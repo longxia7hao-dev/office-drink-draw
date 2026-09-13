@@ -9,7 +9,6 @@ import {
   flipAllReady,
   flipMarkReady,
   flipPick,
-  flipRevealCards,
   makeLocalPlayers,
   startFlipBattle,
   type GameMode,
@@ -152,31 +151,6 @@ function beginFlipBattle() {
   broadcast()
   render()
   burstSpray()
-  runFlipCountdown()
-}
-
-function runFlipCountdown() {
-  clearFlipTimer()
-  if (!state.flip || state.flip.sub !== 'countdown') return
-  // 僅房主／單機跑倒數；客人靠 sync 看數字
-  if (state.isOnline && !state.isHost) return
-  flipTimer = window.setInterval(() => {
-    if (!state.flip || state.flip.sub !== 'countdown') {
-      clearFlipTimer()
-      return
-    }
-    if (state.flip.countdown > 1) {
-      state.flip.countdown -= 1
-      broadcast()
-      render()
-    } else {
-      clearFlipTimer()
-      flipRevealCards(state)
-      broadcast()
-      render()
-      burstSpray()
-    }
-  }, 1000)
 }
 
 function advanceFlipRound() {
@@ -185,7 +159,6 @@ function advanceFlipRound() {
   broadcast()
   render()
   burstSpray()
-  runFlipCountdown()
 }
 
 function startCeremony(mode: GameMode) {
@@ -234,7 +207,7 @@ function finishDraw() {
 function burstSpray() {
   const root = document.getElementById('spray-burst')
   if (!root) return
-  const icons = ['💥', '✨', '🔥', '🧢', '🎤', '⭐', '💧', '🎨']
+  const icons = ['📊', '📄', '📎', '✏️', '📌', '🗂️', '💾', '✅']
   for (let i = 0; i < 14; i++) {
     const span = document.createElement('span')
     span.textContent = icons[i % icons.length]!

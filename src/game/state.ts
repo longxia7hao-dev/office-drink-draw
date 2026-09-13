@@ -19,7 +19,7 @@ export type Phase =
 export type GameMode = 'draw_one' | 'drink_order' | 'team_toast' | 'flip_battle'
 
 /** 翻牌對戰子階段 */
-export type FlipSubPhase = 'countdown' | 'choose' | 'result'
+export type FlipSubPhase = 'choose' | 'result'
 
 export interface FlipBattleState {
   /** 洗牌後的題目 id 序列 */
@@ -27,14 +27,21 @@ export interface FlipBattleState {
   /** 目前題目在 deck 的索引 */
   index: number
   sub: FlipSubPhase
-  /** 倒數剩餘秒數（3→0） */
-  countdown: number
-  /** 玩家選擇 0 | 1；尚未選為 null */
-  picked: 0 | 1 | null
+  /**
+   * 各玩家選擇：playerId → 0(A) | 1(B)
+   * 選項一開始就可見；全員選完才揭示少數方誰喝（FLIP-004）
+   */
+  votes: Record<string, 0 | 1>
   /** 已點「下一題」的玩家 id */
   readyIds: string[]
-  /** 本輪指定作答者（單機傳手機用；可空） */
+  /** 傳手機／輪流選牌：目前該誰選 */
   answererId: string | null
+  /** 結算後：少數方玩家 id（平手為空陣列） */
+  drinkerIds: string[]
+  /** 結算後：是否 A/B 票數平手 → 平手免喝 */
+  tie: boolean
+  /** 結算後：多數面 0|1；平手為 null */
+  majoritySide: 0 | 1 | null
 }
 
 export interface Player {
@@ -232,25 +239,24 @@ export function applySkill(
   }
 }
 
-/** 開新一局翻牌對戰（洗牌＋第一題倒數） */
+/** 開新一局翻牌對戰：選項立刻可見，收齊票再揭示少數方 */
 export function startFlipBattle(state: GameState): void {
   const rng = createRng(`${state.seed}:flip:${state.drawCount}`)
   const ids = FLIP_QUESTIONS.map((q) => q.id)
   shuffleInPlace(ids, rng)
-  const answerer =
-    state.players.length > 0
-      ? state.players[rngInt(rng, state.players.length)]!.id
-      : null
+  const answerer = state.players.length > 0 ? state.players[0]!.id : null
   state.mode = 'flip_battle'
   state.phase = 'flip_battle'
   state.flip = {
     deck: ids,
     index: 0,
-    sub: 'countdown',
-    countdown: 3,
-    picked: null,
+    sub: 'choose',
+    votes: {},
     readyIds: [],
     answererId: answerer,
+    drinkerIds: [],
+    tie: false,
+    majoritySide: null,
   }
   state.skillPending = false
   state.lastResult = null
@@ -263,20 +269,88 @@ export function currentFlipQuestion(state: GameState): FlipQuestion | null {
   return id ? getFlipQuestion(id) : null
 }
 
-/** 倒數結束 → 翻開選項 */
+/** 重置為選邊階段（選項始終可見，無蓋牌倒數） */
 export function flipRevealCards(state: GameState): void {
   if (!state.flip) return
   state.flip.sub = 'choose'
-  state.flip.countdown = 0
-  state.flip.picked = null
+  state.flip.votes = {}
+  state.flip.drinkerIds = []
+  state.flip.tie = false
+  state.flip.majoritySide = null
+  state.flip.readyIds = []
+  state.flip.answererId =
+    state.players.find((p) => !(p.id in state.flip!.votes))?.id ??
+    state.players[0]?.id ??
+    null
 }
 
-/** 作答 */
+/** 是否全員已選完 A/B */
+export function flipAllVoted(state: GameState): boolean {
+  if (!state.flip) return false
+  if (state.players.length === 0) return true
+  return state.players.every((p) => p.id in state.flip!.votes)
+}
+
+/**
+ * 少數方喝酒判定（CHANGE-FLIP-002）
+ * - 票少的那一面＝少數方，該面玩家喝
+ * - A/B 票數相等 → 平手免喝
+ * - 官方 correct 鍵不參與懲罰
+ */
+export function resolveFlipMinority(state: GameState): void {
+  const flip = state.flip
+  if (!flip) return
+  let countA = 0
+  let countB = 0
+  for (const p of state.players) {
+    const v = flip.votes[p.id]
+    if (v === 0) countA += 1
+    else if (v === 1) countB += 1
+  }
+  // 無人投票（理論上不會）：當平手
+  if (countA === 0 && countB === 0) {
+    flip.tie = true
+    flip.majoritySide = null
+    flip.drinkerIds = []
+    return
+  }
+  if (countA === countB) {
+    flip.tie = true
+    flip.majoritySide = null
+    flip.drinkerIds = []
+    return
+  }
+  flip.tie = false
+  const minoritySide: 0 | 1 = countA < countB ? 0 : 1
+  flip.majoritySide = minoritySide === 0 ? 1 : 0
+  flip.drinkerIds = state.players
+    .filter((p) => flip.votes[p.id] === minoritySide)
+    .map((p) => p.id)
+}
+
+/** 作答：寫入當前作答者選票；收齊後才結算少數方 */
 export function flipPick(state: GameState, choice: 0 | 1): void {
   if (!state.flip || state.flip.sub !== 'choose') return
-  state.flip.picked = choice
-  state.flip.sub = 'result'
-  state.flip.readyIds = []
+  const flip = state.flip
+  const voterId =
+    flip.answererId ??
+    state.players.find((p) => !(p.id in flip.votes))?.id ??
+    state.myPlayerId
+  if (!voterId) return
+  if (voterId in flip.votes) return // 已選過不可改（防連點）
+  flip.votes[voterId] = choice
+
+  if (!flipAllVoted(state)) {
+    // 傳手機：下一位未選者
+    const next = state.players.find((p) => !(p.id in flip.votes))
+    flip.answererId = next?.id ?? null
+    return
+  }
+
+  resolveFlipMinority(state)
+  flip.sub = 'result'
+  flip.readyIds = []
+  flip.answererId = null
 }
 
 /** 標記下一題就緒 */
@@ -293,26 +367,41 @@ export function flipAllReady(state: GameState): boolean {
   return state.players.every((p) => state.flip!.readyIds.includes(p.id))
 }
 
-/** 全體就緒 → 下一題（循環題庫） */
+/** 全體就緒 → 下一題（循環題庫；選項立刻可選） */
 export function flipAdvance(state: GameState): void {
   if (!state.flip) return
   const nextIndex = (state.flip.index + 1) % state.flip.deck.length
-  const rng = createRng(`${state.seed}:flip-ans:${state.drawCount}:${nextIndex}`)
-  const answerer =
-    state.players.length > 0
-      ? state.players[rngInt(rng, state.players.length)]!.id
-      : null
   state.flip.index = nextIndex
-  state.flip.sub = 'countdown'
-  state.flip.countdown = 3
-  state.flip.picked = null
+  state.flip.sub = 'choose'
+  state.flip.votes = {}
   state.flip.readyIds = []
-  state.flip.answererId = answerer
+  state.flip.drinkerIds = []
+  state.flip.tie = false
+  state.flip.majoritySide = null
+  state.flip.answererId = state.players[0]?.id ?? null
   state.drawCount += 1
 }
 
-export function flipIsCorrect(state: GameState): boolean {
+/** @deprecated 懲罰改少數方；保留給「官方答案」趣味揭示 */
+export function flipIsCorrect(state: GameState, playerId?: string): boolean {
   const q = currentFlipQuestion(state)
-  if (!q || state.flip?.picked == null) return false
-  return state.flip.picked === q.correct
+  if (!q || !state.flip) return false
+  const pid = playerId ?? state.flip.answererId
+  if (!pid) return false
+  const vote = state.flip.votes[pid]
+  if (vote == null) return false
+  return vote === q.correct
+}
+
+export function flipVoteCounts(state: GameState): { a: number; b: number } {
+  const flip = state.flip
+  let a = 0
+  let b = 0
+  if (!flip) return { a, b }
+  for (const p of state.players) {
+    const v = flip.votes[p.id]
+    if (v === 0) a += 1
+    else if (v === 1) b += 1
+  }
+  return { a, b }
 }

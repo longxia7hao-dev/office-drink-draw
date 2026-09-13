@@ -1,6 +1,6 @@
 import { ROLES, getRole } from '../game/roles'
 import type { GameState, Player } from '../game/state'
-import { currentFlipQuestion, flipIsCorrect, roleOf } from '../game/state'
+import { currentFlipQuestion, flipVoteCounts, roleOf } from '../game/state'
 
 function esc(s: string): string {
   return s
@@ -11,30 +11,30 @@ function esc(s: string): string {
 }
 
 export function shell(inner: string): string {
-  return `<div class="wall-bg"></div>${inner}`
+  return `<div class="wall-bg" aria-hidden="true"></div>${inner}`
 }
 
 export function homeView(): string {
   return shell(`
     <div class="screen" data-screen="home">
       <div class="top-bar">
-        <span class="tag-pill">STREET DRAW</span>
-        <span class="tag-pill" style="transform:rotate(3deg);border-color:var(--spray-pink);color:var(--spray-pink)">18+</span>
+        <span class="tag-pill">公司酒局.docx</span>
+        <span class="tag-pill danger-pill">18+</span>
       </div>
       <h1 class="graffiti-title">公司酒局</h1>
-      <div class="graffiti-sub">OFFICE DRINK DRAW</div>
-      <div class="street-row" aria-hidden="true">🧢 🎤 🎧 💥 🏙️</div>
+      <div class="graffiti-sub">Office Drink Draw · Word / Excel UI</div>
+      <div class="street-row" aria-hidden="true">📄 📊 📎 ✏️ ✅</div>
       <div class="sticker">
         <p style="margin:0;font-weight:800;line-height:1.5">
-          美式嘻哈街頭塗鴉風 · 上班族抽籤喝酒<br/>
-          <span style="color:var(--spray-cyan)">儀式感大揭示 · 角色技能 · 可單機 / 可開房</span>
+          Word／Excel 辦公室介面風 · 上班族抽籤喝酒<br/>
+          <span class="accent-link">抽籤儀式 · 角色技能 · 翻牌少數方 · 可單機／開房</span>
         </p>
       </div>
       <div class="btn-row">
-        <button class="btn btn-lg" data-action="solo">🎮 單機開打</button>
-        <button class="btn btn-cyan btn-lg" data-action="host">📡 開房間（連線）</button>
-        <button class="btn btn-pink" data-action="join">🔑 加入房間</button>
-        <button class="btn btn-ghost" data-action="roles-preview">👀 看角色技能</button>
+        <button class="btn btn-lg" data-action="solo">單機開打</button>
+        <button class="btn btn-cyan btn-lg" data-action="host">開房間（連線）</button>
+        <button class="btn btn-pink" data-action="join">加入房間</button>
+        <button class="btn btn-ghost" data-action="roles-preview">看角色技能</button>
       </div>
       <p class="footer-note">請理性飲酒 · 未成年勿玩</p>
     </div>
@@ -59,11 +59,11 @@ export function setupView(names: string[], online: boolean): string {
         <span class="tag-pill">${online ? 'ONLINE SETUP' : 'SOLO SETUP'}</span>
       </div>
       <h1 class="graffiti-title" style="font-size:2rem">組隊</h1>
-      <p class="hint">2–12 人。每個人會拿到一個街頭辦公室角色。</p>
+      <p class="hint">2–12 人。每個人會拿到一個辦公室角色（活像被 HR 亂分組）。</p>
       <div class="player-list">${chips}</div>
       <button class="btn btn-lime" data-action="add-player" ${names.length >= 12 ? 'disabled' : ''} type="button">＋ 加一位</button>
       <div class="btn-row">
-        <button class="btn btn-lg" data-action="confirm-setup" type="button">🔥 鎖定陣容</button>
+        <button class="btn btn-lg" data-action="confirm-setup" type="button">💾 鎖定陣容</button>
       </div>
     </div>
   `)
@@ -140,7 +140,7 @@ export function rolesView(players: Player[]): string {
         <span class="tag-pill">CREW</span>
       </div>
       <h1 class="graffiti-title" style="font-size:2rem">角色卡</h1>
-      <p class="hint">記住自己的技能。準備上牆噴漆揭示！</p>
+      <p class="hint">記住自己的技能。準備「另存新檔」大揭示！</p>
       <div class="role-grid">${cards}</div>
       <div class="btn-row">
         <button class="btn btn-lg" data-action="to-modes" type="button">👉 選模式</button>
@@ -185,7 +185,7 @@ export function modesView(state: GameState): string {
       <div class="mode-grid">
         <button class="mode-card" data-action="mode" data-mode="draw_one" ${hostOnly ? 'disabled' : ''} type="button">
           <div class="m-title">🎲 抽一位喝酒</div>
-          <div class="m-desc">Seed 公平亂數 · 街頭儀式大揭示 · 可發動技能</div>
+          <div class="m-desc">Seed 公平亂數 · 另存新檔大揭示 · 可發動技能</div>
         </button>
         <button class="mode-card" data-action="mode" data-mode="drink_order" ${hostOnly ? 'disabled' : ''} type="button">
           <div class="m-title">📜 喝杯順序</div>
@@ -196,8 +196,8 @@ export function modesView(state: GameState): string {
           <div class="m-desc">隨機兩隊 · 對幹乾杯</div>
         </button>
         <button class="mode-card" data-action="mode" data-mode="flip_battle" ${hostOnly ? 'disabled' : ''} type="button">
-          <div class="m-title">🃏 翻牌對戰</div>
-          <div class="m-desc">無厘頭題目 · 蓋牌倒數翻開 · 選錯的喝</div>
+          <div class="m-title">📊 對決選邊</div>
+          <div class="m-desc">選項立刻可見 · 全員選完揭曉 · 少數方喝</div>
         </button>
       </div>
     </div>
@@ -205,13 +205,13 @@ export function modesView(state: GameState): string {
 }
 
 export function drawingView(step: number): string {
-  const lines = ['搖罐中…', '噴漆上牆…', '揭開標籤！']
+  const lines = ['正在開啟文件…', '計算中（請勿關閉 Excel）…', '套用格式中！']
   return shell(`
     <div class="screen" data-screen="drawing">
       <div class="ceremony">
-        <div class="boombox">🎧</div>
-        <div class="graffiti-title" style="font-size:1.8rem">${lines[Math.min(step, lines.length - 1)]}</div>
-        <p class="hint">街頭儀式進行中</p>
+        <div class="boombox">📊</div>
+        <div class="graffiti-title" style="font-size:1.5rem">${lines[Math.min(step, lines.length - 1)]}</div>
+        <p class="hint">Office 儀式進行中 · 請勿強制結束工作管理員</p>
       </div>
       <div class="spray-burst" id="spray-burst"></div>
     </div>
@@ -283,7 +283,7 @@ export function revealView(state: GameState): string {
         ${
           role && role.skillKind !== 'none'
             ? `<div class="sticker" style="width:100%;margin-top:8px">
-                <strong style="color:var(--spray-pink)">${esc(role.skillName)}</strong>
+                <strong style="color:var(--danger)">${esc(role.skillName)}</strong>
                 <p class="hint" style="margin:4px 0 0">${esc(role.skillDesc)}</p>
               </div>`
             : ''
@@ -411,64 +411,99 @@ export function flipBattleView(state: GameState): string {
     : null
   const hostOnly = state.isOnline && !state.isHost
   const canAct = !hostOnly
-  const revealed = flip.sub !== 'countdown'
   const n = flip.index + 1
   const total = flip.deck.length
+  const counts = flipVoteCounts(state)
+  const officialLabel = q.correct === 0 ? 'A' : 'B'
+  const officialText = q.options[q.correct]
 
-  const countdownBanner =
-    flip.sub === 'countdown'
-      ? `<div class="flip-countdown" aria-live="polite">
-           <span class="flip-cd-num">${flip.countdown > 0 ? flip.countdown : '翻！'}</span>
-           <span class="flip-cd-label">蓋牌倒數</span>
-         </div>`
-      : ''
-
+  // FLIP-004：選項一開始就亮；票數／少數標籤只在 result 揭曉
   const cards = [0, 1]
     .map((i) => {
       const opt = q.options[i as 0 | 1]
-      const isPick = flip.picked === i
-      const isCorrect = q.correct === i
-      let cls = 'flip-card'
-      if (!revealed) cls += ' face-down'
-      else cls += ' face-up'
+      let cls = 'flip-card face-up'
       if (flip.sub === 'result') {
-        if (isCorrect) cls += ' is-correct'
-        if (isPick && !isCorrect) cls += ' is-wrong'
-        if (isPick) cls += ' is-picked'
+        if (flip.majoritySide != null && !flip.tie) {
+          if (i === flip.majoritySide) cls += ' is-majority'
+          else cls += ' is-minority'
+        }
+        if (q.correct === i) cls += ' is-official'
       }
       const disabled =
         !canAct || flip.sub !== 'choose' ? 'disabled' : ''
-      const backArt = i === 0 ? '🔥' : '❄️'
+      const voteN = i === 0 ? counts.a : counts.b
+      const voteHint =
+        flip.sub === 'result'
+          ? `<span class="flip-vote-n">${voteN} 票</span>`
+          : `<span class="flip-vote-n muted">選項已公開</span>`
       return `
         <button class="${cls}" data-action="flip-pick" data-choice="${i}" ${disabled} type="button">
           <div class="flip-card-inner">
-            <div class="flip-face flip-back">
-              <span class="flip-back-tag">STREET</span>
-              <span class="flip-back-ico">${backArt}</span>
-              <span class="flip-back-sub">蓋牌</span>
-            </div>
             <div class="flip-face flip-front">
               <span class="flip-opt-label">${i === 0 ? 'A' : 'B'}</span>
               <span class="flip-opt-text">${esc(opt)}</span>
+              ${voteHint}
             </div>
           </div>
         </button>`
     })
     .join('')
 
+  let chooseProgress = ''
+  if (flip.sub === 'choose') {
+    const voteChips = state.players
+      .map((p) => {
+        const done = p.id in flip.votes
+        const turn = flip.answererId === p.id
+        return `<div class="ready-chip ${done ? 'on' : turn ? 'turn' : 'off'}">
+          <span class="status-dot ${done ? 'on' : 'off'}"></span>
+          <strong>${esc(p.name)}</strong>
+          <span class="ready-label">${done ? '已選' : turn ? '輪到選' : '還沒選'}</span>
+        </div>`
+      })
+      .join('')
+    chooseProgress = `
+      <div class="sticker flip-ready-box" style="width:100%;margin-top:8px">
+        <p style="margin:0 0 8px;font-weight:900">選邊進度（收齊才結算）</p>
+        <div class="ready-list">${voteChips}</div>
+        ${
+          answerer
+            ? `<p class="hint" style="margin:10px 0 0">傳手機給 <strong style="color:var(--danger)">${esc(answerer.name)}</strong> 選 A 或 B</p>`
+            : ''
+        }
+        <p class="hint" style="margin-bottom:0">規則：跟大家不一樣的<strong>少數方</strong>喝；平手免喝。</p>
+      </div>`
+  }
+
   let resultBlock = ''
-  if (flip.sub === 'result' && flip.picked != null) {
-    const ok = flipIsCorrect(state)
-    const who = answerer ? esc(answerer.name) : '選錯的人'
-    resultBlock = ok
-      ? `<div class="flip-result ok">
-           <div class="flip-result-title">答對了！</div>
-           <p class="hint" style="margin:0">免喝 · 街頭知識＋1</p>
+  if (flip.sub === 'result') {
+    const drinkNames = flip.drinkerIds
+      .map((id) => state.players.find((p) => p.id === id)?.name)
+      .filter(Boolean)
+      .map((n) => esc(n!))
+    if (flip.tie) {
+      resultBlock = `<div class="flip-result ok">
+           <div class="flip-result-title">平手免喝！</div>
+           <p class="hint" style="margin:0">A ${counts.a} ： B ${counts.b} · 少數不成立，這輪放過</p>
          </div>`
-      : `<div class="flip-result bad">
-           <div class="flip-result-title">選錯的喝！</div>
-           <p class="hint" style="margin:0">${who} · 乾一口 🍻</p>
+    } else if (drinkNames.length === 0) {
+      resultBlock = `<div class="flip-result ok">
+           <div class="flip-result-title">全場同邊！</div>
+           <p class="hint" style="margin:0">沒有少數方 · 全員免喝 🍻</p>
          </div>`
+    } else {
+      resultBlock = `<div class="flip-result bad">
+           <div class="flip-result-title">少數方喝！</div>
+           <p class="hint" style="margin:0">${drinkNames.join('、')} · 跟大家不一樣 · 乾一口 🍻</p>
+           <p class="hint" style="margin:6px 0 0">票數 A ${counts.a} ： B ${counts.b}</p>
+         </div>`
+    }
+
+    resultBlock += `
+      <div class="flip-official sticker" style="width:100%;margin-top:8px">
+        <div class="flip-q-label">官方答案（趣味｜不決定誰喝）</div>
+        <p style="margin:4px 0 0;font-weight:800">${officialLabel}. ${esc(officialText)}</p>
+      </div>`
 
     const readySet = new Set(flip.readyIds)
     const readyList = state.players
@@ -504,22 +539,18 @@ export function flipBattleView(state: GameState): string {
     <div class="screen" data-screen="flip">
       <div class="top-bar">
         <button class="btn btn-ghost" data-action="to-modes" style="width:auto;min-height:40px;padding:8px 12px" type="button">←</button>
-        <span class="tag-pill">FLIP ${n}/${total}</span>
+        <span class="tag-pill">Sheet ${n}/${total}</span>
       </div>
       <div class="flip-q sticker">
-        <div class="flip-q-label">無厘頭題</div>
+        <div class="flip-q-label">工作表 · 題目</div>
         <p class="flip-q-text">${esc(q.q)}</p>
-        ${
-          answerer
-            ? `<p class="hint" style="margin:8px 0 0">本輪點名作答：<strong style="color:var(--spray-pink)">${esc(answerer.name)}</strong></p>`
-            : ''
-        }
       </div>
-      ${countdownBanner}
-      <div class="flip-cards ${revealed ? 'revealed' : 'hidden-opts'}">${cards}</div>
+      <p class="hint flip-ux-hint">兩選項已公開 · 全員選完才揭曉少數方誰喝</p>
+      <div class="flip-cards revealed">${cards}</div>
+      ${chooseProgress}
       ${resultBlock}
       <div class="spray-burst" id="spray-burst"></div>
-      <p class="footer-note">選錯的喝 · 請理性飲酒</p>
+      <p class="footer-note">少數方喝 · 平手免喝 · 請理性飲酒</p>
     </div>
   `)
 }
