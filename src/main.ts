@@ -5,7 +5,13 @@ import {
   drawOne,
   drawOrder,
   drawTeams,
+  flipAdvance,
+  flipAllReady,
+  flipMarkReady,
+  flipPick,
+  flipRevealCards,
   makeLocalPlayers,
+  startFlipBattle,
   type GameMode,
   type GameState,
 } from './game/state'
@@ -22,6 +28,7 @@ let wsStatus: 'connecting' | 'open' | 'closed' | 'error' | 'idle' = 'idle'
 let roster: { id: string; name: string; connected: boolean }[] = []
 let skillMessage = ''
 let ceremonyTimer: number | null = null
+let flipTimer: number | null = null
 let pendingMode: GameMode | null = null
 let uiOverlay: 'join' | 'host-name' | 'roles-preview' | null = null
 
@@ -109,6 +116,9 @@ function render() {
     case 'result':
       html = UI.resultBanner(skillMessage)
       break
+    case 'flip_battle':
+      html = UI.flipBattleView(state)
+      break
     default:
       html = UI.homeView()
   }
@@ -121,6 +131,61 @@ function render() {
 
 function setUi(ui: typeof uiOverlay) {
   uiOverlay = ui
+}
+
+
+function clearFlipTimer() {
+  if (flipTimer != null) {
+    window.clearInterval(flipTimer)
+    flipTimer = null
+  }
+}
+
+function beginFlipBattle() {
+  if (state.isOnline && !state.isHost) return
+  clearFlipTimer()
+  if (ceremonyTimer != null) {
+    window.clearInterval(ceremonyTimer)
+    ceremonyTimer = null
+  }
+  startFlipBattle(state)
+  broadcast()
+  render()
+  burstSpray()
+  runFlipCountdown()
+}
+
+function runFlipCountdown() {
+  clearFlipTimer()
+  if (!state.flip || state.flip.sub !== 'countdown') return
+  // 僅房主／單機跑倒數；客人靠 sync 看數字
+  if (state.isOnline && !state.isHost) return
+  flipTimer = window.setInterval(() => {
+    if (!state.flip || state.flip.sub !== 'countdown') {
+      clearFlipTimer()
+      return
+    }
+    if (state.flip.countdown > 1) {
+      state.flip.countdown -= 1
+      broadcast()
+      render()
+    } else {
+      clearFlipTimer()
+      flipRevealCards(state)
+      broadcast()
+      render()
+      burstSpray()
+    }
+  }, 1000)
+}
+
+function advanceFlipRound() {
+  if (state.isOnline && !state.isHost) return
+  flipAdvance(state)
+  broadcast()
+  render()
+  burstSpray()
+  runFlipCountdown()
 }
 
 function startCeremony(mode: GameMode) {
@@ -151,7 +216,7 @@ function startCeremony(mode: GameMode) {
 
 function finishDraw() {
   const mode = pendingMode ?? state.mode
-  if (!mode) return
+  if (!mode || mode === 'flip_battle') return
   let result
   if (mode === 'draw_one') result = drawOne(state)
   else if (mode === 'drink_order') result = drawOrder(state)
@@ -195,7 +260,9 @@ app.addEventListener('click', (ev) => {
   switch (action) {
     case 'home':
       setUi(null)
+      clearFlipTimer()
       state.phase = 'home'
+      state.flip = null
       state.isOnline = false
       state.roomCode = null
       room.disconnect()
@@ -299,8 +366,10 @@ app.addEventListener('click', (ev) => {
     }
     case 'to-modes':
       setUi(null)
+      clearFlipTimer()
       state.phase = 'mode_select'
       state.skillPending = false
+      state.flip = null
       broadcast()
       render()
       break
@@ -311,11 +380,57 @@ app.addEventListener('click', (ev) => {
       break
     case 'mode': {
       const mode = t.dataset.mode as GameMode
-      startCeremony(mode)
+      if (mode === 'flip_battle') {
+        beginFlipBattle()
+      } else {
+        startCeremony(mode)
+      }
+      break
+    }
+    case 'flip-pick': {
+      if (state.isOnline && !state.isHost) return
+      const choice = Number(t.dataset.choice) as 0 | 1
+      if (choice !== 0 && choice !== 1) return
+      flipPick(state, choice)
+      broadcast()
+      render()
+      burstSpray()
+      break
+    }
+    case 'flip-ready': {
+      if (state.isOnline && !state.isHost) return
+      const pid = t.dataset.player
+      if (!pid) return
+      flipMarkReady(state, pid)
+      broadcast()
+      render()
+      if (flipAllReady(state)) {
+        window.setTimeout(() => {
+          if (!flipAllReady(state)) return
+          advanceFlipRound()
+        }, 350)
+      }
+      break
+    }
+    case 'flip-ready-all': {
+      if (state.isOnline && !state.isHost) return
+      // 傳手機：每次按「下一題」標記下一位尚未就緒者；全到齊自動進下一題
+      if (state.isOnline && state.myPlayerId) {
+        flipMarkReady(state, state.myPlayerId)
+      } else {
+        const next = state.players.find((p) => !state.flip!.readyIds.includes(p.id))
+        if (next) flipMarkReady(state, next.id)
+      }
+      broadcast()
+      render()
+      if (flipAllReady(state)) {
+        window.setTimeout(() => advanceFlipRound(), 350)
+      }
       break
     }
     case 'again':
-      if (state.mode) startCeremony(state.mode)
+      if (state.mode === 'flip_battle') beginFlipBattle()
+      else if (state.mode) startCeremony(state.mode)
       break
     case 'use-skill':
       state.phase = 'skill'

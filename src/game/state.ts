@@ -1,5 +1,6 @@
 import { assignRoles, getRole, type RoleDef, type SkillKind } from './roles'
 import { createRng, newSeed, rngInt, shuffleInPlace } from './rng'
+import { FLIP_QUESTIONS, getFlipQuestion, type FlipQuestion } from './flipQuestions'
 
 export type Phase =
   | 'home'
@@ -13,8 +14,28 @@ export type Phase =
   | 'order_reveal'
   | 'team_reveal'
   | 'result'
+  | 'flip_battle'
 
-export type GameMode = 'draw_one' | 'drink_order' | 'team_toast'
+export type GameMode = 'draw_one' | 'drink_order' | 'team_toast' | 'flip_battle'
+
+/** 翻牌對戰子階段 */
+export type FlipSubPhase = 'countdown' | 'choose' | 'result'
+
+export interface FlipBattleState {
+  /** 洗牌後的題目 id 序列 */
+  deck: string[]
+  /** 目前題目在 deck 的索引 */
+  index: number
+  sub: FlipSubPhase
+  /** 倒數剩餘秒數（3→0） */
+  countdown: number
+  /** 玩家選擇 0 | 1；尚未選為 null */
+  picked: 0 | 1 | null
+  /** 已點「下一題」的玩家 id */
+  readyIds: string[]
+  /** 本輪指定作答者（單機傳手機用；可空） */
+  answererId: string | null
+}
 
 export interface Player {
   id: string
@@ -50,6 +71,7 @@ export interface GameState {
   myPlayerId: string | null
   skillPending: boolean
   ceremonyStep: number
+  flip: FlipBattleState | null
 }
 
 export function createInitialState(): GameState {
@@ -66,6 +88,7 @@ export function createInitialState(): GameState {
     myPlayerId: null,
     skillPending: false,
     ceremonyStep: 0,
+    flip: null,
   }
 }
 
@@ -207,4 +230,89 @@ export function applySkill(
     default:
       return `${me?.name} ${getRole(me?.roleId ?? 'worker').drink}`
   }
+}
+
+/** 開新一局翻牌對戰（洗牌＋第一題倒數） */
+export function startFlipBattle(state: GameState): void {
+  const rng = createRng(`${state.seed}:flip:${state.drawCount}`)
+  const ids = FLIP_QUESTIONS.map((q) => q.id)
+  shuffleInPlace(ids, rng)
+  const answerer =
+    state.players.length > 0
+      ? state.players[rngInt(rng, state.players.length)]!.id
+      : null
+  state.mode = 'flip_battle'
+  state.phase = 'flip_battle'
+  state.flip = {
+    deck: ids,
+    index: 0,
+    sub: 'countdown',
+    countdown: 3,
+    picked: null,
+    readyIds: [],
+    answererId: answerer,
+  }
+  state.skillPending = false
+  state.lastResult = null
+}
+
+export function currentFlipQuestion(state: GameState): FlipQuestion | null {
+  const flip = state.flip
+  if (!flip || flip.deck.length === 0) return null
+  const id = flip.deck[flip.index % flip.deck.length]
+  return id ? getFlipQuestion(id) : null
+}
+
+/** 倒數結束 → 翻開選項 */
+export function flipRevealCards(state: GameState): void {
+  if (!state.flip) return
+  state.flip.sub = 'choose'
+  state.flip.countdown = 0
+  state.flip.picked = null
+}
+
+/** 作答 */
+export function flipPick(state: GameState, choice: 0 | 1): void {
+  if (!state.flip || state.flip.sub !== 'choose') return
+  state.flip.picked = choice
+  state.flip.sub = 'result'
+  state.flip.readyIds = []
+}
+
+/** 標記下一題就緒 */
+export function flipMarkReady(state: GameState, playerId: string): void {
+  if (!state.flip || state.flip.sub !== 'result') return
+  if (!state.flip.readyIds.includes(playerId)) {
+    state.flip.readyIds.push(playerId)
+  }
+}
+
+export function flipAllReady(state: GameState): boolean {
+  if (!state.flip) return false
+  if (state.players.length === 0) return true
+  return state.players.every((p) => state.flip!.readyIds.includes(p.id))
+}
+
+/** 全體就緒 → 下一題（循環題庫） */
+export function flipAdvance(state: GameState): void {
+  if (!state.flip) return
+  const nextIndex = (state.flip.index + 1) % state.flip.deck.length
+  const rng = createRng(`${state.seed}:flip-ans:${state.drawCount}:${nextIndex}`)
+  const answerer =
+    state.players.length > 0
+      ? state.players[rngInt(rng, state.players.length)]!.id
+      : null
+  state.flip.index = nextIndex
+  state.flip.sub = 'countdown'
+  state.flip.countdown = 3
+  state.flip.picked = null
+  state.flip.readyIds = []
+  state.flip.answererId = answerer
+  state.drawCount += 1
+}
+
+export function flipIsCorrect(state: GameState): boolean {
+  const q = currentFlipQuestion(state)
+  if (!q || state.flip?.picked == null) return false
+  return state.flip.picked === q.correct
 }

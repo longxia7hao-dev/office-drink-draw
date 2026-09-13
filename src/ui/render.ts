@@ -1,6 +1,6 @@
 import { ROLES, getRole } from '../game/roles'
 import type { GameState, Player } from '../game/state'
-import { roleOf } from '../game/state'
+import { currentFlipQuestion, flipIsCorrect, roleOf } from '../game/state'
 
 function esc(s: string): string {
   return s
@@ -195,6 +195,10 @@ export function modesView(state: GameState): string {
           <div class="m-title">🤜 分隊乾杯</div>
           <div class="m-desc">隨機兩隊 · 對幹乾杯</div>
         </button>
+        <button class="mode-card" data-action="mode" data-mode="flip_battle" ${hostOnly ? 'disabled' : ''} type="button">
+          <div class="m-title">🃏 翻牌對戰</div>
+          <div class="m-desc">無厘頭題目 · 蓋牌倒數翻開 · 選錯的喝</div>
+        </button>
       </div>
     </div>
   `)
@@ -385,6 +389,137 @@ export function resultBanner(msg: string): string {
         <button class="btn btn-lg" data-action="again" type="button">🎲 再抽</button>
         <button class="btn btn-ghost" data-action="to-modes" type="button">換模式</button>
       </div>
+    </div>
+  `)
+}
+
+
+export function flipBattleView(state: GameState): string {
+  const flip = state.flip
+  const q = currentFlipQuestion(state)
+  if (!flip || !q) {
+    return shell(`
+      <div class="screen" data-screen="flip">
+        <p class="hint">題庫載入中…</p>
+        <button class="btn btn-ghost" data-action="to-modes" type="button">回模式</button>
+      </div>
+    `)
+  }
+
+  const answerer = flip.answererId
+    ? state.players.find((p) => p.id === flip.answererId)
+    : null
+  const hostOnly = state.isOnline && !state.isHost
+  const canAct = !hostOnly
+  const revealed = flip.sub !== 'countdown'
+  const n = flip.index + 1
+  const total = flip.deck.length
+
+  const countdownBanner =
+    flip.sub === 'countdown'
+      ? `<div class="flip-countdown" aria-live="polite">
+           <span class="flip-cd-num">${flip.countdown > 0 ? flip.countdown : '翻！'}</span>
+           <span class="flip-cd-label">蓋牌倒數</span>
+         </div>`
+      : ''
+
+  const cards = [0, 1]
+    .map((i) => {
+      const opt = q.options[i as 0 | 1]
+      const isPick = flip.picked === i
+      const isCorrect = q.correct === i
+      let cls = 'flip-card'
+      if (!revealed) cls += ' face-down'
+      else cls += ' face-up'
+      if (flip.sub === 'result') {
+        if (isCorrect) cls += ' is-correct'
+        if (isPick && !isCorrect) cls += ' is-wrong'
+        if (isPick) cls += ' is-picked'
+      }
+      const disabled =
+        !canAct || flip.sub !== 'choose' ? 'disabled' : ''
+      const backArt = i === 0 ? '🔥' : '❄️'
+      return `
+        <button class="${cls}" data-action="flip-pick" data-choice="${i}" ${disabled} type="button">
+          <div class="flip-card-inner">
+            <div class="flip-face flip-back">
+              <span class="flip-back-tag">STREET</span>
+              <span class="flip-back-ico">${backArt}</span>
+              <span class="flip-back-sub">蓋牌</span>
+            </div>
+            <div class="flip-face flip-front">
+              <span class="flip-opt-label">${i === 0 ? 'A' : 'B'}</span>
+              <span class="flip-opt-text">${esc(opt)}</span>
+            </div>
+          </div>
+        </button>`
+    })
+    .join('')
+
+  let resultBlock = ''
+  if (flip.sub === 'result' && flip.picked != null) {
+    const ok = flipIsCorrect(state)
+    const who = answerer ? esc(answerer.name) : '選錯的人'
+    resultBlock = ok
+      ? `<div class="flip-result ok">
+           <div class="flip-result-title">答對了！</div>
+           <p class="hint" style="margin:0">免喝 · 街頭知識＋1</p>
+         </div>`
+      : `<div class="flip-result bad">
+           <div class="flip-result-title">選錯的喝！</div>
+           <p class="hint" style="margin:0">${who} · 乾一口 🍻</p>
+         </div>`
+
+    const readySet = new Set(flip.readyIds)
+    const readyList = state.players
+      .map((p) => {
+        const done = readySet.has(p.id)
+        return `<div class="ready-chip ${done ? 'on' : 'off'}">
+          <span class="status-dot ${done ? 'on' : 'off'}"></span>
+          <strong>${esc(p.name)}</strong>
+          <span class="ready-label">${done ? '已就緒' : '還沒按'}</span>
+          ${
+            canAct && !done
+              ? `<button class="chip-btn alt" data-action="flip-ready" data-player="${p.id}" type="button">下一題 ✓</button>`
+              : ''
+          }
+        </div>`
+      })
+      .join('')
+
+    resultBlock += `
+      <div class="sticker flip-ready-box" style="width:100%;margin-top:8px">
+        <p style="margin:0 0 8px;font-weight:900">下一題就緒狀況</p>
+        <div class="ready-list">${readyList}</div>
+        ${
+          canAct
+            ? `<button class="btn btn-lg" style="margin-top:12px" data-action="flip-ready-all" type="button">下一題</button>
+               <p class="hint" style="margin-bottom:0">傳手機：每人按一次「下一題」；名單會顯示誰好了／誰還沒。全到齊自動進下一題。</p>`
+            : `<p class="hint" style="margin-bottom:0">等待房主／大家按下一題…</p>`
+        }
+      </div>`
+  }
+
+  return shell(`
+    <div class="screen" data-screen="flip">
+      <div class="top-bar">
+        <button class="btn btn-ghost" data-action="to-modes" style="width:auto;min-height:40px;padding:8px 12px" type="button">←</button>
+        <span class="tag-pill">FLIP ${n}/${total}</span>
+      </div>
+      <div class="flip-q sticker">
+        <div class="flip-q-label">無厘頭題</div>
+        <p class="flip-q-text">${esc(q.q)}</p>
+        ${
+          answerer
+            ? `<p class="hint" style="margin:8px 0 0">本輪點名作答：<strong style="color:var(--spray-pink)">${esc(answerer.name)}</strong></p>`
+            : ''
+        }
+      </div>
+      ${countdownBanner}
+      <div class="flip-cards ${revealed ? 'revealed' : 'hidden-opts'}">${cards}</div>
+      ${resultBlock}
+      <div class="spray-burst" id="spray-burst"></div>
+      <p class="footer-note">選錯的喝 · 請理性飲酒</p>
     </div>
   `)
 }

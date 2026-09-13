@@ -1,4 +1,11 @@
-import type { GameMode, GameState, Phase, Player, DrawResult } from '../game/state'
+import type {
+  FlipBattleState,
+  GameMode,
+  GameState,
+  Phase,
+  Player,
+  DrawResult,
+} from '../game/state'
 
 export type ClientMsg =
   | { type: 'create'; name: string }
@@ -25,6 +32,7 @@ export interface SyncPayload {
   lastResult: DrawResult | null
   skillPending: boolean
   ceremonyStep: number
+  flip: FlipBattleState | null
 }
 
 export function toSync(state: GameState): SyncPayload {
@@ -37,6 +45,7 @@ export function toSync(state: GameState): SyncPayload {
     lastResult: state.lastResult,
     skillPending: state.skillPending,
     ceremonyStep: state.ceremonyStep,
+    flip: state.flip,
   }
 }
 
@@ -49,6 +58,7 @@ export function applySync(state: GameState, sync: SyncPayload): void {
   state.lastResult = sync.lastResult
   state.skillPending = sync.skillPending
   state.ceremonyStep = sync.ceremonyStep
+  state.flip = sync.flip ?? null
 }
 
 export function defaultWsUrl(): string {
