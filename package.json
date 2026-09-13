@@ -1,0 +1,24 @@
+{
+  "name": "office-drink-draw",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "公司酒局 — 美式嘻哈街頭塗鴉風上班族抽籤喝酒遊戲",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "server": "node server/index.mjs",
+    "start:all": "npx concurrently -k \"npm run server\" \"npm run dev\"",
+    "deploy:pages": "VITE_BASE=/office-drink-draw/ npm run build && echo '將 dist/ 內容發佈到 GitHub Pages（Settings → Pages → Deploy from branch: gh-pages，或用 actions）'"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1",
+    "concurrently": "^9.1.2",
+    "typescript": "~5.8.0",
+    "vite": "^6.2.0"
+  },
+  "dependencies": {
+    "ws": "^8.18.1"
+  }
+}
