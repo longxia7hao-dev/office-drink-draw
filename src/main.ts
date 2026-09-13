@@ -207,7 +207,7 @@ function finishDraw() {
 function burstSpray() {
   const root = document.getElementById('spray-burst')
   if (!root) return
-  const icons = ['📊', '📄', '📎', '✏️', '📌', '🗂️', '💾', '✅']
+  const icons = ['💥', '✨', '🔥', '🧢', '🎤', '⭐', '💧', '🎨']
   for (let i = 0; i < 14; i++) {
     const span = document.createElement('span')
     span.textContent = icons[i % icons.length]!

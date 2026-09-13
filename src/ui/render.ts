@@ -18,23 +18,23 @@ export function homeView(): string {
   return shell(`
     <div class="screen" data-screen="home">
       <div class="top-bar">
-        <span class="tag-pill">公司酒局.docx</span>
-        <span class="tag-pill danger-pill">18+</span>
+        <span class="tag-pill">STREET DRAW</span>
+        <span class="tag-pill" style="transform:rotate(3deg);border-color:var(--spray-pink);color:var(--spray-pink)">18+</span>
       </div>
       <h1 class="graffiti-title">公司酒局</h1>
-      <div class="graffiti-sub">Office Drink Draw · Word / Excel UI</div>
-      <div class="street-row" aria-hidden="true">📄 📊 📎 ✏️ ✅</div>
+      <div class="graffiti-sub">OFFICE DRINK DRAW</div>
+      <div class="street-row" aria-hidden="true">🧢 🎤 🎧 💥 🏙️</div>
       <div class="sticker">
         <p style="margin:0;font-weight:800;line-height:1.5">
-          Word／Excel 辦公室介面風 · 上班族抽籤喝酒<br/>
-          <span class="accent-link">抽籤儀式 · 角色技能 · 翻牌少數方 · 可單機／開房</span>
+          美式嘻哈街頭塗鴉風 · 上班族抽籤喝酒<br/>
+          <span style="color:var(--spray-cyan)">儀式感大揭示 · 角色技能 · 少數方喝 · 可單機 / 可開房</span>
         </p>
       </div>
       <div class="btn-row">
-        <button class="btn btn-lg" data-action="solo">單機開打</button>
-        <button class="btn btn-cyan btn-lg" data-action="host">開房間（連線）</button>
-        <button class="btn btn-pink" data-action="join">加入房間</button>
-        <button class="btn btn-ghost" data-action="roles-preview">看角色技能</button>
+        <button class="btn btn-lg" data-action="solo">🎮 單機開打</button>
+        <button class="btn btn-cyan btn-lg" data-action="host">📡 開房間（連線）</button>
+        <button class="btn btn-pink" data-action="join">🔑 加入房間</button>
+        <button class="btn btn-ghost" data-action="roles-preview">👀 看角色技能</button>
       </div>
       <p class="footer-note">請理性飲酒 · 未成年勿玩</p>
     </div>
@@ -59,11 +59,11 @@ export function setupView(names: string[], online: boolean): string {
         <span class="tag-pill">${online ? 'ONLINE SETUP' : 'SOLO SETUP'}</span>
       </div>
       <h1 class="graffiti-title" style="font-size:2rem">組隊</h1>
-      <p class="hint">2–12 人。每個人會拿到一個辦公室角色（活像被 HR 亂分組）。</p>
+      <p class="hint">2–12 人。每個人會拿到一個街頭辦公室角色。</p>
       <div class="player-list">${chips}</div>
       <button class="btn btn-lime" data-action="add-player" ${names.length >= 12 ? 'disabled' : ''} type="button">＋ 加一位</button>
       <div class="btn-row">
-        <button class="btn btn-lg" data-action="confirm-setup" type="button">💾 鎖定陣容</button>
+        <button class="btn btn-lg" data-action="confirm-setup" type="button">🔥 鎖定陣容</button>
       </div>
     </div>
   `)
@@ -140,7 +140,7 @@ export function rolesView(players: Player[]): string {
         <span class="tag-pill">CREW</span>
       </div>
       <h1 class="graffiti-title" style="font-size:2rem">角色卡</h1>
-      <p class="hint">記住自己的技能。準備「另存新檔」大揭示！</p>
+      <p class="hint">記住自己的技能。準備上牆噴漆揭示！</p>
       <div class="role-grid">${cards}</div>
       <div class="btn-row">
         <button class="btn btn-lg" data-action="to-modes" type="button">👉 選模式</button>
@@ -185,7 +185,7 @@ export function modesView(state: GameState): string {
       <div class="mode-grid">
         <button class="mode-card" data-action="mode" data-mode="draw_one" ${hostOnly ? 'disabled' : ''} type="button">
           <div class="m-title">🎲 抽一位喝酒</div>
-          <div class="m-desc">Seed 公平亂數 · 另存新檔大揭示 · 可發動技能</div>
+          <div class="m-desc">Seed 公平亂數 · 街頭儀式大揭示 · 可發動技能</div>
         </button>
         <button class="mode-card" data-action="mode" data-mode="drink_order" ${hostOnly ? 'disabled' : ''} type="button">
           <div class="m-title">📜 喝杯順序</div>
@@ -196,8 +196,8 @@ export function modesView(state: GameState): string {
           <div class="m-desc">隨機兩隊 · 對幹乾杯</div>
         </button>
         <button class="mode-card" data-action="mode" data-mode="flip_battle" ${hostOnly ? 'disabled' : ''} type="button">
-          <div class="m-title">📊 對決選邊</div>
-          <div class="m-desc">選項立刻可見 · 全員選完揭曉 · 少數方喝</div>
+          <div class="m-title">🃏 翻牌對戰</div>
+          <div class="m-desc">時事梗／無厘頭 · 選項即開 · 少數方喝</div>
         </button>
       </div>
     </div>
@@ -205,13 +205,13 @@ export function modesView(state: GameState): string {
 }
 
 export function drawingView(step: number): string {
-  const lines = ['正在開啟文件…', '計算中（請勿關閉 Excel）…', '套用格式中！']
+  const lines = ['搖罐中…', '噴漆上牆…', '揭開標籤！']
   return shell(`
     <div class="screen" data-screen="drawing">
       <div class="ceremony">
-        <div class="boombox">📊</div>
-        <div class="graffiti-title" style="font-size:1.5rem">${lines[Math.min(step, lines.length - 1)]}</div>
-        <p class="hint">Office 儀式進行中 · 請勿強制結束工作管理員</p>
+        <div class="boombox">🎧</div>
+        <div class="graffiti-title" style="font-size:1.8rem">${lines[Math.min(step, lines.length - 1)]}</div>
+        <p class="hint">街頭儀式進行中</p>
       </div>
       <div class="spray-burst" id="spray-burst"></div>
     </div>
@@ -283,7 +283,7 @@ export function revealView(state: GameState): string {
         ${
           role && role.skillKind !== 'none'
             ? `<div class="sticker" style="width:100%;margin-top:8px">
-                <strong style="color:var(--danger)">${esc(role.skillName)}</strong>
+                <strong style="color:var(--spray-pink)">${esc(role.skillName)}</strong>
                 <p class="hint" style="margin:4px 0 0">${esc(role.skillDesc)}</p>
               </div>`
             : ''
@@ -468,7 +468,7 @@ export function flipBattleView(state: GameState): string {
         <div class="ready-list">${voteChips}</div>
         ${
           answerer
-            ? `<p class="hint" style="margin:10px 0 0">傳手機給 <strong style="color:var(--danger)">${esc(answerer.name)}</strong> 選 A 或 B</p>`
+            ? `<p class="hint" style="margin:10px 0 0">傳手機給 <strong style="color:var(--spray-pink)">${esc(answerer.name)}</strong> 選 A 或 B</p>`
             : ''
         }
         <p class="hint" style="margin-bottom:0">規則：跟大家不一樣的<strong>少數方</strong>喝；平手免喝。</p>
@@ -539,10 +539,10 @@ export function flipBattleView(state: GameState): string {
     <div class="screen" data-screen="flip">
       <div class="top-bar">
         <button class="btn btn-ghost" data-action="to-modes" style="width:auto;min-height:40px;padding:8px 12px" type="button">←</button>
-        <span class="tag-pill">Sheet ${n}/${total}</span>
+        <span class="tag-pill">FLIP ${n}/${total}</span>
       </div>
       <div class="flip-q sticker">
-        <div class="flip-q-label">工作表 · 題目</div>
+        <div class="flip-q-label">牆上口號</div>
         <p class="flip-q-text">${esc(q.q)}</p>
       </div>
       <p class="hint flip-ux-hint">兩選項已公開 · 全員選完才揭曉少數方誰喝</p>
