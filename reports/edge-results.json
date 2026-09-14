@@ -1,0 +1,23 @@
+{
+  "version": "0aca4c0401b36f66",
+  "base": "http://127.0.0.1:4173/office-drink-draw/",
+  "timestamp": "2026-09-14T20:58:49.803Z",
+  "results": [
+    {
+      "engine": "chromium",
+      "initialIntroFrames": 6,
+      "keyboardSkip": true,
+      "idleAudioRequests": 0,
+      "scriptFailureAndReload": true,
+      "audioRequestsAfterTrustedEnter": 1
+    },
+    {
+      "engine": "webkit",
+      "initialIntroFrames": 1,
+      "keyboardSkip": true,
+      "idleAudioRequests": 0,
+      "scriptFailureAndReload": true,
+      "audioRequestsAfterTrustedEnter": 1
+    }
+  ]
+}
