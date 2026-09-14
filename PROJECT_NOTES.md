@@ -5,7 +5,11 @@
 
 ## 目前狀態
 - 最後更新：2026-09-15（Codex）
-- 進行中：Codex 在 codex/mobile-overhaul，基底 0042c6d；手機、載入與連線 fallback 已修正；最終版本 0aca4c0401b36f66 已通過 30 項測試及雙引擎啟動邊界檢查，準備正常 fast-forward 部署，尚未完成公開站 smoke。
+- 已完成修正、測試及 GitHub Pages 部署。無進行中作業。
+- 功能提交：5a2945e2a7711cd3165b68be6d3ce4c41f9d498b；版本：0aca4c0401b36f66。
+- 30 項手機回歸通過、0 失敗；公開站 6 項 smoke 全通過，HTML 與新／舊 bundle SHA-256 確認無舊快取問題。
+- 公開站：https://longxia7hao-dev.github.io/office-drink-draw/；報告入口 reports/index.html。
+- 多人連線仍不可用：兩個 contexts 開房／加入同房，原站 HTTP 500，Pages 跨站 CORS 拒絕；已使用明確原站導引並保留房號。這是外部後端限制，不可宣稱已修復同步。
 
 ## 睿哥的指示與決策
 - 不使用舊 main 覆蓋 gh-pages；不 force push、不刪舊 bundle。
@@ -19,6 +23,7 @@
 - 未發布的中間版 bundle 移至 /tmp/office-drink-draw-intermediate；原部署資產完全保留。
 
 ## 變更日誌（新的在上）
+- 2026-09-15｜Codex｜5a2945e 以正常 fast-forward 部署 gh-pages，Pages Action 34896479112 成功；公開版本 0aca4c0401b36f66，6 項公開站 smoke 與新舊資產雜湊比對全通過。補存驗證報告，程式與資產不再變更。
 - 2026-09-15｜Codex｜最終版 0aca4c0401b36f66：Chromium/WebKit 五尺寸、低動態、省流量與單機完整回合全通過；JSON、截圖與雙 context CORS/500 證據已產出。準備部署。
 - 2026-09-15｜Codex｜完成 production hotfix、手機流程與 RTC 實測工具；修復觸控點擊穿透、選角重疊、房號輸入與音樂停止下載，最終驗證中。
 - 2026-09-14｜Codex｜fetch、檢查提交與成功的 Pages Actions；從最新 gh-pages 建立乾淨工作分支。

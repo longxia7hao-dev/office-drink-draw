@@ -55,3 +55,11 @@ GitHub Pages 預設顯示說明與原站連結，保留 URL `?room=` 及輸入�
 先完成 `npm test`，再確認 `origin/gh-pages` 未被其他人更新，以正常 push 做 fast-forward。
 不得 force push，也不刪除舊 bundle。部署後核對 Actions、公開 HTML 的版本及三個新資產的 SHA-256，再執行公開站 smoke test。
 若需復原，對本次 deployment commit 使用 `git revert <deployment-commit>`，建立新提交並正常推送；不要 reset 或重寫 gh-pages 歷史。
+
+## 已完成的發布驗證（2026-09-15）
+
+功能提交：`5a2945e2a7711cd3165b68be6d3ce4c41f9d498b`，公開版本：`0aca4c0401b36f66`。
+30 項手機回歸通過（12 項重複故障案例略過），雙引擎啟動邊界檢查通過。
+部署後直接對 GitHub Pages 執行的 6 項 Chromium/WebKit smoke tests 全通過。
+公開 HTML 的普通 URL 和 cache-busting URL 均回傳新版本；新 JS、CSS、runtime 與保留的兩個舊 bundle 全部通過 SHA-256 比對。
+報告入口：`reports/index.html`；公開站檢查：`reports/public-smoke.json`、`reports/deployment-check.json`。
