@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ART, STUDIO_FRAMES } from "@/game/art";
 import { isLiteMode } from "@/game/odd";
 import { warmupGame, warmupSplash } from "@/game/preload";
@@ -8,8 +8,8 @@ import { AutoVideo } from "./AutoVideo";
 export function StudioSplash({ onDone }: { onDone: () => void }) {
   const finished = useRef(false);
   const warmed = useRef(false);
+  const [pct, setPct] = useState(0);
 
-  /** 其餘素材等開場影片不再需要頻寬了才載，避免播放中被搶資源。 */
   function warmRest() {
     if (warmed.current) return;
     warmed.current = true;
@@ -19,12 +19,10 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     void warmupSplash();
     if (isLiteMode()) {
-      // 精簡模式不播影片，沒有搶資源的問題，直接開始預載。
       warmRest();
       const t = window.setTimeout(() => finish(), 0);
       return () => window.clearTimeout(t);
     }
-    // 保險：萬一 canplaythrough 沒觸發，播到後段也要開始預載。
     const warmFallback = window.setTimeout(warmRest, 4500);
     const t = window.setTimeout(() => finish(), 8000);
     return () => {
@@ -36,6 +34,7 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
   function finish() {
     if (finished.current) return;
     finished.current = true;
+    setPct(100);
     warmRest();
     try {
       unlockSfx();
@@ -74,11 +73,21 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
             src={ART.studioIntro}
             poster={STUDIO_FRAMES[0]}
             onBuffered={warmRest}
+            onProgress={setPct}
             onEnded={finish}
           />
         )}
       </div>
-      <p className="studio-skip">點擊進入 · 五告哞聊工作室</p>
+      <div
+        className="studio-load"
+        role="progressbar"
+        aria-label="開場進度"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(pct)}
+      >
+        <i style={{ width: `${pct}%` }} />
+      </div>
     </div>
   );
 }

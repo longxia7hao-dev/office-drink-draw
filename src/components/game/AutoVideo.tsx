@@ -7,6 +7,7 @@ export function AutoVideo({
   loop = false,
   onEnded,
   onBuffered,
+  onProgress,
 }: {
   src: string;
   poster?: string;
@@ -15,12 +16,15 @@ export function AutoVideo({
   onEnded?: () => void;
   /** 影片已經緩衝到可以一路播完，適合在這時才去載其他素材。 */
   onBuffered?: () => void;
+  onProgress?: (pct: number) => void;
 }) {
   const vRef = useRef<HTMLVideoElement>(null);
   const ended = useRef(onEnded);
   ended.current = onEnded;
   const buffered = useRef(onBuffered);
   buffered.current = onBuffered;
+  const progress = useRef(onProgress);
+  progress.current = onProgress;
   const [cover, setCover] = useState(Boolean(poster));
 
   useEffect(() => {
@@ -62,10 +66,14 @@ export function AutoVideo({
       if (!loop) ended.current?.();
     };
     const onThrough = () => buffered.current?.();
+    const onTime = () => {
+      if (v.duration > 0) progress.current?.(Math.min(100, (v.currentTime / v.duration) * 100));
+    };
 
     v.addEventListener("playing", onPlaying);
     v.addEventListener("canplay", kick);
     v.addEventListener("canplaythrough", onThrough);
+    v.addEventListener("timeupdate", onTime);
     v.addEventListener("ended", onEnd);
     kick();
 
@@ -74,6 +82,7 @@ export function AutoVideo({
       v.removeEventListener("playing", onPlaying);
       v.removeEventListener("canplay", kick);
       v.removeEventListener("canplaythrough", onThrough);
+      v.removeEventListener("timeupdate", onTime);
       v.removeEventListener("ended", onEnd);
       v.pause();
     };
