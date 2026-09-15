@@ -1,0 +1,16 @@
+node_modules
+dist
+dist-pages
+.vercel
+.tanstack
+.grok
+.DS_Store
+*.log
+.env
+.env.local
+.node_modules.lock
+.project_id
+attachments
+artifacts
+screenshots
+assets/sprites

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <title>公司酒局 Office Drink Draw</title>
+    <meta name="theme-color" content="#121212" />
+    <meta
+      name="description"
+      content="公司酒局 — 美式嘻哈街頭塗鴉風上班族抽籤喝酒遊戲。單機傳手機或開房連線。"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bangers&family=Noto+Sans+TC:wght@500;700;900&display=swap"
+    />
+    <link rel="preload" as="video" href="%BASE_URL%art/ui/studio-intro.mp4" type="video/mp4" />
+    <script src="%BASE_URL%config.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <section id="load-error" role="alert" hidden>
+      <h1>載入失敗</h1>
+      <p>請確認網路連線，再重新載入。</p>
+      <button id="reload-app" type="button">重新載入</button>
+    </section>
+    <noscript>此遊戲需要啟用 JavaScript。</noscript>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>
