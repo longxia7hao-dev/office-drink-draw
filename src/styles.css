@@ -2794,9 +2794,22 @@ input, select, textarea {
 
 /* ---- 一屏排版修正：頂列避開浮動音樂鈕、練習設定頁不留大空白 ---- */
 
-/* 右上音樂鈕是浮動的，頂列保留它的位置，標籤才不會被壓住或切出畫面 */
+/*
+ * 右上角的音樂鈕是浮在畫面上的（.music-fab，absolute、44px、right 8px），
+ * 各畫面最上面那一列剛好在它底下，不預留位置就會被蓋住。
+ * 有邊框或會橫向捲動的用 margin（讓整塊在鈕之前結束），單純的列用 padding。
+ */
+:root {
+  --fab-reserve: 56px;
+}
 .screen > .top-bar {
-  padding-right: 56px;
+  padding-right: var(--fab-reserve);
+}
+.screen > .crew-brand,
+.screen > .crew-head,
+.screen > .drink-hud,
+.screen > .pick-crew {
+  margin-right: var(--fab-reserve);
 }
 
 /* 標題行高很緊又有旋轉，補一點上緣避免壓到返回鍵 */
