@@ -1,11 +1,11 @@
 {
-  "version": "0aca4c0401b36f66",
+  "version": "32e7996af5d96d41",
   "base": "http://127.0.0.1:4173/office-drink-draw/",
-  "timestamp": "2026-09-14T20:58:49.803Z",
+  "timestamp": "2026-09-15T05:05:20.342Z",
   "results": [
     {
       "engine": "chromium",
-      "initialIntroFrames": 6,
+      "initialIntroFrames": 1,
       "keyboardSkip": true,
       "idleAudioRequests": 0,
       "scriptFailureAndReload": true,

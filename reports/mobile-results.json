@@ -289,12 +289,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 7329,
+                  "duration": 7328,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:58:51.630Z",
+                  "startTime": "2026-09-15T05:02:33.058Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -304,7 +304,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-3c3de942b86b31bc60c5",
           "file": "mobile.spec.mjs",
-          "line": 35,
+          "line": 46,
           "column": 1
         },
         {
@@ -323,12 +323,12 @@
                   "workerIndex": 1,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 13527,
+                  "duration": 13718,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:58:51.629Z",
+                  "startTime": "2026-09-15T05:02:33.062Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -338,7 +338,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-54b3b055b3f516c5c7cd",
           "file": "mobile.spec.mjs",
-          "line": 86,
+          "line": 96,
           "column": 1
         },
         {
@@ -357,12 +357,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8272,
+                  "duration": 8236,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:58:59.662Z",
+                  "startTime": "2026-09-15T05:02:41.382Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -372,7 +372,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-2a645b199f11e6f7164f",
           "file": "mobile.spec.mjs",
-          "line": 99,
+          "line": 109,
           "column": 1
         },
         {
@@ -391,12 +391,12 @@
                   "workerIndex": 2,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 7315,
+                  "duration": 7188,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:06.803Z",
+                  "startTime": "2026-09-15T05:02:48.684Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -406,7 +406,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-6188aee3c57b4123390b",
           "file": "mobile.spec.mjs",
-          "line": 35,
+          "line": 46,
           "column": 1
         },
         {
@@ -422,7 +422,7 @@
                   "description": "Network fault test runs once per engine",
                   "location": {
                     "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                    "line": 87,
+                    "line": 97,
                     "column": 8
                   }
                 }
@@ -435,19 +435,19 @@
                   "workerIndex": 3,
                   "parallelIndex": 0,
                   "status": "skipped",
-                  "duration": 70,
+                  "duration": 72,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:08.855Z",
+                  "startTime": "2026-09-15T05:02:50.535Z",
                   "annotations": [
                     {
                       "type": "skip",
                       "description": "Network fault test runs once per engine",
                       "location": {
                         "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                        "line": 87,
+                        "line": 97,
                         "column": 8
                       }
                     }
@@ -460,7 +460,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-6e20f6c9ea773b9196ab",
           "file": "mobile.spec.mjs",
-          "line": 86,
+          "line": 96,
           "column": 1
         },
         {
@@ -479,12 +479,12 @@
                   "workerIndex": 3,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8580,
+                  "duration": 8511,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:09.534Z",
+                  "startTime": "2026-09-15T05:02:51.288Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -494,7 +494,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-0c924d37730c8df80b54",
           "file": "mobile.spec.mjs",
-          "line": 99,
+          "line": 109,
           "column": 1
         },
         {
@@ -513,12 +513,12 @@
                   "workerIndex": 4,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 7424,
+                  "duration": 7375,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:15.652Z",
+                  "startTime": "2026-09-15T05:02:57.389Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -528,7 +528,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-075c460f5bf303379a0f",
           "file": "mobile.spec.mjs",
-          "line": 35,
+          "line": 46,
           "column": 1
         },
         {
@@ -544,7 +544,7 @@
                   "description": "Network fault test runs once per engine",
                   "location": {
                     "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                    "line": 87,
+                    "line": 97,
                     "column": 8
                   }
                 }
@@ -557,19 +557,19 @@
                   "workerIndex": 5,
                   "parallelIndex": 0,
                   "status": "skipped",
-                  "duration": 72,
+                  "duration": 78,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:19.076Z",
+                  "startTime": "2026-09-15T05:03:00.775Z",
                   "annotations": [
                     {
                       "type": "skip",
                       "description": "Network fault test runs once per engine",
                       "location": {
                         "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                        "line": 87,
+                        "line": 97,
                         "column": 8
                       }
                     }
@@ -582,7 +582,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-27cb8ef2571dddf22c39",
           "file": "mobile.spec.mjs",
-          "line": 86,
+          "line": 96,
           "column": 1
         },
         {
@@ -601,12 +601,12 @@
                   "workerIndex": 5,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8474,
+                  "duration": 8493,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:19.842Z",
+                  "startTime": "2026-09-15T05:03:01.477Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -616,7 +616,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-4262f7ddd8c85437759b",
           "file": "mobile.spec.mjs",
-          "line": 99,
+          "line": 109,
           "column": 1
         },
         {
@@ -635,12 +635,12 @@
                   "workerIndex": 6,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 7455,
+                  "duration": 7465,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:24.712Z",
+                  "startTime": "2026-09-15T05:03:06.368Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -650,7 +650,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-232e52e3dce29f4ec42a",
           "file": "mobile.spec.mjs",
-          "line": 35,
+          "line": 46,
           "column": 1
         },
         {
@@ -666,7 +666,7 @@
                   "description": "Network fault test runs once per engine",
                   "location": {
                     "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                    "line": 87,
+                    "line": 97,
                     "column": 8
                   }
                 }
@@ -679,19 +679,19 @@
                   "workerIndex": 7,
                   "parallelIndex": 0,
                   "status": "skipped",
-                  "duration": 69,
+                  "duration": 74,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:29.301Z",
+                  "startTime": "2026-09-15T05:03:10.951Z",
                   "annotations": [
                     {
                       "type": "skip",
                       "description": "Network fault test runs once per engine",
                       "location": {
                         "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                        "line": 87,
+                        "line": 97,
                         "column": 8
                       }
                     }
@@ -704,7 +704,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-d010f9202a49f569ce2a",
           "file": "mobile.spec.mjs",
-          "line": 86,
+          "line": 96,
           "column": 1
         },
         {
@@ -723,12 +723,12 @@
                   "workerIndex": 7,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8490,
+                  "duration": 8561,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:30.018Z",
+                  "startTime": "2026-09-15T05:03:11.676Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -738,7 +738,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-c92362542f9e34793c4f",
           "file": "mobile.spec.mjs",
-          "line": 99,
+          "line": 109,
           "column": 1
         },
         {
@@ -757,12 +757,12 @@
                   "workerIndex": 8,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 7943,
+                  "duration": 8399,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:33.681Z",
+                  "startTime": "2026-09-15T05:03:15.397Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -772,7 +772,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-416d1f5f99e7c32a66d2",
           "file": "mobile.spec.mjs",
-          "line": 35,
+          "line": 46,
           "column": 1
         },
         {
@@ -788,7 +788,7 @@
                   "description": "Network fault test runs once per engine",
                   "location": {
                     "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                    "line": 87,
+                    "line": 97,
                     "column": 8
                   }
                 }
@@ -801,19 +801,19 @@
                   "workerIndex": 9,
                   "parallelIndex": 0,
                   "status": "skipped",
-                  "duration": 82,
+                  "duration": 72,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:39.496Z",
+                  "startTime": "2026-09-15T05:03:21.226Z",
                   "annotations": [
                     {
                       "type": "skip",
                       "description": "Network fault test runs once per engine",
                       "location": {
                         "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                        "line": 87,
+                        "line": 97,
                         "column": 8
                       }
                     }
@@ -826,7 +826,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-c29f5781e5d2e84675dd",
           "file": "mobile.spec.mjs",
-          "line": 86,
+          "line": 96,
           "column": 1
         },
         {
@@ -845,12 +845,12 @@
                   "workerIndex": 9,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8507,
+                  "duration": 8536,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:40.218Z",
+                  "startTime": "2026-09-15T05:03:22.052Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -860,7 +860,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-6b2d19ddda71491cfea5",
           "file": "mobile.spec.mjs",
-          "line": 99,
+          "line": 109,
           "column": 1
         },
         {
@@ -879,12 +879,12 @@
                   "workerIndex": 10,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 7011,
+                  "duration": 7124,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:43.260Z",
+                  "startTime": "2026-09-15T05:03:25.337Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -894,7 +894,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-04ccae174edc76a076b4",
           "file": "mobile.spec.mjs",
-          "line": 35,
+          "line": 46,
           "column": 1
         },
         {
@@ -910,7 +910,7 @@
                   "description": "Network fault test runs once per engine",
                   "location": {
                     "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                    "line": 87,
+                    "line": 97,
                     "column": 8
                   }
                 }
@@ -923,19 +923,19 @@
                   "workerIndex": 11,
                   "parallelIndex": 0,
                   "status": "skipped",
-                  "duration": 71,
+                  "duration": 75,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:49.662Z",
+                  "startTime": "2026-09-15T05:03:31.556Z",
                   "annotations": [
                     {
                       "type": "skip",
                       "description": "Network fault test runs once per engine",
                       "location": {
                         "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                        "line": 87,
+                        "line": 97,
                         "column": 8
                       }
                     }
@@ -948,7 +948,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-cd407a98cf39d062a0d0",
           "file": "mobile.spec.mjs",
-          "line": 86,
+          "line": 96,
           "column": 1
         },
         {
@@ -967,12 +967,12 @@
                   "workerIndex": 11,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6350,
+                  "duration": 6250,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:50.438Z",
+                  "startTime": "2026-09-15T05:03:32.328Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -982,7 +982,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-f32ad130051d012f5541",
           "file": "mobile.spec.mjs",
-          "line": 99,
+          "line": 109,
           "column": 1
         },
         {
@@ -1001,12 +1001,12 @@
                   "workerIndex": 12,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 25880,
+                  "duration": 25977,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:51.846Z",
+                  "startTime": "2026-09-15T05:03:34.018Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1016,7 +1016,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-8d0ae6c8b0f00a13dfc0",
           "file": "mobile.spec.mjs",
-          "line": 35,
+          "line": 46,
           "column": 1
         },
         {
@@ -1032,7 +1032,7 @@
                   "description": "Network fault test runs once per engine",
                   "location": {
                     "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                    "line": 87,
+                    "line": 97,
                     "column": 8
                   }
                 }
@@ -1045,19 +1045,19 @@
                   "workerIndex": 13,
                   "parallelIndex": 0,
                   "status": "skipped",
-                  "duration": 75,
+                  "duration": 78,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:57.715Z",
+                  "startTime": "2026-09-15T05:03:39.502Z",
                   "annotations": [
                     {
                       "type": "skip",
                       "description": "Network fault test runs once per engine",
                       "location": {
                         "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                        "line": 87,
+                        "line": 97,
                         "column": 8
                       }
                     }
@@ -1070,7 +1070,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-5c40e7bdea4fb05cc7e6",
           "file": "mobile.spec.mjs",
-          "line": 86,
+          "line": 96,
           "column": 1
         },
         {
@@ -1089,12 +1089,12 @@
                   "workerIndex": 13,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 19165,
+                  "duration": 19117,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T20:59:58.475Z",
+                  "startTime": "2026-09-15T05:03:40.211Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1104,7 +1104,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-14046efc39c7eb862275",
           "file": "mobile.spec.mjs",
-          "line": 99,
+          "line": 109,
           "column": 1
         },
         {
@@ -1123,12 +1123,12 @@
                   "workerIndex": 14,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8494,
+                  "duration": 8155,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:00:18.687Z",
+                  "startTime": "2026-09-15T05:04:00.276Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1138,7 +1138,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-16f2ba15b1f82cd306d1",
           "file": "mobile.spec.mjs",
-          "line": 35,
+          "line": 46,
           "column": 1
         },
         {
@@ -1154,7 +1154,7 @@
                   "description": "Network fault test runs once per engine",
                   "location": {
                     "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                    "line": 87,
+                    "line": 97,
                     "column": 8
                   }
                 }
@@ -1167,19 +1167,19 @@
                   "workerIndex": 15,
                   "parallelIndex": 1,
                   "status": "skipped",
-                  "duration": 419,
+                  "duration": 379,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:00:19.267Z",
+                  "startTime": "2026-09-15T05:04:01.668Z",
                   "annotations": [
                     {
                       "type": "skip",
                       "description": "Network fault test runs once per engine",
                       "location": {
                         "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                        "line": 87,
+                        "line": 97,
                         "column": 8
                       }
                     }
@@ -1192,7 +1192,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-9ed63c32d3ba271b6cf4",
           "file": "mobile.spec.mjs",
-          "line": 86,
+          "line": 96,
           "column": 1
         },
         {
@@ -1211,12 +1211,12 @@
                   "workerIndex": 15,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 9077,
+                  "duration": 8914,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:00:19.948Z",
+                  "startTime": "2026-09-15T05:04:02.312Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1226,7 +1226,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-99f1a82846d44076a48c",
           "file": "mobile.spec.mjs",
-          "line": 99,
+          "line": 109,
           "column": 1
         },
         {
@@ -1245,12 +1245,12 @@
                   "workerIndex": 16,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8365,
+                  "duration": 8165,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:00:28.427Z",
+                  "startTime": "2026-09-15T05:04:09.648Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1260,7 +1260,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-dbfd4a424373e830b149",
           "file": "mobile.spec.mjs",
-          "line": 35,
+          "line": 46,
           "column": 1
         },
         {
@@ -1279,12 +1279,12 @@
                   "workerIndex": 17,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 14115,
+                  "duration": 14098,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:00:29.989Z",
+                  "startTime": "2026-09-15T05:04:12.111Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1294,7 +1294,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-16707f44610e8d5a3b41",
           "file": "mobile.spec.mjs",
-          "line": 86,
+          "line": 96,
           "column": 1
         },
         {
@@ -1313,12 +1313,12 @@
                   "workerIndex": 16,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8899,
+                  "duration": 8871,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:00:37.079Z",
+                  "startTime": "2026-09-15T05:04:17.999Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1328,7 +1328,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-146b7a36186f166c7ac1",
           "file": "mobile.spec.mjs",
-          "line": 99,
+          "line": 109,
           "column": 1
         },
         {
@@ -1347,12 +1347,12 @@
                   "workerIndex": 18,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 7998,
+                  "duration": 8207,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:00:45.281Z",
+                  "startTime": "2026-09-15T05:04:27.323Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1362,7 +1362,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-977493d30f0afc8c3180",
           "file": "mobile.spec.mjs",
-          "line": 35,
+          "line": 46,
           "column": 1
         },
         {
@@ -1378,7 +1378,7 @@
                   "description": "Network fault test runs once per engine",
                   "location": {
                     "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                    "line": 87,
+                    "line": 97,
                     "column": 8
                   }
                 }
@@ -1391,19 +1391,19 @@
                   "workerIndex": 19,
                   "parallelIndex": 0,
                   "status": "skipped",
-                  "duration": 393,
+                  "duration": 377,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:00:46.930Z",
+                  "startTime": "2026-09-15T05:04:27.804Z",
                   "annotations": [
                     {
                       "type": "skip",
                       "description": "Network fault test runs once per engine",
                       "location": {
                         "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                        "line": 87,
+                        "line": 97,
                         "column": 8
                       }
                     }
@@ -1416,7 +1416,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-00209fab4ccfead73244",
           "file": "mobile.spec.mjs",
-          "line": 86,
+          "line": 96,
           "column": 1
         },
         {
@@ -1435,12 +1435,12 @@
                   "workerIndex": 19,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8919,
+                  "duration": 8972,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:00:47.598Z",
+                  "startTime": "2026-09-15T05:04:28.451Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1450,7 +1450,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-d1ece2c9e34c5b56c03e",
           "file": "mobile.spec.mjs",
-          "line": 99,
+          "line": 109,
           "column": 1
         },
         {
@@ -1469,12 +1469,12 @@
                   "workerIndex": 20,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 8214,
+                  "duration": 8383,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:00:54.470Z",
+                  "startTime": "2026-09-15T05:04:36.672Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1484,7 +1484,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-2b1175d25260b72ea9ee",
           "file": "mobile.spec.mjs",
-          "line": 35,
+          "line": 46,
           "column": 1
         },
         {
@@ -1500,7 +1500,7 @@
                   "description": "Network fault test runs once per engine",
                   "location": {
                     "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                    "line": 87,
+                    "line": 97,
                     "column": 8
                   }
                 }
@@ -1513,19 +1513,19 @@
                   "workerIndex": 21,
                   "parallelIndex": 0,
                   "status": "skipped",
-                  "duration": 398,
+                  "duration": 382,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:00:57.422Z",
+                  "startTime": "2026-09-15T05:04:38.337Z",
                   "annotations": [
                     {
                       "type": "skip",
                       "description": "Network fault test runs once per engine",
                       "location": {
                         "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                        "line": 87,
+                        "line": 97,
                         "column": 8
                       }
                     }
@@ -1538,7 +1538,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-65ec70a6771dd7434e71",
           "file": "mobile.spec.mjs",
-          "line": 86,
+          "line": 96,
           "column": 1
         },
         {
@@ -1557,12 +1557,12 @@
                   "workerIndex": 21,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8880,
+                  "duration": 8940,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:00:58.120Z",
+                  "startTime": "2026-09-15T05:04:38.980Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1572,7 +1572,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-b7ed6347eef1b24c6e71",
           "file": "mobile.spec.mjs",
-          "line": 99,
+          "line": 109,
           "column": 1
         },
         {
@@ -1591,12 +1591,12 @@
                   "workerIndex": 22,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 8409,
+                  "duration": 9070,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:01:03.940Z",
+                  "startTime": "2026-09-15T05:04:46.256Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1606,7 +1606,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-a46fbbb52896bd0c40fb",
           "file": "mobile.spec.mjs",
-          "line": 35,
+          "line": 46,
           "column": 1
         },
         {
@@ -1622,7 +1622,7 @@
                   "description": "Network fault test runs once per engine",
                   "location": {
                     "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                    "line": 87,
+                    "line": 97,
                     "column": 8
                   }
                 }
@@ -1635,19 +1635,19 @@
                   "workerIndex": 23,
                   "parallelIndex": 0,
                   "status": "skipped",
-                  "duration": 379,
+                  "duration": 413,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:01:07.943Z",
+                  "startTime": "2026-09-15T05:04:48.805Z",
                   "annotations": [
                     {
                       "type": "skip",
                       "description": "Network fault test runs once per engine",
                       "location": {
                         "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                        "line": 87,
+                        "line": 97,
                         "column": 8
                       }
                     }
@@ -1660,7 +1660,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-b5a8b95adbf17fbdfe31",
           "file": "mobile.spec.mjs",
-          "line": 86,
+          "line": 96,
           "column": 1
         },
         {
@@ -1679,12 +1679,12 @@
                   "workerIndex": 23,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8877,
+                  "duration": 8931,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:01:08.596Z",
+                  "startTime": "2026-09-15T05:04:49.509Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1694,7 +1694,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-7fb59b13e4b6f27b0d0c",
           "file": "mobile.spec.mjs",
-          "line": 99,
+          "line": 109,
           "column": 1
         },
         {
@@ -1713,12 +1713,12 @@
                   "workerIndex": 24,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 7983,
+                  "duration": 8300,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:01:13.543Z",
+                  "startTime": "2026-09-15T05:04:56.521Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1728,7 +1728,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-21a87a59d679fa994535",
           "file": "mobile.spec.mjs",
-          "line": 35,
+          "line": 46,
           "column": 1
         },
         {
@@ -1744,7 +1744,7 @@
                   "description": "Network fault test runs once per engine",
                   "location": {
                     "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                    "line": 87,
+                    "line": 97,
                     "column": 8
                   }
                 }
@@ -1757,19 +1757,19 @@
                   "workerIndex": 25,
                   "parallelIndex": 0,
                   "status": "skipped",
-                  "duration": 382,
+                  "duration": 392,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:01:18.464Z",
+                  "startTime": "2026-09-15T05:04:59.340Z",
                   "annotations": [
                     {
                       "type": "skip",
                       "description": "Network fault test runs once per engine",
                       "location": {
                         "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                        "line": 87,
+                        "line": 97,
                         "column": 8
                       }
                     }
@@ -1782,7 +1782,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-0280293a45c5d7befe0a",
           "file": "mobile.spec.mjs",
-          "line": 86,
+          "line": 96,
           "column": 1
         },
         {
@@ -1801,12 +1801,12 @@
                   "workerIndex": 25,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6621,
+                  "duration": 6605,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:01:19.115Z",
+                  "startTime": "2026-09-15T05:05:00.010Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1816,7 +1816,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-4128fc12ca34e361c0df",
           "file": "mobile.spec.mjs",
-          "line": 99,
+          "line": 109,
           "column": 1
         },
         {
@@ -1835,12 +1835,12 @@
                   "workerIndex": 26,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 7226,
+                  "duration": 7562,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:01:22.737Z",
+                  "startTime": "2026-09-15T05:05:05.988Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1850,7 +1850,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-4a38a3b3e048f4fec880",
           "file": "mobile.spec.mjs",
-          "line": 35,
+          "line": 46,
           "column": 1
         },
         {
@@ -1866,7 +1866,7 @@
                   "description": "Network fault test runs once per engine",
                   "location": {
                     "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                    "line": 87,
+                    "line": 97,
                     "column": 8
                   }
                 }
@@ -1879,19 +1879,19 @@
                   "workerIndex": 27,
                   "parallelIndex": 0,
                   "status": "skipped",
-                  "duration": 381,
+                  "duration": 405,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:01:26.695Z",
+                  "startTime": "2026-09-15T05:05:07.570Z",
                   "annotations": [
                     {
                       "type": "skip",
                       "description": "Network fault test runs once per engine",
                       "location": {
                         "file": "/Users/longxia7hao/office-drink-draw/tests/mobile.spec.mjs",
-                        "line": 87,
+                        "line": 97,
                         "column": 8
                       }
                     }
@@ -1904,7 +1904,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-584daf8e3b637b2fe278",
           "file": "mobile.spec.mjs",
-          "line": 86,
+          "line": 96,
           "column": 1
         },
         {
@@ -1923,12 +1923,12 @@
                   "workerIndex": 27,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1223,
+                  "duration": 1387,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-14T21:01:27.347Z",
+                  "startTime": "2026-09-15T05:05:08.253Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1938,7 +1938,7 @@
           ],
           "id": "1eb741ed998de6cec1a3-02042390ad11b3e75143",
           "file": "mobile.spec.mjs",
-          "line": 99,
+          "line": 109,
           "column": 1
         }
       ]
@@ -1946,8 +1946,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-09-14T20:58:50.691Z",
-    "duration": 159585.605,
+    "startTime": "2026-09-15T05:02:32.193Z",
+    "duration": 161760.707,
     "expected": 30,
     "skipped": 12,
     "unexpected": 0,

@@ -23,9 +23,20 @@ async function poster(page){
   await expect.poll(()=>page.locator('.home-poster').evaluate(e=>e.complete&&e.naturalWidth>0)).toBe(true);
   const geometry=await page.locator('.home-poster-wrap').evaluate(e=>{
     const r=e.getBoundingClientRect(),im=e.querySelector('img').getBoundingClientRect();
-    return {inside:r.left>=-1&&r.top>=-1&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1,ratio:r.width/r.height,aligned:Math.abs(r.width-im.width)<1&&Math.abs(r.height-im.height)<1};
+    const stage=e.closest('.home-stage').getBoundingClientRect();
+    const shell=e.closest('.app-shell').getBoundingClientRect();
+    const stageStyle=getComputedStyle(e.closest('.home-stage'),'::before');
+    return {
+      inside:r.left>=-1&&r.top>=-1&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1,
+      ratio:r.width/r.height,
+      aligned:Math.abs(r.width-im.width)<1&&Math.abs(r.height-im.height)<1,
+      stageFull:stage.left<=shell.left+1&&stage.top<=shell.top+1&&stage.right>=shell.right-1&&stage.bottom>=shell.bottom-1,
+      hasFill:stageStyle.backgroundImage.includes('home-poster.jpg'),
+      noParty:!e.querySelector('.home-party')
+    };
   });
   expect(geometry.inside).toBe(true);expect(geometry.aligned).toBe(true);expect(geometry.ratio).toBeCloseTo(750/1584,3);
+  expect(geometry.stageFull).toBe(true);expect(geometry.hasFill).toBe(true);expect(geometry.noParty).toBe(true);
   for(const button of await page.locator('.hs').all()) {
     const box=await button.boundingBox();expect(box.width).toBeGreaterThan(0);expect(box.height).toBeGreaterThan(0);
     expect(await button.evaluate(el=>{const r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));})).toBe(true);
@@ -40,9 +51,8 @@ test('home, every hotspot, overlays, solo setup/roles/full round, resize',async(
   await poster(page);await inputs(page);
   expect(requests.filter(u=>u.includes('/audio/'))).toHaveLength(0);
   expect(requests.filter(u=>u.includes('/art/roles/'))).toHaveLength(0);
-  expect(new Set(requests.filter(u=>u.includes('/studio/f'))).size).toBeLessThan(30);
-  expect(new Set(requests.filter(u=>u.includes('/home-idle/'))).size).toBeLessThan(24);
-  if(/save-data|reduced-motion/.test(info.project.name)) expect(new Set(requests.filter(u=>u.includes('/home-idle/'))).size).toBeLessThanOrEqual(1);
+  expect(new Set(requests.filter(u=>u.includes('/studio/f'))).size).toBeLessThanOrEqual(1);
+  expect(new Set(requests.filter(u=>u.includes('/home-idle/'))).size).toBe(0);
   const viewport=await page.locator('meta[name=viewport]').getAttribute('content');
   expect(viewport).not.toContain('user-scalable=no');expect(viewport).not.toContain('maximum-scale');
   await shot(page,info,'home');

@@ -41,8 +41,11 @@ replace('  Lt = !1;\n  try {\n    localStorage.removeItem(Pt);', '  try { Lt = l
 replace('  let e = It[zt];\n  return (e && (Lt ? e.pause() : e.play().catch(() => {})), Lt);', '  if (Lt) { for (const track of Object.values(It)) { track.pause(); track.removeAttribute(`src`); track.load(); } } else Ut();\n  return Lt;');
 replace('  if (!e) return;\n  if (((e.muted = Lt), Lt)) {', '  if (!e) return;\n  if (!e.getAttribute(`src`) && !Lt) e.src = Ft[zt];\n  if (((e.muted = Lt), Lt)) {');
 fn('Ai','U', `function Ai() {
-  // Only six intro frames initially. Animation requests subsequent frames on demand.
-  return ki || (ki = Promise.all((mobile.lite() ? kt.slice(0,1) : kt.slice(0,6)).map(Di)));
+  // Keep startup still and cheap on phones. The splash image and home poster load naturally.
+  return ki || (ki = Promise.all([
+    Di(Ot.homePoster),
+    document.fonts ? document.fonts.ready.then(() => void 0) : Promise.resolve(),
+  ]));
 }`);
 replace('if (!r || e.length < 2) return;', 'if (!r || mobile.lite() || e.length < 2) return;');
 replace('              l.current?.();\n              return;', '              window.clearInterval(s);\n              l.current?.();\n              return;');
@@ -52,7 +55,8 @@ replace('window.setTimeout(() => i(), 3200)', 'window.setTimeout(() => i(), mobi
 replace('    tabIndex: 0,\n    onClick:', '    tabIndex: 0,\n    "aria-label": `跳過開場`,\n    onKeyDown: (event) => { if (event.key === `Enter` || event.key === ` `) { event.preventDefault(); i(); } },\n    onClick:');
 replace('      o.current || e.length < 2','      o.current || mobile.lite() || e.length < 2');
 replace('  );\nfunction jt(e)', '  ).filter((_, index) => index % 2 === 0);\nfunction jt(e)');
-replace('                fps: 4,','                fps: 2,');
+replace('            (0, B.jsx)(`div`, {\n              className: `home-party`,\n              "aria-hidden": `true`,\n              children: (0, B.jsx)(U, {\n                frames: At,\n                fps: 4,\n                mode: `pingpong`,\n                className: `home-party-seq`,\n              }),\n            }),\n', '');
+replace('          frames: kt,\n          fps: 12,\n          mode: `once`,\n          playing: !0,\n          className: `studio-reel`,\n          onEnded: i,\n', '          frames: [kt[0]],\n          fps: 1,\n          mode: `once`,\n          playing: !1,\n          className: `studio-reel`,\n');
 // Replace all signaling requests through one configurable, bounded fetch helper.
 app=app.replaceAll('fetch(`/api/rtc`,', 'window.ODD.rtcFetch(``,');
 replace('fetch(`/api/rtc?${e}`)', 'window.ODD.rtcFetch(`?${e}`)');
