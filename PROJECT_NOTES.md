@@ -5,9 +5,9 @@
 
 ## 目前狀態
 - 最後更新：2026-09-15（Codex）
-- 本機修正與驗證完成，準備提交並部署：工作室／主頁非必要幀動畫已移除，主頁局部動畫破圖與未滿版問題已修正。
-- 待部署版本：32e7996af5d96d41；前一版功能提交：5a2945e2a7711cd3165b68be6d3ce4c41f9d498b；前一版公開版本：0aca4c0401b36f66。
-- 30 項手機回歸通過、0 失敗；edge 檢查通過（Chromium/WebKit 初始工作室圖 1 張、閒置音訊 0）。部署後需重新執行公開站 smoke 與 SHA-256 比對。
+- 已完成追加修正、測試與 GitHub Pages 部署。無進行中作業。
+- 已部署版本：32e7996af5d96d41；功能提交：134729a；合併／部署提交：b341419（含遠端 927be64 歷史，正常 fast-forward 到 gh-pages）。
+- 30 項手機回歸通過、0 失敗；edge 檢查通過（Chromium/WebKit 初始工作室圖 1 張、閒置音訊 0）；公開站 6 項 smoke 全通過；HTML 與新／舊 bundle SHA-256 確認無舊快取問題。
 - 公開站：https://longxia7hao-dev.github.io/office-drink-draw/；報告入口 reports/index.html。
 - 多人連線仍不可用：兩個 contexts 開房／加入同房，原站 HTTP 500，Pages 跨站 CORS 拒絕；已使用明確原站導引並保留房號。這是外部後端限制，不可宣稱已修復同步。
 
@@ -23,6 +23,7 @@
 - 未發布的中間版 bundle 移至 /tmp/office-drink-draw-intermediate；原部署資產完全保留。
 
 ## 變更日誌（新的在上）
+- 2026-09-15｜Codex｜部署追加修正到 gh-pages：Pages Action 34931799890 成功；公開站版本 32e7996af5d96d41，6 項公開 smoke 與資產 hash 比對全通過。多人連線狀態未改變，仍為外部後端／CORS 限制。
 - 2026-09-15｜Codex｜待部署版本 32e7996af5d96d41：移除工作室幀動畫與首頁 home-party/home-idle 動畫，首頁用柔化背景滿版並取消行動版外框；完整 Playwright 手機矩陣 30 passed / 0 failed / 12 skipped，edge 檢查通過。
 - 2026-09-15｜Codex｜開始追加修正：依真機截圖與回報，移除工作室與主頁非必要幀動畫，調整首頁滿版背景，並補強動畫資源請求測試。
 - 2026-09-15｜Codex｜5a2945e 以正常 fast-forward 部署 gh-pages，Pages Action 34896479112 成功；公開版本 0aca4c0401b36f66，6 項公開站 smoke 與新舊資產雜湊比對全通過。補存驗證報告，程式與資產不再變更。

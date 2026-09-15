@@ -58,8 +58,9 @@ GitHub Pages 預設顯示說明與原站連結，保留 URL `?room=` 及輸入�
 
 ## 已完成的發布驗證（2026-09-15）
 
-目前待部署版本：`32e7996af5d96d41`。
+已部署版本：`32e7996af5d96d41`。功能提交：`134729a`；合併／部署提交：`b341419`；Pages Action：`34931799890`。
 本版依真機截圖回報移除工作室與首頁的非必要幀動畫：工作室 splash 只載入第一張靜態圖，首頁不再渲染 `home-party` 局部動畫，也不再請求 `home-idle/` 幀圖。首頁使用完整海報維持透明按鈕座標，外圍用同一張海報的柔化背景填滿 viewport，並取消行動版外框內縮。
 
 本機驗證：30 項手機回歸通過（12 項重複故障案例略過），雙引擎啟動邊界檢查通過。`verify-edges` 顯示 Chromium/WebKit 的初始工作室圖片請求皆為 1、閒置音訊請求為 0。
-前一個已部署版本 `0aca4c0401b36f66` 的公開站 smoke 與 SHA-256 比對證據仍保留在 `reports/public-smoke.json`、`reports/deployment-check.json`；新版本部署後需重新產出。
+部署後直接對 GitHub Pages 執行的 6 項 Chromium/WebKit smoke tests 全通過。公開 HTML 的普通 URL 和 cache-busting URL 均回傳新版本；新 JS、CSS、runtime 與保留的兩個舊 bundle 全部通過 SHA-256 比對。
+報告入口：`reports/index.html`；公開站檢查：`reports/public-smoke.json`、`reports/deployment-check.json`。
