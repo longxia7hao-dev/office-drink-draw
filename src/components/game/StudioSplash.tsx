@@ -5,6 +5,8 @@ import { warmupGame, warmupSplash } from "@/game/preload";
 import { bootBgm, unlockSfx } from "@/game/sfx";
 import { StudioLottie } from "./StudioLottie";
 
+const BAR_MS = 3000;
+
 export function StudioSplash({ onDone }: { onDone: () => void }) {
   const finished = useRef(false);
   const warmed = useRef(false);
@@ -15,21 +17,6 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
     warmed.current = true;
     void warmupGame();
   }
-
-  useEffect(() => {
-    void warmupSplash();
-    if (isLiteMode()) {
-      warmRest();
-      const t = window.setTimeout(() => finish(), 0);
-      return () => window.clearTimeout(t);
-    }
-    const warmFallback = window.setTimeout(warmRest, 1800);
-    const t = window.setTimeout(() => finish(), 4500);
-    return () => {
-      window.clearTimeout(warmFallback);
-      window.clearTimeout(t);
-    };
-  }, []);
 
   function finish() {
     if (finished.current) return;
@@ -43,6 +30,35 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
       onDone();
     }
   }
+
+  useEffect(() => {
+    void warmupSplash();
+    if (isLiteMode()) {
+      warmRest();
+      const t = window.setTimeout(() => finish(), 0);
+      return () => window.clearTimeout(t);
+    }
+    const warmFallback = window.setTimeout(warmRest, 1200);
+    const start = performance.now();
+    let raf = 0;
+    let hold = 0;
+    const tick = (now: number) => {
+      if (finished.current) return;
+      const p = Math.min(100, ((now - start) / BAR_MS) * 100);
+      setPct(p);
+      if (p >= 100) {
+        hold = window.setTimeout(() => finish(), 320);
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(warmFallback);
+      window.clearTimeout(hold);
+    };
+  }, []);
 
   function skip(e: { stopPropagation: () => void }) {
     e.stopPropagation();
@@ -68,13 +84,7 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
         {isLiteMode() ? (
           <img className="studio-reel" src={STUDIO_FRAMES[0]} alt="" draggable={false} />
         ) : (
-          <StudioLottie
-            className="studio-reel"
-            src={ART.studioSting}
-            onReady={warmRest}
-            onProgress={setPct}
-            onEnded={finish}
-          />
+          <StudioLottie className="studio-reel" src={ART.studioSting} onReady={warmRest} />
         )}
       </div>
       <div
