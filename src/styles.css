@@ -384,6 +384,12 @@
   min-height: 0;
   background: #000;
 }
+.studio-reel canvas {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+  display: block;
+}
 .studio-splash video::-webkit-media-controls,
 .studio-splash video::-webkit-media-controls-start-playback-button,
 .studio-splash video::-webkit-media-controls-overlay-play-button,

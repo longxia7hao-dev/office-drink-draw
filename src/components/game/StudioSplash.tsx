@@ -3,7 +3,7 @@ import { ART, STUDIO_FRAMES } from "@/game/art";
 import { isLiteMode } from "@/game/odd";
 import { warmupGame, warmupSplash } from "@/game/preload";
 import { bootBgm, unlockSfx } from "@/game/sfx";
-import { AutoVideo } from "./AutoVideo";
+import { StudioLottie } from "./StudioLottie";
 
 export function StudioSplash({ onDone }: { onDone: () => void }) {
   const finished = useRef(false);
@@ -23,8 +23,8 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
       const t = window.setTimeout(() => finish(), 0);
       return () => window.clearTimeout(t);
     }
-    const warmFallback = window.setTimeout(warmRest, 4500);
-    const t = window.setTimeout(() => finish(), 8000);
+    const warmFallback = window.setTimeout(warmRest, 1800);
+    const t = window.setTimeout(() => finish(), 4500);
     return () => {
       window.clearTimeout(warmFallback);
       window.clearTimeout(t);
@@ -68,11 +68,10 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
         {isLiteMode() ? (
           <img className="studio-reel" src={STUDIO_FRAMES[0]} alt="" draggable={false} />
         ) : (
-          <AutoVideo
+          <StudioLottie
             className="studio-reel"
-            src={ART.studioIntro}
-            poster={STUDIO_FRAMES[0]}
-            onBuffered={warmRest}
+            src={ART.studioSting}
+            onReady={warmRest}
             onProgress={setPct}
             onEnded={finish}
           />
