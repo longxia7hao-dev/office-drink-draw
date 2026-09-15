@@ -77,8 +77,12 @@ export function HomeScreen() {
         <div className="home-poster-wrap">
           <img className="home-poster" src={ART.homePoster} alt="" draggable={false} />
           <AutoVideo className="home-party-vid" src={ART.homeLoop} loop />
-          <MusicToggle className="music-fab-home" />
-          <button type="button" className="hs hs-set" aria-label="設定" {...pressSet} />
+          <div className="home-fab-row">
+            <MusicToggle />
+            <button type="button" className="music-fab" aria-label="設定" title="設定" {...pressSet}>
+              <Settings size={22} strokeWidth={2.6} />
+            </button>
+          </div>
           <button type="button" className="hs hs-solo" aria-label="單機開打，練習模式" {...pressSolo} />
           <button type="button" className="hs hs-host" aria-label="開房間連線，揪朋友一起玩" {...pressHost} />
           <button type="button" className="hs hs-join" aria-label="加入房間，輸入房號立即開局" {...pressJoin} />
