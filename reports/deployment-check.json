@@ -1,36 +1,36 @@
 {
-  "timestamp": "2026-09-15T05:13:11.828Z",
+  "timestamp": "2026-09-15T05:29:02.794Z",
   "base": "https://longxia7hao-dev.github.io/office-drink-draw/",
-  "version": "32e7996af5d96d41",
+  "version": "e7dcce1979ad0338",
   "checks": [
     {
       "url": "https://longxia7hao-dev.github.io/office-drink-draw/",
       "status": 200,
       "versionMatches": true,
-      "lastModified": "Tue, 15 Sep 2026 05:12:50 GMT"
+      "lastModified": "Tue, 15 Sep 2026 05:28:52 GMT"
     },
     {
-      "url": "https://longxia7hao-dev.github.io/office-drink-draw/?verify=32e7996af5d96d41",
+      "url": "https://longxia7hao-dev.github.io/office-drink-draw/?verify=e7dcce1979ad0338",
       "status": 200,
       "versionMatches": true,
-      "lastModified": "Tue, 15 Sep 2026 05:12:50 GMT"
+      "lastModified": "Tue, 15 Sep 2026 05:28:52 GMT"
     },
     {
       "file": "version.json",
       "status": 200,
-      "sha256": "15990c89bfee78aac9d5c0d85c2c41d49756e2d75947bb9bece17e712105f1cb",
+      "sha256": "a8abd57425afa7708d9fa06d4e57e2ffc0dc056e7aace95f98048a9f5336cfe7",
       "matchesTestedArtifact": true
     },
     {
-      "file": "assets/mobile-b25a66906f17.js",
+      "file": "assets/mobile-1814d17a6a31.js",
       "status": 200,
-      "sha256": "b25a66906f17dd5a1eef1aa99a6e79f7f4bdeab93f32df1d35e375eb3e1a9494",
+      "sha256": "1814d17a6a31b8f67fca98eb09d279d31f440ead0378c67321cafb2d88d6e45b",
       "matchesTestedArtifact": true
     },
     {
-      "file": "assets/mobile-3c8edc7273c6.css",
+      "file": "assets/mobile-d000dd900d2d.css",
       "status": 200,
-      "sha256": "3c8edc7273c6ec034ae29186ab2cfbafd1095c3dd98e4d77ae1b9f84ae99da4a",
+      "sha256": "d000dd900d2d8f7c000ae51127df0f2c44926bef5fd9cd52fa12f25f5afd4066",
       "matchesTestedArtifact": true
     },
     {
