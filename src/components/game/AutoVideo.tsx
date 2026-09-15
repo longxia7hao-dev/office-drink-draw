@@ -37,16 +37,25 @@ export function AutoVideo({
     v.setAttribute("muted", "");
 
     let kicked = false;
+    let alive = true;
     const go = () => setCover(false);
-    const kick = () => {
-      // canplay 會重複觸發（緩衝、seek），只在第一次真的去 play()，
-      // 免得播放中又被重新起手而抖動。
-      if (kicked) return;
+    const onPlaying = () => {
       kicked = true;
+      go();
+    };
+    const kick = () => {
+      if (!alive || kicked) return;
+      if (!v.paused) {
+        kicked = true;
+        go();
+        return;
+      }
       v.muted = true;
-      void v.play().then(go).catch(() => {
-        // 這次沒播成就讓下一個 canplay 再試一次
-        kicked = false;
+      const p = v.play();
+      if (!p) return;
+      void p.then(onPlaying).catch(() => {
+        if (!alive || kicked) return;
+        window.setTimeout(kick, 180);
       });
     };
     const onEnd = () => {
@@ -54,20 +63,19 @@ export function AutoVideo({
     };
     const onThrough = () => buffered.current?.();
 
-    v.addEventListener("playing", go);
+    v.addEventListener("playing", onPlaying);
     v.addEventListener("canplay", kick);
     v.addEventListener("canplaythrough", onThrough);
     v.addEventListener("ended", onEnd);
     kick();
 
     return () => {
-      v.removeEventListener("playing", go);
+      alive = false;
+      v.removeEventListener("playing", onPlaying);
       v.removeEventListener("canplay", kick);
       v.removeEventListener("canplaythrough", onThrough);
       v.removeEventListener("ended", onEnd);
       v.pause();
-      v.removeAttribute("src");
-      v.load();
     };
   }, [src, loop]);
 

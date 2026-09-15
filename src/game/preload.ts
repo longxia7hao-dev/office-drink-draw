@@ -44,11 +44,8 @@ export function warmupGame(): Promise<void> {
   gameStarted = (async () => {
     await loadImage(ART.homePoster);
     void Promise.all([...Object.values(ROLE_ART).map(loadImage), loadImage(ART.logo)]);
-    const h = document.createElement("video");
-    h.preload = "auto";
-    h.muted = true;
-    h.playsInline = true;
-    h.src = ART.homeLoop;
+    // 不要再開一個隱藏 <video> 去預載 home-loop：iPhone 常常只能硬體解一支，
+    // 隱藏那支會把解碼器佔走，主選單沙發就不會動。
   })();
   return gameStarted;
 }
