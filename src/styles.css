@@ -2841,3 +2841,35 @@ input, select, textarea {
   object-fit: contain;
   filter: drop-shadow(4px 4px 0 rgba(0, 0, 0, 0.6));
 }
+
+/*
+ * 主選單的音樂鈕是海報上畫好的圖，關掉音樂時圖片不會變，
+ * 使用者看不出現在是開還關。關閉時就蓋一個靜音圖示上去。
+ *
+ * 位置不能跟 .hs-music 綁在一起 —— 那個熱區是刻意放大的點擊範圍（14%×6.3%），
+ * 比畫上去的圓大。這裡用海報上實際量到的座標：
+ * 750×1584 的海報裡，粉紅外圈在 (642,126)-(723,207)，也就是 85.6% / 8% / 81px 見方。
+ * 外框比例固定，所以 aspect-ratio:1 配寬度百分比就能一直對齊。
+ */
+.hs-music-off {
+  position: absolute;
+  left: 85.6%;
+  top: 8%;
+  width: 10.8%;
+  aspect-ratio: 1;
+  z-index: 5;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #1a1210;
+  border: 3px solid #000;
+  box-shadow:
+    0 0 0 2px var(--spray-pink),
+    3px 3px 0 #000;
+  color: var(--spray-gold);
+}
+.hs-music-off > svg {
+  width: 54%;
+  height: 54%;
+}

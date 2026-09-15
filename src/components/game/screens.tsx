@@ -70,9 +70,15 @@ export function HomeScreen() {
     unlockSfx();
     setOverlay("board");
   });
+  // 主選單的音樂鈕是畫在海報上的，圖不會變，所以關掉時要自己蓋一個靜音圖示，
+  // 不然使用者看不出來現在是開還關（其他畫面的 .music-fab 是真的 DOM 按鈕，會換圖）。
+  const [musicOn, setMusicOn] = useState(true);
+  useEffect(() => {
+    setMusicOn(!isBgmMuted());
+  }, []);
   const pressMusic = usePress(() => {
     unlockSfx();
-    toggleBgmMute();
+    setMusicOn(!toggleBgmMute());
   });
   return (
     <Screen className="screen-home">
@@ -81,7 +87,19 @@ export function HomeScreen() {
         <div className="home-poster-wrap">
           <img className="home-poster" src={ART.homePoster} alt="" draggable={false} />
           <AutoVideo className="home-party-vid" src={ART.homeLoop} loop />
-          <button type="button" className="hs hs-music" aria-label="音樂開關" {...pressMusic} />
+          <button
+            type="button"
+            className="hs hs-music"
+            aria-label={musicOn ? "關閉音樂" : "開啟音樂"}
+            aria-pressed={!musicOn}
+            title={musicOn ? "音樂開" : "音樂關"}
+            {...pressMusic}
+          />
+          {musicOn ? null : (
+            <span className="hs-music-off" aria-hidden>
+              <VolumeX strokeWidth={2.6} />
+            </span>
+          )}
           <button type="button" className="hs hs-set" aria-label="設定" {...pressSet} />
           <button type="button" className="hs hs-solo" aria-label="單機開打，練習模式" {...pressSolo} />
           <button type="button" className="hs hs-host" aria-label="開房間連線，揪朋友一起玩" {...pressHost} />
