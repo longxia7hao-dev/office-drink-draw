@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { ART, STUDIO_FRAMES } from "@/game/art";
 import { isLiteMode } from "@/game/odd";
-import { warmupGame, warmupSplash } from "@/game/preload";
+import { prefetchHomeLoop, warmupGame, warmupSplash } from "@/game/preload";
 import { bootBgm, unlockSfx } from "@/game/sfx";
 import { StudioLottie } from "./StudioLottie";
-
-const BAR_MS = 3000;
 
 export function StudioSplash({ onDone }: { onDone: () => void }) {
   const finished = useRef(false);
@@ -33,30 +31,20 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
 
   useEffect(() => {
     void warmupSplash();
+    warmRest();
     if (isLiteMode()) {
-      warmRest();
       const t = window.setTimeout(() => finish(), 0);
       return () => window.clearTimeout(t);
     }
-    warmRest();
-    const start = performance.now();
-    let raf = 0;
     let hold = 0;
-    const tick = (now: number) => {
+    void prefetchHomeLoop((p) => {
       if (finished.current) return;
-      const p = Math.min(100, ((now - start) / BAR_MS) * 100);
       setPct(p);
       if (p >= 100) {
-        hold = window.setTimeout(() => finish(), 320);
-        return;
+        hold = window.setTimeout(() => finish(), 280);
       }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.clearTimeout(hold);
-    };
+    });
+    return () => window.clearTimeout(hold);
   }, []);
 
   function skip(e: { stopPropagation: () => void }) {
