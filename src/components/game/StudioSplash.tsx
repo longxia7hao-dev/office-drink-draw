@@ -37,14 +37,18 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
       return () => window.clearTimeout(t);
     }
     let hold = 0;
+    let cancelled = false;
     void prefetchHomeLoop((p) => {
-      if (finished.current) return;
-      setPct(p);
-      if (p >= 100) {
-        hold = window.setTimeout(() => finish(), 280);
-      }
+      if (!cancelled) setPct(p);
+    }).then(() => {
+      if (cancelled || finished.current) return;
+      setPct(100);
+      hold = window.setTimeout(() => finish(), 180);
     });
-    return () => window.clearTimeout(hold);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(hold);
+    };
   }, []);
 
   function skip(e: { stopPropagation: () => void }) {

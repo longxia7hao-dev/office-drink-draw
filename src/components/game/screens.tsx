@@ -34,6 +34,7 @@ import { useGame } from "@/game/store";
 import { MusicToggle, RoleIcon, Screen, SprayBurst, usePress } from "./chrome";
 import { DrinkHud, FrameAnim, Portrait, RoleShowcase, RouletteDraw, SprayDraw } from "./artui";
 import { AutoVideo } from "./AutoVideo";
+import { HomeLoopVideo } from "./HomeLoopVideo";
 
 export function HomeScreen() {
   const setOverlay = useGame((s) => s.setOverlay);
@@ -76,7 +77,7 @@ export function HomeScreen() {
       <div className="home-stage">
         <div className="home-poster-wrap">
           <img className="home-poster" src={ART.homePoster} alt="" draggable={false} />
-          <AutoVideo className="home-party-vid" src={ART.homeLoop} loop />
+          <HomeLoopVideo />
           <div className="home-fab-row">
             <MusicToggle />
             <button type="button" className="music-fab" aria-label="設定" title="設定" {...pressSet}>
