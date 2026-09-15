@@ -26,13 +26,13 @@ import {
 import { ROLE_ART, ART } from "@/game/art";
 import { FLIP_CATEGORIES, questionsForCat } from "@/game/flipQuestions";
 import { ROLES, claimedBy, getRole, isRoleAvailable } from "@/game/roles";
-import { PUNISH_PRESETS } from "@/game/partyPlay";
+import { PUNISH_PRESETS, fillPunish, punishPhrase } from "@/game/partyPlay";
 import { currentFlipQuestion, flipVoteCounts, type GameState, type Player } from "@/game/state";
 import { isBgmMuted, sfxFlip, sfxTalk, sfxTick, toggleBgmMute, unlockSfx } from "@/game/sfx";
 import { hasSignaling } from "@/game/odd";
 import { useGame } from "@/game/store";
 import { RoleIcon, Screen, SprayBurst, usePress } from "./chrome";
-import { DrinkHud, Portrait, RoleShowcase, RouletteDraw, SprayDraw } from "./artui";
+import { DrinkHud, FrameAnim, Portrait, RoleShowcase, RouletteDraw, SprayDraw } from "./artui";
 import { AutoVideo } from "./AutoVideo";
 
 export function HomeScreen() {
@@ -291,7 +291,7 @@ export function SetupScreen() {
   const setPunishLabel = useGame((s) => s.setPunishLabel);
 
   return (
-    <Screen>
+    <Screen className="setup-screen">
       <div className="top-bar">
         <button className="btn btn-ghost btn-sm" type="button" onClick={goHome} aria-label="返回">
           <ChevronLeft size={18} />
@@ -333,6 +333,9 @@ export function SetupScreen() {
             {p}
           </button>
         ))}
+      </div>
+      <div className="setup-art" aria-hidden>
+        <FrameAnim frames={ART.internIdle} fps={5} className="setup-mascot" />
       </div>
       <div className="btn-row">
         <button className="btn btn-lg" type="button" onClick={confirmSetup}>
@@ -595,6 +598,7 @@ export function PickRoleScreen({ onPick }: { onPick: (playerId: string, roleId: 
 
 function RoleCard({ player, roleId }: { player?: Player; roleId: string }) {
   const r = getRole(roleId);
+  const punishLabel = useGame((s) => s.punishLabel);
   return (
     <article className="crew-card" style={{ ["--neon" as string]: r.color }}>
       <div className="crew-art">
@@ -609,8 +613,8 @@ function RoleCard({ player, roleId }: { player?: Player; roleId: string }) {
       </div>
       <div className="crew-skill">
         <b>{r.skillName}</b>
-        <p>{r.skillDesc}</p>
-        <em>{r.drink}</em>
+        <p>{fillPunish(r.skillDesc, punishLabel)}</p>
+        <em>{fillPunish(r.drink, punishLabel)}</em>
         <q>{r.line}</q>
       </div>
     </article>
@@ -929,12 +933,12 @@ export function RevealScreen() {
         <div className="graffiti-sub">
           {role?.name} · {role?.tag}
         </div>
-        <div className="reveal-drink">{r.drinkHint}</div>
+        <div className="reveal-drink">{fillPunish(r.drinkHint, state.punishLabel)}</div>
         {role && role.skillKind !== "none" ? (
           <div className="sticker" style={{ width: "100%", marginTop: 8 }}>
             <strong style={{ color: "var(--spray-pink)" }}>{role.skillName}</strong>
             <p className="hint" style={{ margin: "4px 0 0" }}>
-              {role.skillDesc}
+              {fillPunish(role.skillDesc, state.punishLabel)}
             </p>
           </div>
         ) : null}
@@ -946,7 +950,7 @@ export function RevealScreen() {
               <Zap size={20} /> 發動技能
             </button>
             <button className="btn btn-lime" type="button" disabled={hostOnly} onClick={state.skipSkill}>
-              直接喝 · 跳過技能
+              直接受罰 · 跳過技能
             </button>
           </>
         ) : (
@@ -992,7 +996,7 @@ export function SkillScreen() {
     case "pick_drink2":
       body = (
         <>
-          <p className="hint">指定一位「上班族」喝 2</p>
+          <p className="hint">指定一位「上班族」{punishPhrase(state.punishLabel, 2)}</p>
           <TargetBtns list={workers.length ? workers : others} onPick={state.skillTarget} />
         </>
       );
@@ -1001,9 +1005,9 @@ export function SkillScreen() {
       body = (
         <>
           <button className="btn btn-pink" type="button" disabled={hostOnly} onClick={() => state.skillOpt("all")}>
-            全場喝 1
+            全場{state.punishLabel}
           </button>
-          <p className="hint">或指定一人喝 2：</p>
+          <p className="hint">或指定一人 {punishPhrase(state.punishLabel, 2)}：</p>
           <TargetBtns list={others} onPick={state.skillTarget} />
         </>
       );
@@ -1014,7 +1018,7 @@ export function SkillScreen() {
           <p className="error-banner">救命已用完</p>
         ) : (
           <>
-            <p className="hint">把這次喝酒傳給誰？</p>
+            <p className="hint">把這次懲罰傳給誰？</p>
             <TargetBtns list={others} onPick={state.skillTarget} />
           </>
         );
@@ -1022,7 +1026,7 @@ export function SkillScreen() {
     case "treat":
       body = (
         <>
-          <p className="hint">請客對象（各喝 1）</p>
+          <p className="hint">請客對象（各{state.punishLabel}）</p>
           <TargetBtns list={others} onPick={state.skillTarget} />
         </>
       );
@@ -1041,7 +1045,7 @@ export function SkillScreen() {
     case "tax":
       body = (
         <>
-          <p className="hint">誰多喝 1？（你改半杯）</p>
+          <p className="hint">誰多{state.punishLabel}？（你減半）</p>
           <TargetBtns list={others} onPick={state.skillTarget} />
         </>
       );
@@ -1052,7 +1056,7 @@ export function SkillScreen() {
           <p className="hint">可指定一人下輪免抽（也可跳過）</p>
           <TargetBtns list={others} onPick={state.skillTarget} />
           <button className="btn btn-lime" type="button" disabled={hostOnly} onClick={() => state.skillOpt("selfonly")}>
-            只自己喝 1
+            只自己{state.punishLabel}
           </button>
         </>
       );
@@ -1060,7 +1064,7 @@ export function SkillScreen() {
     case "overtime":
       body = (
         <button className="btn btn-pink btn-lg" type="button" disabled={hostOnly} onClick={() => state.skillOpt("ot")}>
-          確認加班：喝 2，下輪免抽
+          確認加班：{punishPhrase(state.punishLabel, 2)}，下輪免抽
         </button>
       );
       break;

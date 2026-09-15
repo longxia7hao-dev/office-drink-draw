@@ -14,15 +14,19 @@ npm run dev
 GitHub Pages 建置：
 
 ```bash
-npx vite build --config vite.pages.config.ts
+npm run pages:build
 ```
 
-`pages-entry/index.html` 裡的 `%BASE_URL%` 在部署時要替換成 `/office-drink-draw/`。
+輸出在 `dist-pages/`，內容就是可以直接放上 `gh-pages` 的完整站台：
+`%BASE_URL%` 由 Vite 的 `base` 換成 `/office-drink-draw/`，建置時另外自動產生
+`.nojekyll`（站上有 `__grok/` 這種底線開頭的目錄，少了它 Jekyll 會整個忽略）
+與 `404.html`（SPA fallback，內容同 `index.html`）。
 
 ## 產品重點
 
 - 手機直向、不出現滾輪、一屏完整顯示
-- 4 大模式：多數決、指人票選、真心話/喝、反應挑戰
+- 4 大模式：多數決、指人票選、真心話/喝、反應挑戰；可插混亂事件
+- 懲罰由房主在開局時選，文案一律套用該懲罰詞（不寫死「喝一杯」）
 - 1200 題／12 類；模式與題庫由房主選
 - 練習模式是電腦模擬
 - 角色自選，已選不能重複

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Crown, RotateCw, Zap } from "lucide-react";
 import { getKingCmd, NEVER_PROMPTS, recapTitle, WHEEL } from "@/game/party";
-import { getTruth, getWho } from "@/game/partyPlay";
+import { getTruth, getWho, fillPunish, punishPhrase } from "@/game/partyPlay";
 import { useGame } from "@/game/store";
 import { sfxDrink, sfxSlam, sfxSpin, sfxTick, sfxWin, unlockSfx, vibrate } from "@/game/sfx";
 import { Screen, usePress } from "./chrome";
@@ -378,6 +378,7 @@ export function ReactScreen() {
 
 export function KingScreen() {
   const king = useGame((s) => s.king);
+  const punishLabel = useGame((s) => s.punishLabel);
   const players = useGame((s) => s.players);
   const kingRevealDone = useGame((s) => s.kingRevealDone);
   const kingPickCmd = useGame((s) => s.kingPickCmd);
@@ -409,7 +410,7 @@ export function KingScreen() {
 
       {king.sub === "reveal" ? (
         <>
-          <p className="hint">號碼揭曉。國王發號施令，被點到的人喝。</p>
+          <p className="hint">號碼揭曉。國王發號施令，被點到的人受罰。</p>
           <div className="king-grid">
             {players.map((p) => {
               const n = king.numbers[p.id] ?? 0;
@@ -460,7 +461,7 @@ export function KingScreen() {
                   }}
                 >
                   <div className="m-title">{c.title}</div>
-                  <div className="m-desc">{c.desc}</div>
+                  <div className="m-desc">{fillPunish(c.desc, punishLabel)}</div>
                 </button>
               );
             })}
@@ -506,12 +507,12 @@ export function KingScreen() {
                 <div className="drinker-chip" key={id}>
                   <Portrait roleId={p.roleId} size={48} />
                   <span>
-                    {p.name} · 喝 {king.cups}
+                    {p.name} · {punishPhrase(punishLabel, king.cups)}
                   </span>
                 </div>
               );
             })}
-            {king.drinkerIds.length === 0 ? <p className="hint">本輪沒人喝</p> : null}
+            {king.drinkerIds.length === 0 ? <p className="hint">本輪沒人受罰</p> : null}
           </div>
           <div className="btn-row">
             <HostGate>
@@ -537,6 +538,7 @@ export function KingScreen() {
 
 export function NeverScreen() {
   const n = useGame((s) => s.never);
+  const punishLabel = useGame((s) => s.punishLabel);
   const players = useGame((s) => s.players);
   const neverTap = useGame((s) => s.neverTap);
   const neverDone = useGame((s) => s.neverDone);
@@ -566,7 +568,7 @@ export function NeverScreen() {
         從未做過
       </h1>
       <div className="flip-q sticker">
-        <div className="flip-q-label">做過的人喝 1</div>
+        <div className="flip-q-label">做過的人{punishLabel}</div>
         <p className="flip-q-text">{q.q}</p>
       </div>
       {n.sub === "ask" ? (
@@ -598,7 +600,7 @@ export function NeverScreen() {
                   neverDone();
                 }}
               >
-                確認 · {n.marked.length} 人喝
+                確認 · {n.marked.length} 人受罰
               </button>
             </HostGate>
           </div>
@@ -606,13 +608,13 @@ export function NeverScreen() {
       ) : (
         <>
           <div className={`flip-result ${n.marked.length ? "bad" : "ok"}`}>
-            <div className="flip-result-title">{n.marked.length ? "中鏢喝酒" : "全場清白"}</div>
+            <div className="flip-result-title">{n.marked.length ? "中鏢受罰" : "全場清白"}</div>
             <p className="hint" style={{ marginBottom: 0 }}>
               {n.marked.length
                 ? n.marked
                     .map((id) => players.find((p) => p.id === id)?.name)
                     .filter(Boolean)
-                    .join("、") + " 喝 1"
+                    .join("、") + ` ${punishLabel}`
                 : "這題沒人中"}
             </p>
           </div>
@@ -632,6 +634,7 @@ export function NeverScreen() {
 
 export function WheelScreen() {
   const w = useGame((s) => s.wheel);
+  const punishLabel = useGame((s) => s.punishLabel);
   const players = useGame((s) => s.players);
   const wheelGo = useGame((s) => s.wheelGo);
   const wheelLanded = useGame((s) => s.wheelLanded);
@@ -716,8 +719,8 @@ export function WheelScreen() {
                 ? w.drinkerIds
                     .map((id) => players.find((p) => p.id === id)?.name)
                     .filter(Boolean)
-                    .join("、") + ` 喝 ${seg?.cups ?? 1}`
-                : "沒人加杯"}
+                    .join("、") + ` ${punishPhrase(punishLabel, seg?.cups ?? 1)}`
+                : "沒人受罰"}
             </p>
           </div>
           <div className="btn-row inline">

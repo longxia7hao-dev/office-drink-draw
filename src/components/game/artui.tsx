@@ -4,6 +4,7 @@ import { ART, roleArt } from "@/game/art";
 import { type RoleDef } from "@/game/roles";
 import { heatOf, peekDrawOne } from "@/game/state";
 import { WHEEL } from "@/game/party";
+import { fillPunish } from "@/game/partyPlay";
 import { sfxSlam, sfxSpray, sfxTick, unlockSfx, vibrate } from "@/game/sfx";
 import { useGame } from "@/game/store";
 import { cn } from "@/lib/utils";
@@ -93,6 +94,7 @@ export function RoleShowcase({
   speaking?: boolean;
 }) {
   const startX = useRef<number | null>(null);
+  const punishLabel = useGame((s) => s.punishLabel);
 
   function onPointerDown(e: PointerEvent<HTMLDivElement>) {
     startX.current = e.clientX;
@@ -140,8 +142,8 @@ export function RoleShowcase({
       <div className="hero-skill">
         <span className="hero-skill-kicker">技能</span>
         <strong style={{ color: role.color }}>{role.skillName}</strong>
-        <p>{role.skillDesc}</p>
-        <span className="hero-drink">{role.drink}</span>
+        <p>{fillPunish(role.skillDesc, punishLabel)}</p>
+        <span className="hero-drink">{fillPunish(role.drink, punishLabel)}</span>
       </div>
       {footer}
     </article>

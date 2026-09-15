@@ -2,6 +2,20 @@
 
 export const PUNISH_PRESETS = ["喝一口", "喝一杯", "做 10 下", "真心話一題", "罰一分"] as const;
 
+/** 一份懲罰的說法：n>1 就加倍。懲罰內容由房主在開局時選，不寫死喝酒。 */
+export function punishPhrase(label: string, n = 1): string {
+  if (n <= 0) return "免罰過關";
+  return n === 1 ? label : `${label} ×${n}`;
+}
+
+/**
+ * 把文案裡的 {P} / {P2} 換成房主選的懲罰詞。
+ * 角色技能、國王指令、輪盤都用這個，避免任何地方寫死「喝一杯」。
+ */
+export function fillPunish(text: string, label: string): string {
+  return text.replace(/\{P(\d*)\}/g, (_m, d: string) => punishPhrase(label, d ? Number(d) : 1));
+}
+
 export const WHO_QUESTIONS: { id: string; q: string }[] = [
   { id: "w01", q: "誰最可能喝醉後打給前任？" },
   { id: "w02", q: "誰最可能明天上班遲到？" },

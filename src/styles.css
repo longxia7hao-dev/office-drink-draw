@@ -2680,34 +2680,50 @@ input, select, textarea {
 .hero-art, .portrait {
   object-fit: contain;
 }
-.pick-screen .role-hero {
-  flex-shrink: 0;
-}
+/* 角色卡：可壓縮，讓底部「鎖定角色」等按鈕永遠留在一屏內 */
+.pick-screen .role-hero,
 .role-hero {
-  flex: 0 0 auto !important;
-  min-height: min-content !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
 }
-.role-hero > *,
-.hero-stage,
-.hero-art-wrap {
-  flex-shrink: 0;
+.role-hero > * {
+  min-height: 0;
 }
 .hero-stage {
-  flex: 0 0 auto;
-  min-height: min-content;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .hero-art-wrap {
-  flex: 0 0 auto;
-  min-height: 280px;
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 96px;
+  max-height: 300px;
+}
+/* 立繪絕對定位撐滿剩餘空間，不再用固定 280px 把按鈕擠出畫面 */
+.hero-art-wrap > .hero-art {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: min(72vw, 280px);
+  max-height: 100%;
+  object-fit: contain;
 }
 .hero-name, .hero-tag, .hero-bio {
   position: relative;
   z-index: 1;
 }
 .hero-bio, .hero-skill p {
-  display: block;
-  overflow: visible;
-  -webkit-line-clamp: unset;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+@media (max-height: 740px) {
+  .hero-bio {
+    -webkit-line-clamp: 2;
+  }
 }
 .top-bar, .btn-row {
   flex-shrink: 0;
@@ -2775,3 +2791,40 @@ input, select, textarea {
   }
 }
 
+
+/* ---- 一屏排版修正：頂列避開浮動音樂鈕、練習設定頁不留大空白 ---- */
+
+/* 右上音樂鈕是浮動的，頂列保留它的位置，標籤才不會被壓住或切出畫面 */
+.screen > .top-bar {
+  padding-right: 56px;
+}
+
+/* 標題行高很緊又有旋轉，補一點上緣避免壓到返回鍵 */
+.screen > .graffiti-title {
+  padding-top: 6px;
+}
+
+/* 練習設定頁只有一個玩家欄位，別讓它撐開整個畫面 */
+.setup-screen .player-list {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+.setup-screen .btn-row {
+  margin-top: auto;
+}
+.setup-art {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 4px 0;
+  pointer-events: none;
+}
+.setup-mascot {
+  max-height: 100%;
+  max-width: min(58vw, 240px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(4px 4px 0 rgba(0, 0, 0, 0.6));
+}

@@ -9,7 +9,7 @@ import {
   WHEEL,
   type KingKind,
 } from "./party";
-import { CHAOS_CARDS, TRUTH_QUESTIONS, WHO_QUESTIONS } from "./partyPlay";
+import { CHAOS_CARDS, TRUTH_QUESTIONS, WHO_QUESTIONS, fillPunish } from "./partyPlay";
 
 export type Phase =
   | "home"
@@ -567,7 +567,7 @@ export function applySkill(
       if (!target) return "請選擇目標";
       if (me) addCups(state, [me.id], 1);
       addCups(state, [target.id], 2);
-      return `${me?.name} 打小報告！${target.name} 喝 2 杯！`;
+      return `${me?.name} 打小報告！${target.name} ${punishPhrase(state, 2)}！`;
     case "boss_choice":
       if (option === "all") {
         addCups(
@@ -575,21 +575,21 @@ export function applySkill(
           state.players.map((p) => p.id),
           1,
         );
-        return `老闆發話：全場一起喝 1 杯！`;
+        return `老闆發話：全場一起${punishPhrase(state)}！`;
       }
       if (!target) return "請選擇";
       if (me) addCups(state, [me.id], 1);
       addCups(state, [target.id], 2);
-      return `老闆點名：${target.name} 喝 2 杯！`;
+      return `老闆點名：${target.name} ${punishPhrase(state, 2)}！`;
     case "intern_pass":
       if (me) me.hasPass = false;
       if (!target) return "請選擇傳給誰";
       addCups(state, [target.id], 1);
-      return `${me?.name} 喊救命！喝酒傳給 ${target.name}！`;
+      return `${me?.name} 喊救命！懲罰傳給 ${target.name}！`;
     case "treat":
       if (!target || !me) return "請選擇請客對象";
       addCups(state, [me.id, target.id], 1);
-      return `${me.name} 請客！${me.name} 與 ${target.name} 各喝 1！`;
+      return `${me.name} 請客！${me.name} 與 ${target.name} 各${punishPhrase(state)}！`;
     case "transfer":
       if (option === "redraw") {
         const rng = createRng(`${state.seed}:redraw:${state.drawCount}`);
@@ -614,22 +614,22 @@ export function applySkill(
     case "tax":
       if (!target) return "請選擇";
       addCups(state, [target.id], 1);
-      return `報帳！${target.name} 多喝 1；${me?.name} 改半杯`;
+      return `報帳！${target.name} 多${punishPhrase(state)}；${me?.name} 減半`;
     case "deploy":
       if (target) target.skipNext = true;
       if (me) addCups(state, [me.id], 1);
       return target
-        ? `緊急上線！${me?.name} 喝 1；${target.name} 下輪免抽`
-        : `${me?.name} 喝 1 杯（可選延後對象）`;
+        ? `緊急上線！${me?.name} ${punishPhrase(state)}；${target.name} 下輪免抽`
+        : `${me?.name} ${punishPhrase(state)}（可選延後對象）`;
     case "overtime":
       if (me) {
         me.skipNext = true;
         addCups(state, [me.id], 2);
       }
-      return `${me?.name} 加班！喝 2 杯，下輪免抽`;
+      return `${me?.name} 加班！${punishPhrase(state, 2)}，下輪免抽`;
     default:
       if (me) addCups(state, [me.id], roleDrinkCups(me.roleId));
-      return `${me?.name} ${getRole(me?.roleId ?? "worker").drink}`;
+      return `${me?.name} ${fillPunish(getRole(me?.roleId ?? "worker").drink, state.punishLabel || "喝一口")}`;
   }
 }
 
@@ -1023,7 +1023,7 @@ export function wheelApply(state: GameState): void {
       break;
     case "skip":
       drinkers = [];
-      w.message = "本輪免喝，過關！";
+      w.message = "本輪免罰，過關！";
       break;
     case "redraw": {
       const ids = assignRoles(state.players.length, (n) => rngInt(rng, n));

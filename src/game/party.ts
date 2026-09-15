@@ -26,22 +26,22 @@ export interface KingCmd {
 }
 
 export const KING_CMDS: KingCmd[] = [
-  { id: "k1", title: "點名處罰", desc: "國王指定一人喝 2 杯", kind: "pick1", cups: 2 },
-  { id: "k2", title: "雙人組", desc: "國王指定兩人互相乾杯（各 1）", kind: "pick2", cups: 1 },
-  { id: "k3", title: "單數特攻", desc: "號碼單數的人各喝 1", kind: "odds", cups: 1 },
-  { id: "k4", title: "偶數加班", desc: "號碼偶數的人各喝 1", kind: "evens", cups: 1 },
-  { id: "k5", title: "兩極乾杯", desc: "最大號與最小號互相敬酒", kind: "highlow", cups: 1 },
-  { id: "k6", title: "國王免責", desc: "除了國王，全場各喝 1", kind: "all_but_king", cups: 1 },
-  { id: "k7", title: "以身作則", desc: "國王自己喝 2 當榜樣", kind: "king_drinks", cups: 2 },
-  { id: "k8", title: "左右逢源", desc: "國王左邊與右邊的人各喝 1", kind: "neighbors", cups: 1 },
-  { id: "k9", title: "管理階層", desc: "老闆／主管角色各喝 1", kind: "role_boss", cups: 1 },
-  { id: "k10", title: "菜鳥特攻", desc: "實習生喝 1（沒有就上班族喝）", kind: "role_intern", cups: 1 },
-  { id: "k11", title: "酒王加碼", desc: "目前喝最多的人再喝 1", kind: "leader", cups: 1 },
-  { id: "k12", title: "清水補課", desc: "目前喝最少的人喝 1", kind: "rookie", cups: 1 },
-  { id: "k13", title: "全場乾杯", desc: "包含國王，全員喝 1", kind: "all", cups: 1 },
-  { id: "k14", title: "肝帝點名", desc: "加班狗角色喝 2（沒有則國王喝）", kind: "overtime", cups: 2 },
-  { id: "k15", title: "基層團結", desc: "所有上班族各喝 1", kind: "workers", cups: 1 },
-  { id: "k16", title: "國王欽點", desc: "國王指定一人喝 1 並講一句幹話", kind: "pick1", cups: 1 },
+  { id: "k1", title: "點名處罰", desc: "國王指定一人{P2}", kind: "pick1", cups: 2 },
+  { id: "k2", title: "雙人組", desc: "國王指定兩人互相對決（各{P}）", kind: "pick2", cups: 1 },
+  { id: "k3", title: "單數特攻", desc: "號碼單數的人各{P}", kind: "odds", cups: 1 },
+  { id: "k4", title: "偶數加班", desc: "號碼偶數的人各{P}", kind: "evens", cups: 1 },
+  { id: "k5", title: "兩極乾杯", desc: "最大號與最小號互相對決（各{P}）", kind: "highlow", cups: 1 },
+  { id: "k6", title: "國王免責", desc: "除了國王，全場各{P}", kind: "all_but_king", cups: 1 },
+  { id: "k7", title: "以身作則", desc: "國王自己{P2} 當榜樣", kind: "king_drinks", cups: 2 },
+  { id: "k8", title: "左右逢源", desc: "國王左邊與右邊的人各{P}", kind: "neighbors", cups: 1 },
+  { id: "k9", title: "管理階層", desc: "老闆／主管角色各{P}", kind: "role_boss", cups: 1 },
+  { id: "k10", title: "菜鳥特攻", desc: "實習生{P}（沒有就上班族）", kind: "role_intern", cups: 1 },
+  { id: "k11", title: "酒王加碼", desc: "目前受罰最多的人再{P}", kind: "leader", cups: 1 },
+  { id: "k12", title: "清水補課", desc: "目前受罰最少的人{P}", kind: "rookie", cups: 1 },
+  { id: "k13", title: "全場乾杯", desc: "包含國王，全員{P}", kind: "all", cups: 1 },
+  { id: "k14", title: "肝帝點名", desc: "加班狗角色{P2}（沒有則國王）", kind: "overtime", cups: 2 },
+  { id: "k15", title: "基層團結", desc: "所有上班族各{P}", kind: "workers", cups: 1 },
+  { id: "k16", title: "國王欽點", desc: "國王指定一人{P} 並講一句幹話", kind: "pick1", cups: 1 },
 ];
 
 export function getKingCmd(id: string): KingCmd {
@@ -112,14 +112,14 @@ export interface WheelSeg {
 }
 
 export const WHEEL: WheelSeg[] = [
-  { id: "w1", label: "隨機喝 1", color: "#ff2d95", kind: "random1", cups: 1 },
-  { id: "w2", label: "隨機喝 2", color: "#ff6b1a", kind: "random2", cups: 2 },
-  { id: "w3", label: "全場乾杯", color: "#ffd700", kind: "all", cups: 1 },
-  { id: "w4", label: "點名喝 2", color: "#00f0ff", kind: "pick", cups: 2 },
-  { id: "w5", label: "免喝過關", color: "#b8ff00", kind: "skip", cups: 0 },
+  { id: "w1", label: "隨機受罰", color: "#ff2d95", kind: "random1", cups: 1 },
+  { id: "w2", label: "隨機 ×2", color: "#ff6b1a", kind: "random2", cups: 2 },
+  { id: "w3", label: "全場受罰", color: "#ffd700", kind: "all", cups: 1 },
+  { id: "w4", label: "點名 ×2", color: "#00f0ff", kind: "pick", cups: 2 },
+  { id: "w5", label: "免罰過關", color: "#b8ff00", kind: "skip", cups: 0 },
   { id: "w6", label: "重抽角色", color: "#a78bfa", kind: "redraw", cups: 0 },
-  { id: "w7", label: "酒王加碼", color: "#f472b6", kind: "leader", cups: 1 },
-  { id: "w8", label: "找人陪喝", color: "#38bdf8", kind: "buddy", cups: 1 },
+  { id: "w7", label: "領先加碼", color: "#f472b6", kind: "leader", cups: 1 },
+  { id: "w8", label: "找人陪罰", color: "#38bdf8", kind: "buddy", cups: 1 },
 ];
 
 export function recapTitle(rank: number, total: number): string {
