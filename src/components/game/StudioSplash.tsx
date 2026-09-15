@@ -38,7 +38,7 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
       const t = window.setTimeout(() => finish(), 0);
       return () => window.clearTimeout(t);
     }
-    const warmFallback = window.setTimeout(warmRest, 1200);
+    warmRest();
     const start = performance.now();
     let raf = 0;
     let hold = 0;
@@ -55,7 +55,6 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
-      window.clearTimeout(warmFallback);
       window.clearTimeout(hold);
     };
   }, []);
