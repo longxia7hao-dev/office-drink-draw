@@ -178,12 +178,24 @@
   display: block;
   z-index: 0;
 }
+/*
+ * 沙發區的循環動畫要疊回海報上原本的位置，接縫才不會露出來。
+ *
+ * 座標是拿 home-loop.mp4 的畫格去跟 home-poster.jpg 做樣板比對算出來的：
+ * 750×1584 的海報裡最佳落點是 (493,341)、255×765，相似度 0.974。
+ * 舊值 left:66% top:22% height:48% 換算是 (495,348) 255×760 —— 往下偏 7px、
+ * 高度短 6px，天空和 101 大樓就會出現一條錯開的邊。
+ *
+ * 高度改用 aspect-ratio 綁住影片原生的 224:672，而不是再寫一個百分比，
+ * 這樣不會再跟影片比例走鐘（舊的 34%×48% 等於把畫面垂直壓了 0.7%）。
+ */
 .home-poster-wrap .silent-video {
   position: absolute;
-  left: 66%;
-  top: 22%;
+  left: 65.733%;
+  top: 21.528%;
   width: 34%;
-  height: 48%;
+  aspect-ratio: 224 / 672;
+  height: auto;
   z-index: 1;
   pointer-events: none;
 }
