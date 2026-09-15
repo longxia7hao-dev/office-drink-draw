@@ -49,7 +49,7 @@ export function usePress(fn: () => void) {
   };
 }
 
-export function MusicToggle() {
+export function MusicToggle({ className }: { className?: string }) {
   const [on, setOn] = useState(true);
   useEffect(() => {
     setOn(!isBgmMuted());
@@ -60,7 +60,7 @@ export function MusicToggle() {
   });
   return (
     <button
-      className="music-fab"
+      className={cn("music-fab", className)}
       type="button"
       {...press}
       aria-label={on ? "關閉音樂" : "開啟音樂"}

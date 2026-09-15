@@ -31,7 +31,7 @@ import { currentFlipQuestion, flipVoteCounts, type GameState, type Player } from
 import { isBgmMuted, sfxFlip, sfxTalk, sfxTick, toggleBgmMute, unlockSfx } from "@/game/sfx";
 import { hasSignaling } from "@/game/odd";
 import { useGame } from "@/game/store";
-import { RoleIcon, Screen, SprayBurst, usePress } from "./chrome";
+import { MusicToggle, RoleIcon, Screen, SprayBurst, usePress } from "./chrome";
 import { DrinkHud, FrameAnim, Portrait, RoleShowcase, RouletteDraw, SprayDraw } from "./artui";
 import { AutoVideo } from "./AutoVideo";
 
@@ -70,16 +70,6 @@ export function HomeScreen() {
     unlockSfx();
     setOverlay("board");
   });
-  // 主選單的音樂鈕是畫在海報上的，圖不會變，所以關掉時要自己蓋一個靜音圖示，
-  // 不然使用者看不出來現在是開還關（其他畫面的 .music-fab 是真的 DOM 按鈕，會換圖）。
-  const [musicOn, setMusicOn] = useState(true);
-  useEffect(() => {
-    setMusicOn(!isBgmMuted());
-  }, []);
-  const pressMusic = usePress(() => {
-    unlockSfx();
-    setMusicOn(!toggleBgmMute());
-  });
   return (
     <Screen className="screen-home">
       <h1 className="sr-only">公司酒局</h1>
@@ -87,19 +77,7 @@ export function HomeScreen() {
         <div className="home-poster-wrap">
           <img className="home-poster" src={ART.homePoster} alt="" draggable={false} />
           <AutoVideo className="home-party-vid" src={ART.homeLoop} loop />
-          <button
-            type="button"
-            className="hs hs-music"
-            aria-label={musicOn ? "關閉音樂" : "開啟音樂"}
-            aria-pressed={!musicOn}
-            title={musicOn ? "音樂開" : "音樂關"}
-            {...pressMusic}
-          />
-          {musicOn ? null : (
-            <span className="hs-music-off" aria-hidden>
-              <VolumeX strokeWidth={2.6} />
-            </span>
-          )}
+          <MusicToggle className="music-fab-home" />
           <button type="button" className="hs hs-set" aria-label="設定" {...pressSet} />
           <button type="button" className="hs hs-solo" aria-label="單機開打，練習模式" {...pressSolo} />
           <button type="button" className="hs hs-host" aria-label="開房間連線，揪朋友一起玩" {...pressHost} />
@@ -775,16 +753,12 @@ export function FlipCatsOverlay() {
     if (!hostOnly) toModes();
   });
   const pressMix = usePress(() => pick(null));
-  const pressMusic = usePress(() => {
-    unlockSfx();
-    toggleBgmMute();
-  });
   return (
     <Screen className="screen-home">
       <div className="home-stage">
         <div className="home-poster-wrap">
           <img className="home-poster" src={ART.catsPoster} alt="" draggable={false} />
-          <button type="button" className="hs hs-cats-music" aria-label="音樂開關" {...pressMusic} />
+          <MusicToggle className="music-fab-cats" />
           <button type="button" className="hs hs-poster-back" aria-label="返回" disabled={hostOnly} {...pressBack} />
           <button type="button" className="hs hs-cat-mix" aria-label="全部混搭" disabled={hostOnly} {...pressMix} />
           {FLIP_CATEGORIES.map((c, i) => (
@@ -815,10 +789,6 @@ export function ModesScreen() {
   const pressBack = usePress(() => {
     if (!hostOnly) backRoles();
   });
-  const pressMusic = usePress(() => {
-    unlockSfx();
-    toggleBgmMute();
-  });
   const pressFlip = usePress(() => {
     if (!hostOnly) toFlipCats();
   });
@@ -838,7 +808,7 @@ export function ModesScreen() {
       <div className="home-stage">
         <div className="home-poster-wrap">
           <img className="home-poster" src={ART.modesPoster} alt="" draggable={false} />
-          <button type="button" className="hs hs-modes-music" aria-label="音樂開關" {...pressMusic} />
+          <MusicToggle className="music-fab-modes" />
           <button type="button" className="hs hs-mode-back" aria-label="返回" disabled={hostOnly} {...pressBack} />
           <button type="button" className="hs hs-mode-flip" aria-label="多數決" disabled={hostOnly} {...pressFlip} />
           <button type="button" className="hs hs-mode-who" aria-label="誰最可能" disabled={hostOnly} {...pressWho} />

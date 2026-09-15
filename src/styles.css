@@ -2855,33 +2855,40 @@ input, select, textarea {
 }
 
 /*
- * 主選單的音樂鈕是海報上畫好的圖，關掉音樂時圖片不會變，
- * 使用者看不出現在是開還關。關閉時就蓋一個靜音圖示上去。
- *
- * 位置不能跟 .hs-music 綁在一起 —— 那個熱區是刻意放大的點擊範圍（14%×6.3%），
- * 比畫上去的圓大。這裡用海報上實際量到的座標：
- * 750×1584 的海報裡，粉紅外圈在 (642,126)-(723,207)，也就是 85.6% / 8% / 81px 見方。
- * 外框比例固定，所以 aspect-ratio:1 配寬度百分比就能一直對齊。
+ * 全遊戲音樂鈕同一顆：黃底、粉邊、喇叭圖。
+ * 主選單／題庫／模式海報把這顆疊在畫好的喇叭上，其它畫面用右上角 .music-fab。
  */
-.hs-music-off {
-  position: absolute;
+.music-fab-home,
+.music-fab-cats,
+.music-fab-modes {
+  left: auto;
+  right: auto;
+  bottom: auto;
+  width: auto;
+  height: auto;
+  z-index: 6;
+}
+.music-fab-home {
   left: 85.6%;
   top: 8%;
   width: 10.8%;
   aspect-ratio: 1;
-  z-index: 5;
-  pointer-events: none;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #1a1210;
-  border: 3px solid #000;
-  box-shadow:
-    0 0 0 2px var(--spray-pink),
-    3px 3px 0 #000;
-  color: var(--spray-gold);
 }
-.hs-music-off > svg {
-  width: 54%;
-  height: 54%;
+.music-fab-cats {
+  left: 86.1%;
+  top: 3.8%;
+  width: 10%;
+  aspect-ratio: 1;
+}
+.music-fab-modes {
+  left: 84%;
+  top: 14.5%;
+  width: 10.5%;
+  aspect-ratio: 1;
+}
+.music-fab-home svg,
+.music-fab-cats svg,
+.music-fab-modes svg {
+  width: 52%;
+  height: 52%;
 }
