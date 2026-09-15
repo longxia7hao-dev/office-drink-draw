@@ -5,7 +5,7 @@ import { bootBgm, setBgmTrack, unlockSfx } from "@/game/sfx";
 import { APP_VERSION } from "@/game/version";
 import "@/game/odd";
 import { useGame, type NetMsg } from "@/game/store";
-import { MusicToggle, WallBg } from "./chrome";
+import { TopFabs, WallBg } from "./chrome";
 import { StudioSplash } from "./StudioSplash";
 import { usePracticeBots } from "./usePracticeBots";
 import {
@@ -351,7 +351,13 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
         />
       ) : null}
       {splash ? <StudioSplash onDone={() => setSplash(false)} /> : view}
-      {splash ? null : <MusicToggle />}
+      <TopFabs
+        onSettings={() => {
+          if (splash) setSplash(false);
+          const cur = useGame.getState().overlay;
+          useGame.getState().setOverlay(cur === "settings" ? null : "settings");
+        }}
+      />
       <span className="app-ver" aria-hidden="true">
         V{APP_VERSION}
       </span>

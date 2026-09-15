@@ -11,6 +11,7 @@ import {
   User,
   Volume2,
   VolumeX,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 import type { RoleIconId } from "@/game/roles";
@@ -66,8 +67,26 @@ export function MusicToggle({ className }: { className?: string }) {
       aria-label={on ? "關閉音樂" : "開啟音樂"}
       title={on ? "音樂開" : "音樂關"}
     >
-      {on ? <Volume2 size={22} strokeWidth={2.6} /> : <VolumeX size={22} strokeWidth={2.6} />}
+      {on ? <Volume2 size={20} strokeWidth={2.6} /> : <VolumeX size={20} strokeWidth={2.6} />}
     </button>
+  );
+}
+
+export function TopFabs({ onSettings }: { onSettings: () => void }) {
+  const pressSet = usePress(onSettings);
+  return (
+    <div className="top-fabs">
+      <MusicToggle />
+      <button
+        className="music-fab"
+        type="button"
+        {...pressSet}
+        aria-label="設定"
+        title="設定"
+      >
+        <Settings size={20} strokeWidth={2.6} />
+      </button>
+    </div>
   );
 }
 

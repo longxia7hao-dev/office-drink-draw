@@ -12,7 +12,6 @@ import {
   Plus,
   Radio,
   RotateCw,
-  Settings,
   ShoppingBag,
   Shuffle,
   Swords,
@@ -31,7 +30,7 @@ import { currentFlipQuestion, flipVoteCounts, type GameState, type Player } from
 import { isBgmMuted, sfxFlip, sfxTalk, sfxTick, toggleBgmMute, unlockSfx } from "@/game/sfx";
 import { hasSignaling } from "@/game/odd";
 import { useGame } from "@/game/store";
-import { MusicToggle, RoleIcon, Screen, SprayBurst, usePress } from "./chrome";
+import { RoleIcon, Screen, SprayBurst, usePress } from "./chrome";
 import { DrinkHud, FrameAnim, Portrait, RoleShowcase, RouletteDraw, SprayDraw } from "./artui";
 import { AutoVideo } from "./AutoVideo";
 import { HomeLoopVideo } from "./HomeLoopVideo";
@@ -50,10 +49,6 @@ export function HomeScreen() {
   const pressJoin = usePress(() => {
     unlockSfx();
     setOverlay("join");
-  });
-  const pressSet = usePress(() => {
-    unlockSfx();
-    setOverlay("settings");
   });
   const pressRules = usePress(() => {
     unlockSfx();
@@ -78,12 +73,6 @@ export function HomeScreen() {
         <div className="home-poster-wrap">
           <img className="home-poster" src={ART.homePoster} alt="" draggable={false} />
           <HomeLoopVideo />
-          <div className="home-fab-row">
-            <MusicToggle />
-            <button type="button" className="music-fab" aria-label="設定" title="設定" {...pressSet}>
-              <Settings size={22} strokeWidth={2.6} />
-            </button>
-          </div>
           <button type="button" className="hs hs-solo" aria-label="單機開打，練習模式" {...pressSolo} />
           <button type="button" className="hs hs-host" aria-label="開房間連線，揪朋友一起玩" {...pressHost} />
           <button type="button" className="hs hs-join" aria-label="加入房間，輸入房號立即開局" {...pressJoin} />
@@ -763,7 +752,6 @@ export function FlipCatsOverlay() {
       <div className="home-stage">
         <div className="home-poster-wrap">
           <img className="home-poster" src={ART.catsPoster} alt="" draggable={false} />
-          <MusicToggle className="music-fab-cats" />
           <button type="button" className="hs hs-poster-back" aria-label="返回" disabled={hostOnly} {...pressBack} />
           <button type="button" className="hs hs-cat-mix" aria-label="全部混搭" disabled={hostOnly} {...pressMix} />
           {FLIP_CATEGORIES.map((c, i) => (
@@ -813,7 +801,6 @@ export function ModesScreen() {
       <div className="home-stage">
         <div className="home-poster-wrap">
           <img className="home-poster" src={ART.modesPoster} alt="" draggable={false} />
-          <MusicToggle className="music-fab-modes" />
           <button type="button" className="hs hs-mode-back" aria-label="返回" disabled={hostOnly} {...pressBack} />
           <button type="button" className="hs hs-mode-flip" aria-label="多數決" disabled={hostOnly} {...pressFlip} />
           <button type="button" className="hs hs-mode-who" aria-label="誰最可能" disabled={hostOnly} {...pressWho} />

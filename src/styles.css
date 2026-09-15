@@ -323,9 +323,8 @@
   white-space: nowrap;
   border: 0;
 }
-.app-shell.is-home > .music-fab,
-.app-shell.is-splash .music-fab {
-  display: none !important;
+.app-shell.is-splash .studio-splash {
+  z-index: 40;
 }
 .studio-splash {
   position: absolute;
@@ -1817,11 +1816,12 @@ select:focus {
 
 .music-fab {
   position: absolute;
-  right: 12px;
-  bottom: calc(14px + var(--safe-b));
+  right: 8px;
+  top: calc(8px + var(--safe-t, 0px));
+  bottom: auto;
   z-index: 40;
-  width: 52px;
-  height: 52px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 3px solid #000;
   background: var(--spray-gold);
@@ -2594,8 +2594,8 @@ select {
 }
 
 .music-fab {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   right: 8px;
   top: calc(8px + var(--safe-t));
   bottom: auto;
@@ -2852,7 +2852,7 @@ input, select, textarea {
  * 有邊框或會橫向捲動的用 margin（讓整塊在鈕之前結束），單純的列用 padding。
  */
 :root {
-  --fab-reserve: 56px;
+  --fab-reserve: 92px;
 }
 .screen > .top-bar {
   padding-right: var(--fab-reserve);
@@ -2898,18 +2898,18 @@ input, select, textarea {
  * 全遊戲音樂鈕同一顆：黃底、粉邊、喇叭圖。
  * 主選單／題庫／模式海報把這顆疊在畫好的喇叭上，其它畫面用右上角 .music-fab。
  */
-.home-fab-row {
+.top-fabs {
   position: absolute;
-  top: 5.6%;
-  right: 3.4%;
-  height: auto;
-  z-index: 6;
+  top: calc(8px + var(--safe-t, 0px));
+  right: 8px;
+  z-index: 55;
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 6px;
+  pointer-events: none;
 }
-.home-fab-row .music-fab {
+.top-fabs .music-fab {
   position: relative;
   left: auto;
   right: auto;
@@ -2919,12 +2919,8 @@ input, select, textarea {
   height: 36px;
   min-width: 36px;
   min-height: 36px;
+  pointer-events: auto;
   display: grid;
-  border-width: 2px;
-}
-.home-fab-row .music-fab svg {
-  width: 18px;
-  height: 18px;
 }
 .music-fab-cats,
 .music-fab-modes {
