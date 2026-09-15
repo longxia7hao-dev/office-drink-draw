@@ -4,12 +4,14 @@ import lottie, { type AnimationItem } from "lottie-web";
 export function StudioLottie({
   src,
   className,
+  loop = false,
   onEnded,
   onProgress,
   onReady,
 }: {
   src: string;
   className?: string;
+  loop?: boolean;
   onEnded?: () => void;
   onProgress?: (pct: number) => void;
   onReady?: () => void;
@@ -28,7 +30,7 @@ export function StudioLottie({
     const anim: AnimationItem = lottie.loadAnimation({
       container: el,
       renderer: "canvas",
-      loop: false,
+      loop,
       autoplay: true,
       path: src,
       rendererSettings: {
@@ -37,9 +39,10 @@ export function StudioLottie({
       },
     });
     const onFrame = () => {
-      const total = anim.totalFrames || 90;
+      if (!progress.current) return;
+      const total = anim.totalFrames || 1;
       const cur = Math.min(total, Math.max(0, anim.currentFrame));
-      progress.current?.((cur / total) * 100);
+      progress.current((cur / total) * 100);
     };
     const onDone = () => {
       progress.current?.(100);
@@ -47,14 +50,14 @@ export function StudioLottie({
     };
     anim.addEventListener("DOMLoaded", () => ready.current?.());
     anim.addEventListener("data_ready", () => ready.current?.());
-    anim.addEventListener("enterFrame", onFrame);
-    anim.addEventListener("complete", onDone);
+    if (progress.current) anim.addEventListener("enterFrame", onFrame);
+    if (!loop) anim.addEventListener("complete", onDone);
     return () => {
       anim.removeEventListener("enterFrame", onFrame);
       anim.removeEventListener("complete", onDone);
       anim.destroy();
     };
-  }, [src]);
+  }, [src, loop]);
 
   return <div ref={box} className={className} aria-hidden="true" />;
 }

@@ -35,6 +35,7 @@ export const ART = {
   homePartySprite: asset("/art/ui/home-party-sprite.jpg"),
   studioIntro: asset("/art/ui/studio-intro.mp4"),
   studioSting: asset("/art/ui/studio-sting.json"),
+  catWalk: asset("/art/ui/cat-walk.json"),
   loadCat: asset("/art/ui/load-cat.png"),
   catsPoster: asset("/art/ui/cats-poster.jpg"),
   modesPoster: asset("/art/ui/modes-poster.jpg"),
