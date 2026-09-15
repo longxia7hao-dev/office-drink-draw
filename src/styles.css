@@ -323,7 +323,7 @@
   white-space: nowrap;
   border: 0;
 }
-.app-shell.is-home .music-fab,
+.app-shell.is-home .music-fab:not(.music-fab-home):not(.music-fab-cats):not(.music-fab-modes),
 .app-shell.is-splash .music-fab {
   display: none !important;
 }
@@ -2882,6 +2882,7 @@ input, select, textarea {
   width: auto;
   height: auto;
   z-index: 6;
+  display: grid;
 }
 .music-fab-home {
   left: 85.6%;
