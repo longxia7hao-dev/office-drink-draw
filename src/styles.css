@@ -367,6 +367,12 @@
   object-fit: contain;
   pointer-events: none;
 }
+.silent-video > video {
+  opacity: 0;
+}
+.silent-video > video.is-on {
+  opacity: 1;
+}
 .silent-cover {
   z-index: 3;
   background: #000;
@@ -393,11 +399,19 @@
 .studio-splash video::-webkit-media-controls,
 .studio-splash video::-webkit-media-controls-start-playback-button,
 .studio-splash video::-webkit-media-controls-overlay-play-button,
+.silent-video video::-webkit-media-controls,
+.silent-video video::-webkit-media-controls-enclosure,
+.silent-video video::-webkit-media-controls-start-playback-button,
+.silent-video video::-webkit-media-controls-overlay-play-button,
 .home-party-vid::-webkit-media-controls,
-.home-party-vid::-webkit-media-controls-start-playback-button {
+.home-party-vid::-webkit-media-controls-start-playback-button,
+.home-party-vid::-webkit-media-controls-overlay-play-button {
   display: none !important;
   -webkit-appearance: none;
   opacity: 0;
+  pointer-events: none;
+  width: 0 !important;
+  height: 0 !important;
 }
 .studio-skip {
   display: none;
