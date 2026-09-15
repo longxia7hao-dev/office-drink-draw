@@ -162,8 +162,8 @@
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: max(100%, calc(100dvh * 1500 / 3167));
-  aspect-ratio: 1500 / 3167;
+  width: max(100%, calc(100dvh * 750 / 1584));
+  aspect-ratio: 750 / 1584;
   height: auto;
 }
 .home-poster {
@@ -189,18 +189,18 @@
  * 高度改用 aspect-ratio 綁住影片原生的 224:672，而不是再寫一個百分比，
  * 這樣不會再跟影片比例走鐘（舊的 34%×48% 等於把畫面垂直壓了 0.7%）。
  */
-.home-poster-wrap .silent-video {
+.home-poster-wrap > .silent-video {
   position: absolute;
-  left: 65.733%;
-  top: 21.528%;
-  width: 34%;
-  aspect-ratio: 224 / 672;
-  height: auto;
+  left: 65.87%;
+  top: 21.46%;
+  width: 33.87%;
+  height: 48.36%;
+  aspect-ratio: auto;
   z-index: 1;
   pointer-events: none;
 }
-.silent-video > .home-party-vid {
-  object-fit: fill;
+.home-poster-wrap > .silent-video > .home-party-vid {
+  object-fit: fill !important;
 }
 .hs {
   position: absolute;
@@ -2900,14 +2900,14 @@ input, select, textarea {
  */
 .home-fab-row {
   position: absolute;
-  top: 6.4%;
-  right: 3.2%;
-  height: 10.2%;
+  top: 5.6%;
+  right: 3.4%;
+  height: auto;
   z-index: 6;
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 .home-fab-row .music-fab {
   position: relative;
@@ -2915,14 +2915,16 @@ input, select, textarea {
   right: auto;
   top: auto;
   bottom: auto;
-  width: auto;
-  height: 100%;
-  aspect-ratio: 1;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   display: grid;
+  border-width: 2px;
 }
 .home-fab-row .music-fab svg {
-  width: 52%;
-  height: 52%;
+  width: 18px;
+  height: 18px;
 }
 .music-fab-cats,
 .music-fab-modes {
