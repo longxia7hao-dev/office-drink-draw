@@ -19,7 +19,12 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Bangers&family=Noto+Sans+TC:wght@500;700;900&display=swap"
     />
-    <link rel="preload" as="video" href="%BASE_URL%art/ui/studio-intro.mp4" type="video/mp4" />
+    <!--
+      這裡原本有 <link rel="preload" as="video">，但 `as="video"` 不是合法值，
+      瀏覽器直接忽略（console 會噴 unsupported `as` value），等於沒作用。
+      改成 as="fetch" 反而會整支先抓一次、video 元素再用 Range 抓第二次。
+      開場影片由 <video preload="auto"> 在 React 掛載時就開始抓，不需要這個提示。
+    -->
     <script src="%BASE_URL%config.js"></script>
   </head>
   <body>
