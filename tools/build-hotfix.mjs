@@ -56,7 +56,7 @@ replace('    tabIndex: 0,\n    onClick:', '    tabIndex: 0,\n    "aria-label": `
 replace('      o.current || e.length < 2','      o.current || mobile.lite() || e.length < 2');
 replace('  );\nfunction jt(e)', '  ).filter((_, index) => index % 2 === 0);\nfunction jt(e)');
 replace('            (0, B.jsx)(`div`, {\n              className: `home-party`,\n              "aria-hidden": `true`,\n              children: (0, B.jsx)(U, {\n                frames: At,\n                fps: 4,\n                mode: `pingpong`,\n                className: `home-party-seq`,\n              }),\n            }),\n', '');
-replace('          frames: kt,\n          fps: 12,\n          mode: `once`,\n          playing: !0,\n          className: `studio-reel`,\n          onEnded: i,\n', '          frames: [kt[0]],\n          fps: 1,\n          mode: `once`,\n          playing: !1,\n          className: `studio-reel`,\n');
+replace('          frames: kt,\n          fps: 12,\n          mode: `once`,\n          playing: !0,\n          className: `studio-reel`,\n          onEnded: i,\n', '          frames: mobile.lite() ? [kt[0]] : kt.slice(0, 8),\n          fps: 8,\n          mode: `once`,\n          playing: !mobile.lite(),\n          className: `studio-reel`,\n          onEnded: i,\n');
 // Replace all signaling requests through one configurable, bounded fetch helper.
 app=app.replaceAll('fetch(`/api/rtc`,', 'window.ODD.rtcFetch(``,');
 replace('fetch(`/api/rtc?${e}`)', 'window.ODD.rtcFetch(`?${e}`)');
