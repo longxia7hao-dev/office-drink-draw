@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useP2PRoom } from "@/lib/multiplayer/use-p2p-room";
 import { flipAdvance } from "@/game/state";
 import { bootBgm, setBgmTrack, unlockSfx } from "@/game/sfx";
+import { APP_VERSION } from "@/game/version";
 import "@/game/odd";
 import { useGame, type NetMsg } from "@/game/store";
 import { MusicToggle, WallBg } from "./chrome";
@@ -351,6 +352,9 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
       ) : null}
       {splash ? <StudioSplash onDone={() => setSplash(false)} /> : view}
       {splash ? null : <MusicToggle />}
+      <span className="app-ver" aria-hidden="true">
+        V{APP_VERSION}
+      </span>
     </div>
   );
 }

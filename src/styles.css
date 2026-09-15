@@ -405,7 +405,7 @@
   border: 2px solid #b8ff00;
   border-radius: 99px;
   background: #111;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 0 12px #b8ff00aa;
   pointer-events: none;
 }
@@ -413,9 +413,34 @@
   display: block;
   height: 100%;
   width: 0;
+  border-radius: 99px;
   background: linear-gradient(90deg, #ff2daa, #ffe14a, #b8ff00);
   box-shadow: 0 0 8px #b8ff00;
   transition: width 0.18s linear;
+}
+.studio-load-cat {
+  position: absolute;
+  top: 0;
+  width: 46px;
+  height: 48px;
+  object-fit: contain;
+  transform: translate(-50%, -88%);
+  pointer-events: none;
+  z-index: 2;
+  filter: drop-shadow(0 0 6px #b8ff00aa);
+  transition: left 0.18s linear;
+}
+.app-ver {
+  position: absolute;
+  right: 8px;
+  bottom: calc(6px + var(--safe-b, 0px));
+  z-index: 50;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: rgba(184, 255, 0, 0.55);
+  pointer-events: none;
+  user-select: none;
 }
 .studio-splash video::-webkit-media-controls,
 .studio-splash video::-webkit-media-controls-start-playback-button,

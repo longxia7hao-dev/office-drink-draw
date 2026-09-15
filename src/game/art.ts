@@ -34,6 +34,7 @@ export const ART = {
   studioSprite: asset("/art/ui/studio-sprite.jpg"),
   homePartySprite: asset("/art/ui/home-party-sprite.jpg"),
   studioIntro: asset("/art/ui/studio-intro.mp4"),
+  loadCat: asset("/art/ui/load-cat.png"),
   catsPoster: asset("/art/ui/cats-poster.jpg"),
   modesPoster: asset("/art/ui/modes-poster.jpg"),
 };

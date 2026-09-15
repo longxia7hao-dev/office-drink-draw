@@ -87,6 +87,13 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
         aria-valuenow={Math.round(pct)}
       >
         <i style={{ width: `${pct}%` }} />
+        <img
+          className="studio-load-cat"
+          src={ART.loadCat}
+          alt=""
+          draggable={false}
+          style={{ left: `${pct}%` }}
+        />
       </div>
     </div>
   );
