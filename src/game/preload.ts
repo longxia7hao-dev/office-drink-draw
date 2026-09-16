@@ -13,7 +13,6 @@ function loadImage(src: string): Promise<void> {
 let splashStarted: Promise<void> | null = null;
 let gameStarted: Promise<void> | null = null;
 let homeLoopStarted: Promise<void> | null = null;
-let homeLoopVideo: HTMLVideoElement | null = null;
 let homeLoopBlobUrl: string | null = null;
 let homeLoopPct = 0;
 const homeLoopListeners = new Set<(pct: number) => void>();
@@ -46,33 +45,7 @@ export function warmupGame(): Promise<void> {
   return gameStarted;
 }
 
-function makeHomeVideo(): HTMLVideoElement {
-  const v = document.createElement("video");
-  v.muted = true;
-  v.defaultMuted = true;
-  v.volume = 0;
-  v.loop = true;
-  v.autoplay = true;
-  v.playsInline = true;
-  v.preload = "auto";
-  v.controls = false;
-  v.disablePictureInPicture = true;
-  v.setAttribute("muted", "");
-  v.setAttribute("playsinline", "true");
-  v.setAttribute("webkit-playsinline", "true");
-  v.setAttribute("x-webkit-airplay", "deny");
-  v.setAttribute("disablepictureinpicture", "");
-  v.playsInline = true;
-  parkNode(v);
-  document.body.appendChild(v);
-  return v;
-}
-
-function parkNode(v: HTMLVideoElement) {
-  v.style.cssText = "position:fixed;left:-120px;top:0;width:2px;height:2px;opacity:0;pointer-events:none;border:0";
-}
-
-/** 下載＋解碼主選單沙發。條到 100 代表這支 video 已經可以播。 */
+/** 只下載主選單 mp4 暖快取，不碰解碼器。進度 100 = 檔案已在記憶體。 */
 export function prefetchHomeLoop(onProgress: (pct: number) => void): Promise<void> {
   homeLoopListeners.add(onProgress);
   onProgress(homeLoopPct);
@@ -83,15 +56,15 @@ export function prefetchHomeLoop(onProgress: (pct: number) => void): Promise<voi
 }
 
 async function runHomeLoopPrefetch(): Promise<void> {
-  const v = makeHomeVideo();
-  homeLoopVideo = v;
+  const ac = new AbortController();
+  const kill = window.setTimeout(() => ac.abort(), 8000);
   try {
-    const res = await fetch(ART.homeLoop, { credentials: "same-origin" });
+    const res = await fetch(ART.homeLoop, { credentials: "same-origin", signal: ac.signal });
     if (!res.ok) throw new Error("home-loop fetch failed");
     const total = Number(res.headers.get("content-length")) || 632929;
     const chunks: BlobPart[] = [];
     let received = 0;
-    reportHomeLoop(1);
+    reportHomeLoop(4);
     if (res.body) {
       const reader = res.body.getReader();
       for (;;) {
@@ -99,53 +72,20 @@ async function runHomeLoopPrefetch(): Promise<void> {
         if (done) break;
         chunks.push(value);
         received += value.byteLength;
-        reportHomeLoop(Math.min(86, (received / total) * 86));
+        reportHomeLoop(Math.min(98, (received / total) * 98));
       }
     } else {
       chunks.push(await res.arrayBuffer());
-      reportHomeLoop(86);
     }
     const blob = new Blob(chunks, { type: "video/mp4" });
     if (homeLoopBlobUrl) URL.revokeObjectURL(homeLoopBlobUrl);
     homeLoopBlobUrl = URL.createObjectURL(blob);
-    reportHomeLoop(88);
-
-    await new Promise<void>((resolve) => {
-      let settled = false;
-      const done = () => {
-        if (settled) return;
-        settled = true;
-        resolve();
-      };
-      v.addEventListener("canplaythrough", done, { once: true });
-      v.addEventListener("playing", () => {
-        reportHomeLoop(96);
-        done();
-      });
-      v.addEventListener("canplay", () => reportHomeLoop(92));
-      v.addEventListener("error", done, { once: true });
-      v.src = homeLoopBlobUrl!;
-      v.load();
-      void v.play().catch(() => {});
-      window.setTimeout(done, 5000);
-    });
     reportHomeLoop(100);
   } catch {
-    v.src = ART.homeLoop;
-    v.load();
-    void v.play().catch(() => {});
     reportHomeLoop(100);
+  } finally {
+    window.clearTimeout(kill);
   }
-}
-
-export function peekHomeLoopVideo(): HTMLVideoElement | null {
-  return homeLoopVideo;
-}
-
-export function parkHomeLoopVideo(): void {
-  if (!homeLoopVideo) return;
-  parkNode(homeLoopVideo);
-  if (homeLoopVideo.parentElement !== document.body) document.body.appendChild(homeLoopVideo);
 }
 
 export function homeLoopSrc(): string {

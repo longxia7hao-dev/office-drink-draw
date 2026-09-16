@@ -36,6 +36,7 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
       const t = window.setTimeout(() => finish(), 0);
       return () => window.clearTimeout(t);
     }
+    const started = Date.now();
     let hold = 0;
     let cancelled = false;
     void prefetchHomeLoop((p) => {
@@ -43,11 +44,14 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
     }).then(() => {
       if (cancelled || finished.current) return;
       setPct(100);
-      hold = window.setTimeout(() => finish(), 180);
+      const wait = Math.max(0, 1200 - (Date.now() - started));
+      hold = window.setTimeout(() => finish(), wait);
     });
+    const cap = window.setTimeout(() => finish(), 6500);
     return () => {
       cancelled = true;
       window.clearTimeout(hold);
+      window.clearTimeout(cap);
     };
   }, []);
 
@@ -75,7 +79,7 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
         {isLiteMode() ? (
           <img className="studio-reel" src={STUDIO_FRAMES[0]} alt="" draggable={false} />
         ) : (
-          <StudioLottie className="studio-reel" src={ART.studioSting} onReady={warmRest} />
+          <StudioLottie className="studio-reel" src={ART.studioSting} onReady={warmRest} onEnded={() => finish()} />
         )}
       </div>
       <div
