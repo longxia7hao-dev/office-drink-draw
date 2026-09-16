@@ -981,10 +981,12 @@ export function RevealScreen() {
 function TargetBtns({ list, onPick }: { list: Player[]; onPick: (id: string) => void }) {
   if (list.length === 0) return <p className="hint">沒有可選對象</p>;
   return (
-    <div className="targets">
+    <div className="king-grid skill-targets">
       {list.map((p) => (
-        <button className="chip-btn" type="button" key={p.id} onClick={() => onPick(p.id)}>
-          {p.name}
+        <button className="king-seat" type="button" key={p.id} onClick={() => onPick(p.id)}>
+          <Portrait roleId={p.roleId} size={56} />
+          <strong>{p.name}</strong>
+          <span>{getRole(p.roleId).name}</span>
         </button>
       ))}
     </div>
@@ -995,18 +997,27 @@ export function SkillScreen() {
   const state = useGame();
   const r = state.lastResult;
   if (!r) return <ModesScreen />;
-  const me = state.players.find((p) => p.id === r.playerId);
+  const me = state.players.find((p) => p.id === (state.punishActorId ?? r.playerId));
   const role = me ? getRole(me.roleId) : null;
-  const others = state.players.filter((p) => p.id !== r.playerId);
-  const workers = state.players.filter((p) => p.roleId === "worker" && p.id !== r.playerId);
-  const hostOnly = state.isOnline && !state.isHost;
+  const others = state.players.filter((p) => p.id !== me?.id);
+  const hostOnly = state.isOnline && !state.isHost && state.myPlayerId !== me?.id;
+  const used = Boolean(me?.skillUsed);
   let body: ReactNode = null;
-  switch (r.skillKind) {
+  if (used) {
+    body = <p className="error-banner">這個模式技能已經用過了</p>;
+  } else switch (r.skillKind) {
+    case "slacker":
+      body = (
+        <button className="btn btn-pink btn-lg" type="button" disabled={hostOnly} onClick={() => state.skillOpt("slack")}>
+          確定摸魚：這次免罰，下次 ×3
+        </button>
+      );
+      break;
     case "pick_drink2":
       body = (
         <>
-          <p className="hint">指定一位「上班族」{punishPhrase(state.punishLabel, 2)}</p>
-          <TargetBtns list={workers.length ? workers : others} onPick={state.skillTarget} />
+          <p className="hint">指定一人代你受罰（雙倍）。你下次 ×2</p>
+          <TargetBtns list={others} onPick={state.skillTarget} />
         </>
       );
       break;
@@ -1014,7 +1025,7 @@ export function SkillScreen() {
       body = (
         <>
           <button className="btn btn-pink" type="button" disabled={hostOnly} onClick={() => state.skillOpt("all")}>
-            全場{state.punishLabel}
+            全場{state.punishLabel}（你免罰，下次 ×2）
           </button>
           <p className="hint">或指定一人 {punishPhrase(state.punishLabel, 2)}：</p>
           <TargetBtns list={others} onPick={state.skillTarget} />
@@ -1022,20 +1033,17 @@ export function SkillScreen() {
       );
       break;
     case "intern_pass":
-      body =
-        me?.hasPass === false ? (
-          <p className="error-banner">救命已用完</p>
-        ) : (
-          <>
-            <p className="hint">把這次懲罰傳給誰？</p>
-            <TargetBtns list={others} onPick={state.skillTarget} />
-          </>
-        );
+      body = (
+        <>
+          <p className="hint">把這次懲罰傳給誰？你下次 ×2</p>
+          <TargetBtns list={others} onPick={state.skillTarget} />
+        </>
+      );
       break;
     case "treat":
       body = (
         <>
-          <p className="hint">請客對象（各{state.punishLabel}）</p>
+          <p className="hint">請客對象（你們各{state.punishLabel}）</p>
           <TargetBtns list={others} onPick={state.skillTarget} />
         </>
       );
@@ -1043,10 +1051,7 @@ export function SkillScreen() {
     case "transfer":
       body = (
         <>
-          <button className="btn btn-cyan" type="button" disabled={hostOnly} onClick={() => state.skillOpt("redraw")}>
-            全體重抽角色
-          </button>
-          <p className="hint">或與一人互換：</p>
+          <p className="hint">與誰對調角色，並由對方代罰？你下次 ×2</p>
           <TargetBtns list={others} onPick={state.skillTarget} />
         </>
       );
@@ -1054,7 +1059,7 @@ export function SkillScreen() {
     case "tax":
       body = (
         <>
-          <p className="hint">誰多{state.punishLabel}？（你減半）</p>
+          <p className="hint">這次免罰。誰下次 ×2？（你自己下次也 ×2）</p>
           <TargetBtns list={others} onPick={state.skillTarget} />
         </>
       );
@@ -1062,18 +1067,15 @@ export function SkillScreen() {
     case "deploy":
       body = (
         <>
-          <p className="hint">可指定一人下輪免抽（也可跳過）</p>
+          <p className="hint">這次免罰。誰下次免罰？（你下次 ×2）</p>
           <TargetBtns list={others} onPick={state.skillTarget} />
-          <button className="btn btn-lime" type="button" disabled={hostOnly} onClick={() => state.skillOpt("selfonly")}>
-            只自己{state.punishLabel}
-          </button>
         </>
       );
       break;
     case "overtime":
       body = (
         <button className="btn btn-pink btn-lg" type="button" disabled={hostOnly} onClick={() => state.skillOpt("ot")}>
-          確認加班：{punishPhrase(state.punishLabel, 2)}，下輪免抽
+          確認加班：這次 {punishPhrase(state.punishLabel, 2)}，下次免罰
         </button>
       );
       break;
@@ -1089,14 +1091,17 @@ export function SkillScreen() {
       <DrinkHud />
       <div className="top-bar">
         <span className="tag-pill">SKILL</span>
+        <span className="tag-pill pink">本模式限一次</span>
       </div>
-      <h1 className="graffiti-title" style={{ fontSize: "1.8rem" }}>
+      {me ? <Portrait roleId={me.roleId} size={72} /> : null}
+      <h1 className="graffiti-title" style={{ fontSize: "1.6rem" }}>
         {role?.skillName ?? "技能"}
       </h1>
+      <p className="hint">{fillPunish(role?.skillDesc ?? "", state.punishLabel)}</p>
       <div className="skill-panel sticker">{body}</div>
       <div className="btn-row">
-        <button className="btn btn-ghost" type="button" disabled={hostOnly} onClick={state.skipSkill}>
-          取消技能
+        <button className="btn btn-lime" type="button" disabled={hostOnly} onClick={state.skipSkill}>
+          接受懲罰 · 不用技能
         </button>
       </div>
     </Screen>

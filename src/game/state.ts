@@ -136,6 +136,8 @@ export interface Player {
   hasPass?: boolean;
   cups: number;
   isBot?: boolean;
+  skillUsed?: boolean;
+  nextMult?: number;
 }
 
 export interface DrawResult {
@@ -175,6 +177,10 @@ export interface GameState {
   practice: boolean;
   allow18: boolean;
   flipCat: string | null;
+  punishQueue: string[];
+  punishAmt: number;
+  punishActorId: string | null;
+  skillReturnPhase: Phase;
 }
 
 export function createInitialState(): GameState {
@@ -211,6 +217,10 @@ export function createInitialState(): GameState {
       }
     })(),
     flipCat: null,
+    punishQueue: [],
+    punishAmt: 1,
+    punishActorId: null,
+    skillReturnPhase: "home",
   };
 }
 
@@ -222,6 +232,8 @@ export function makeLocalPlayers(names: string[], _seed: string, ids?: string[])
     hasPass: false,
     skipNext: false,
     cups: 0,
+    skillUsed: false,
+    nextMult: 1,
   }));
 }
 
@@ -292,11 +304,14 @@ export function roleDrinkCups(roleId: string): number {
 export function addCups(state: GameState, ids: string[], n: number): void {
   if (n <= 0 || ids.length === 0) return;
   const bonus = heatOf(state) >= 3 ? 1 : 0;
-  const amt = n + bonus;
   const unique = [...new Set(ids)];
   for (const id of unique) {
     const p = state.players.find((x) => x.id === id);
-    if (p) p.cups = (p.cups || 0) + amt;
+    if (!p) continue;
+    const m = p.nextMult ?? 1;
+    p.nextMult = 1;
+    if (m === 0) continue;
+    p.cups = (p.cups || 0) + (n + bonus) * m;
   }
 }
 
@@ -312,6 +327,59 @@ export function applyPunish(state: GameState, ids: string[], n = 1): string[] {
   let list = [...new Set(ids)];
   if (buff?.shieldId) list = list.filter((id) => id !== buff.shieldId);
   addCups(state, list, amt);
+  return list;
+}
+
+export function canFireSkill(p: Player): boolean {
+  if (p.skillUsed || p.isBot) return false;
+  return getRole(p.roleId).skillKind !== "none";
+}
+
+export function pumpPunishQueue(state: GameState): void {
+  while (state.punishQueue.length) {
+    const id = state.punishQueue[0]!;
+    const p = state.players.find((x) => x.id === id);
+    if (!p) {
+      state.punishQueue.shift();
+      continue;
+    }
+    if ((p.nextMult ?? 1) === 0) {
+      p.nextMult = 1;
+      state.punishQueue.shift();
+      continue;
+    }
+    if (!canFireSkill(p)) {
+      applyPunish(state, [id], state.punishAmt || 1);
+      state.punishQueue.shift();
+      continue;
+    }
+    const role = getRole(p.roleId);
+    state.punishActorId = id;
+    state.lastResult = {
+      playerId: id,
+      mode: state.mode ?? "flip_battle",
+      message: `${p.name} 被罰`,
+      drinkHint: role.drink,
+      skillKind: role.skillKind,
+    };
+    state.skillPending = true;
+    state.phase = "skill";
+    return;
+  }
+  state.punishActorId = null;
+  state.skillPending = false;
+  if (state.mode === "draw_one") state.phase = "result";
+  else state.phase = state.skillReturnPhase;
+}
+
+export function settlePunish(state: GameState, ids: string[], n = 1): string[] {
+  const buff = state.chaos;
+  let list = [...new Set(ids)];
+  if (buff?.shieldId) list = list.filter((id) => id !== buff.shieldId);
+  if (state.phase !== "skill") state.skillReturnPhase = state.phase;
+  state.punishAmt = n;
+  state.punishQueue = list;
+  pumpPunishQueue(state);
   return list;
 }
 
@@ -340,6 +408,7 @@ export function launchCoreMode(state: GameState, mode: GameMode, fromChaos = fal
   else if (mode === "who") startWho(state);
   else if (mode === "truth") startTruth(state);
   else if (mode === "react") startReact(state);
+  for (const p of state.players) p.skillUsed = false;
 }
 
 export function confirmChaos(state: GameState): void {
@@ -391,7 +460,7 @@ export function whoVote(state: GameState, targetId: string, voterId?: string): v
     let max = 0;
     for (const n of Object.values(tally)) if (n > max) max = n;
     const punished = Object.keys(tally).filter((k) => tally[k] === max);
-    who.punishedIds = applyPunish(state, punished, 1);
+    who.punishedIds = settlePunish(state, punished, 1);
     who.sub = state.chaos?.drag && who.punishedIds.length ? "drag" : "result";
     who.voterId = null;
   } else {
@@ -435,7 +504,7 @@ export function truthChoose(state: GameState, took: "answer" | "punish"): void {
   const t = state.truth;
   if (!t || t.sub !== "ask") return;
   t.took = took;
-  if (took === "punish") applyPunish(state, [t.playerId], 1);
+  if (took === "punish") settlePunish(state, [t.playerId], 1);
   t.sub = took === "punish" && state.chaos?.drag ? "drag" : "result";
 }
 
@@ -476,7 +545,7 @@ export function reactFinish(state: GameState, misses: number): void {
   if (!r) return;
   r.misses = misses;
   r.punished = misses > 0;
-  if (r.punished) applyPunish(state, [r.playerId], 1);
+  if (r.punished) settlePunish(state, [r.playerId], 1);
   r.sub = r.punished && state.chaos?.drag ? "drag" : "result";
 }
 
@@ -557,79 +626,85 @@ export function applySkill(
   targetId?: string,
   option?: string,
 ): string {
-  const result = state.lastResult;
-  if (!result) return "";
-  const me = state.players.find((p) => p.id === result.playerId);
+  const actorId = state.punishActorId ?? state.lastResult?.playerId;
+  const me = actorId ? state.players.find((p) => p.id === actorId) : undefined;
   const target = targetId ? state.players.find((p) => p.id === targetId) : undefined;
+  const mark = () => {
+    if (me) me.skillUsed = true;
+  };
 
   switch (kind) {
+    case "slacker":
+      mark();
+      if (me) me.nextMult = 3;
+      return `${me?.name} 摸魚！這次免罰，下次被罰 ×3`;
     case "pick_drink2":
       if (!target) return "請選擇目標";
-      if (me) addCups(state, [me.id], 1);
+      mark();
       addCups(state, [target.id], 2);
-      return `${me?.name} 打小報告！${target.name} ${punishPhrase(state, 2)}！`;
+      if (me) me.nextMult = 2;
+      return `${me?.name} 打小報告！${target.name} ${punishPhrase(state, 2)}。${me?.name} 下次 ×2`;
     case "boss_choice":
       if (option === "all") {
+        mark();
         addCups(
           state,
-          state.players.map((p) => p.id),
+          state.players.filter((p) => p.id !== me?.id).map((p) => p.id),
           1,
         );
-        return `老闆發話：全場一起${punishPhrase(state)}！`;
+        if (me) me.nextMult = 2;
+        return `老闆發話：全場一起${punishPhrase(state)}（老闆這次免罰，下次 ×2）`;
       }
       if (!target) return "請選擇";
-      if (me) addCups(state, [me.id], 1);
+      mark();
       addCups(state, [target.id], 2);
-      return `老闆點名：${target.name} ${punishPhrase(state, 2)}！`;
+      if (me) me.nextMult = 2;
+      return `老闆點名：${target.name} ${punishPhrase(state, 2)}。${me?.name} 下次 ×2`;
     case "intern_pass":
-      if (me) me.hasPass = false;
       if (!target) return "請選擇傳給誰";
+      mark();
       addCups(state, [target.id], 1);
-      return `${me?.name} 喊救命！懲罰傳給 ${target.name}！`;
+      if (me) me.nextMult = 2;
+      return `${me?.name} 喊救命！懲罰傳給 ${target.name}。${me?.name} 下次 ×2`;
     case "treat":
       if (!target || !me) return "請選擇請客對象";
+      mark();
       addCups(state, [me.id, target.id], 1);
-      return `${me.name} 請客！${me.name} 與 ${target.name} 各${punishPhrase(state)}！`;
+      return `${me.name} 請客！${me.name} 與 ${target.name} 各${punishPhrase(state)}`;
     case "transfer":
-      if (option === "redraw") {
-        const rng = createRng(`${state.seed}:redraw:${state.drawCount}`);
-        const ids = assignRoles(state.players.length, (n) => rngInt(rng, n));
-        state.players.forEach((p, i) => {
-          p.roleId = ids[i]!;
-          p.hasPass = p.roleId === "intern";
-        });
-        if (me) addCups(state, [me.id], 1);
-        return "人資宣布：全體重新抽角色！";
-      }
       if (me && target) {
+        mark();
         const tmp = me.roleId;
         me.roleId = target.roleId;
         target.roleId = tmp;
-        me.hasPass = me.roleId === "intern";
-        target.hasPass = target.roleId === "intern";
-        addCups(state, [me.id], 1);
-        return `調職！${me.name} ⇄ ${target.name}`;
+        addCups(state, [target.id], 1);
+        me.nextMult = 2;
+        return `調職！${me.name} ⇄ ${target.name}，由 ${target.name} 代罰。${me.name} 下次 ×2`;
       }
       return "請選擇";
     case "tax":
-      if (!target) return "請選擇";
-      addCups(state, [target.id], 1);
-      return `報帳！${target.name} 多${punishPhrase(state)}；${me?.name} 減半`;
+      if (!target || !me) return "請選擇";
+      mark();
+      target.nextMult = Math.max(target.nextMult ?? 1, 2);
+      me.nextMult = 2;
+      return `報帳！${me.name} 這次免罰；${target.name} 與 ${me.name} 下次都 ×2`;
     case "deploy":
-      if (target) target.skipNext = true;
-      if (me) addCups(state, [me.id], 1);
-      return target
-        ? `緊急上線！${me?.name} ${punishPhrase(state)}；${target.name} 下輪免抽`
-        : `${me?.name} ${punishPhrase(state)}（可選延後對象）`;
+      if (!target || !me) return "請選擇";
+      mark();
+      target.nextMult = 0;
+      me.nextMult = 2;
+      return `緊急上線！${me.name} 這次免罰，下次 ×2；${target.name} 下次免罰`;
     case "overtime":
+      mark();
       if (me) {
-        me.skipNext = true;
         addCups(state, [me.id], 2);
+        me.nextMult = 0;
       }
-      return `${me?.name} 加班！${punishPhrase(state, 2)}，下輪免抽`;
+      return `${me?.name} 加班！這次 ${punishPhrase(state, 2)}，下次免罰`;
     default:
-      if (me) addCups(state, [me.id], roleDrinkCups(me.roleId));
-      return `${me?.name} ${fillPunish(getRole(me?.roleId ?? "worker").drink, state.punishLabel || "喝半杯")}`;
+      mark();
+      if (me) addCups(state, [me.id], 1);
+      return `${me?.name} ${punishPhrase(state)}`;
   }
 }
 
@@ -638,7 +713,35 @@ export function applyBaseDrink(state: GameState): void {
   if (!r || r.mode !== "draw_one") return;
   const p = state.players.find((x) => x.id === r.playerId);
   if (!p) return;
-  addCups(state, [p.id], roleDrinkCups(p.roleId));
+  applyPunish(state, [p.id], roleDrinkCups(p.roleId));
+}
+
+export function continueAfterSkill(state: GameState, msg: string): void {
+  if (msg.startsWith("請選擇")) {
+    state.skillMessage = msg;
+    return;
+  }
+  state.skillMessage = msg;
+  const actor = state.punishActorId;
+  if (actor && state.punishQueue[0] === actor) state.punishQueue.shift();
+  state.skillPending = false;
+  if (state.mode === "draw_one") {
+    state.phase = "result";
+    return;
+  }
+  pumpPunishQueue(state);
+}
+
+export function declineSkill(state: GameState): void {
+  const actor = state.punishActorId ?? state.lastResult?.playerId;
+  if (actor) applyPunish(state, [actor], state.punishAmt || 1);
+  if (actor && state.punishQueue[0] === actor) state.punishQueue.shift();
+  state.skillPending = false;
+  if (state.mode === "draw_one") {
+    state.phase = "reveal";
+    return;
+  }
+  pumpPunishQueue(state);
 }
 
 export function startFlipBattle(state: GameState): void {
@@ -707,7 +810,7 @@ export function resolveFlipMinority(state: GameState): void {
   const minoritySide: 0 | 1 = countA < countB ? 0 : 1;
   flip.majoritySide = minoritySide === 0 ? 1 : 0;
   const raw = state.players.filter((p) => flip.votes[p.id] === minoritySide).map((p) => p.id);
-  flip.drinkerIds = applyPunish(state, raw, 1);
+  flip.drinkerIds = settlePunish(state, raw, 1);
 }
 
 export function flipPick(state: GameState, choice: 0 | 1, voterId?: string): void {
@@ -1068,6 +1171,10 @@ export interface SyncPayload {
   react: ReactState | null;
   chaos: ChaosBuff | null;
   punishLabel: string;
+  punishQueue: string[];
+  punishAmt: number;
+  punishActorId: string | null;
+  skillReturnPhase: Phase;
 }
 
 export function toSync(state: GameState): SyncPayload {
@@ -1091,6 +1198,10 @@ export function toSync(state: GameState): SyncPayload {
     react: state.react,
     chaos: state.chaos,
     punishLabel: state.punishLabel,
+    punishQueue: state.punishQueue,
+    punishAmt: state.punishAmt,
+    punishActorId: state.punishActorId,
+    skillReturnPhase: state.skillReturnPhase,
   };
 }
 
@@ -1114,4 +1225,8 @@ export function applySync(state: GameState, sync: SyncPayload): void {
   state.react = sync.react ?? null;
   state.chaos = sync.chaos ?? null;
   if (sync.punishLabel) state.punishLabel = sync.punishLabel;
+  if (sync.punishQueue) state.punishQueue = sync.punishQueue;
+  if (sync.punishAmt != null) state.punishAmt = sync.punishAmt;
+  state.punishActorId = sync.punishActorId ?? null;
+  if (sync.skillReturnPhase) state.skillReturnPhase = sync.skillReturnPhase;
 }

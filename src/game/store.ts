@@ -5,7 +5,10 @@ import {
   applyBaseDrink,
   applySkill,
   applySync,
+  canFireSkill,
+  continueAfterSkill,
   createInitialState,
+  declineSkill,
   drawOne,
   drawOrder,
   drawTeams,
@@ -154,6 +157,7 @@ function cloneState<T extends GameState>(s: T): T {
   return {
     ...s,
     players: s.players.map((p) => ({ ...p })),
+    punishQueue: [...(s.punishQueue ?? [])],
     lastResult: s.lastResult
       ? { ...s.lastResult, order: s.lastResult.order?.slice(), teams: s.lastResult.teams?.map((t) => ({ ...t, members: [...t.members] })) }
       : null,
@@ -408,7 +412,14 @@ export const useGame = create<GameStore>((set, get) => ({
     s.lastResult = result;
     s.drawCount += 1;
     s.phase = "reveal";
-    s.skillPending = mode === "draw_one" && result.skillKind !== "none";
+    const hit = s.players.find((p) => p.id === result.playerId);
+    s.skillPending = mode === "draw_one" && Boolean(hit && canFireSkill(hit));
+    if (mode === "draw_one") {
+      s.punishActorId = result.playerId;
+      s.punishQueue = [result.playerId];
+      s.punishAmt = 1;
+      s.skillReturnPhase = "reveal";
+    }
     if (mode === "draw_one" && !s.skillPending) applyBaseDrink(s);
     if (mode === "drink_order" || mode === "team_toast") {
       addCups(
@@ -464,29 +475,25 @@ export const useGame = create<GameStore>((set, get) => ({
   useSkill: () => set({ phase: "skill" }),
   skipSkill: () => {
     const s = cloneState(get());
-    applyBaseDrink(s);
-    s.skillPending = false;
-    s.phase = "reveal";
+    declineSkill(s);
     s.burstKey += 1;
     set(s);
   },
   skillTarget: (targetId) => {
     const s = cloneState(get());
     const kind = s.lastResult?.skillKind ?? "none";
-    s.skillMessage = applySkill(s, kind, targetId);
-    s.skillPending = false;
-    s.phase = "result";
+    continueAfterSkill(s, applySkill(s, kind, targetId));
     s.burstKey += 1;
     set(s);
   },
   skillOpt: (opt) => {
     const s = cloneState(get());
     const kind = s.lastResult?.skillKind ?? "none";
-    if (opt === "selfonly") s.skillMessage = applySkill(s, "deploy");
-    else if (opt === "ot") s.skillMessage = applySkill(s, "overtime");
-    else s.skillMessage = applySkill(s, kind, undefined, opt);
-    s.skillPending = false;
-    s.phase = "result";
+    let msg: string;
+    if (opt === "selfonly") msg = applySkill(s, "deploy");
+    else if (opt === "ot") msg = applySkill(s, "overtime");
+    else msg = applySkill(s, kind, undefined, opt);
+    continueAfterSkill(s, msg);
     s.burstKey += 1;
     set(s);
   },

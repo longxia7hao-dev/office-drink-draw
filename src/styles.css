@@ -2989,3 +2989,11 @@ input, select, textarea {
   width: 52%;
   height: 52%;
 }
+.skill-targets {
+  margin: 8px 0;
+}
+.skill-panel .king-seat span {
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
