@@ -2212,6 +2212,36 @@ select:focus {
   animation: slam 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
 }
 
+/* FLIP minority reveal: who drinks — bright red frame on top scoreboard */
+.hud-chip.is-minority-punished {
+  border-color: #ff1a1a;
+  box-shadow:
+    0 0 0 2px #ff1a1a,
+    0 0 10px 2px rgba(255, 26, 26, 0.75),
+    0 0 18px rgba(255, 40, 40, 0.45);
+  background: #2a0a0a;
+  animation: minority-hud-pulse 1.1s ease-in-out infinite;
+}
+@keyframes minority-hud-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px #ff1a1a,
+      0 0 10px 2px rgba(255, 26, 26, 0.75),
+      0 0 18px rgba(255, 40, 40, 0.45);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px #ff4444,
+      0 0 14px 3px rgba(255, 50, 50, 0.95),
+      0 0 24px rgba(255, 60, 60, 0.55);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-chip.is-minority-punished {
+    animation: none;
+  }
+}
+
 .roulette {
   flex: 1;
   display: flex;

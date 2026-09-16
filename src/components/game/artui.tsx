@@ -189,7 +189,16 @@ export function FrameAnim({
 export function DrinkHud() {
   const players = useGame((s) => s.players);
   const phase = useGame((s) => s.phase);
+  const flip = useGame((s) => s.flip);
   const heat = useGame((s) => heatOf(s));
+  // FLIP minority reveal: highlight who drinks on the top scoreboard.
+  const minorityPunished =
+    phase === "flip_battle" &&
+    flip != null &&
+    flip.sub === "result" &&
+    !flip.tie &&
+    flip.drinkerIds.length > 0;
+  const punished = minorityPunished ? new Set(flip!.drinkerIds) : null;
   if (players.length === 0) return null;
   if (phase === "home" || phase === "setup" || phase === "lobby" || phase === "pick_role") return null;
   return (
@@ -200,7 +209,10 @@ export function DrinkHud() {
       </div>
       <div className="hud-row">
         {players.map((p) => (
-          <div className="hud-chip" key={p.id}>
+          <div
+            className={cn("hud-chip", punished?.has(p.id) && "is-minority-punished")}
+            key={p.id}
+          >
             <Portrait roleId={p.roleId} size={28} />
             <span className="hud-name">{p.name}</span>
             {p.isBot ? <span className="hud-bot">CPU</span> : null}
