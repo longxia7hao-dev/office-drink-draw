@@ -135,7 +135,7 @@ function PunishPicker() {
       <div className="penalty-stage" key={artStem}>
         <img
           className="penalty-art"
-          src={`${base}art/${artStem}.png`}
+          src={`${base}art/${artStem}.png?v=${APP_VERSION}`}
           alt=""
           draggable={false}
         />
