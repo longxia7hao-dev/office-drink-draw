@@ -6,15 +6,15 @@ export function asset(path: string): string {
 }
 
 export const ROLE_ART: Record<string, string> = {
-  ceo: asset("/art/roles/ceo.png"),
-  manager: asset("/art/roles/manager.png"),
-  worker: asset("/art/roles/worker.png"),
-  intern: asset("/art/roles/intern.png"),
-  sales: asset("/art/roles/sales.png"),
-  hr: asset("/art/roles/hr.png"),
-  accountant: asset("/art/roles/accountant.png"),
-  engineer: asset("/art/roles/engineer.png"),
-  overtime: asset("/art/roles/overtime.png"),
+  ceo: asset("/art/roles/ceo.jpg"),
+  manager: asset("/art/roles/manager.jpg"),
+  worker: asset("/art/roles/worker.jpg"),
+  intern: asset("/art/roles/intern.jpg"),
+  sales: asset("/art/roles/sales.jpg"),
+  hr: asset("/art/roles/hr.jpg"),
+  accountant: asset("/art/roles/accountant.jpg"),
+  engineer: asset("/art/roles/engineer.jpg"),
+  overtime: asset("/art/roles/overtime.jpg"),
 };
 
 export const ART = {
