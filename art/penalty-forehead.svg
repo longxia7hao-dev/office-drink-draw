@@ -1,21 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
   <defs>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="3" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <filter id="g" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="0" stdDeviation="2.5" flood-color="#ff2bd6" flood-opacity="0.85"/>
     </filter>
   </defs>
-  <!-- sticker shadow -->
-  <rect x="28" y="32" width="200" height="200" rx="28" fill="#111" opacity="0.35" transform="rotate(3 128 128)"/>
-  <!-- sticker body -->
-  <rect x="24" y="24" width="200" height="200" rx="28" fill="#1a0a2e" stroke="#ff2bd6" stroke-width="8" filter="url(#glow)" transform="rotate(-4 128 128)"/>
-  <!-- tape -->
-  <rect x="88" y="12" width="80" height="22" rx="3" fill="#ffd76a" opacity="0.9" transform="rotate(-6 128 23)"/>
-  <!-- neon drip accents -->
-  <path d="M40 60 Q48 90 42 110" stroke="#ff2bd6" stroke-width="4" fill="none" opacity="0.7"/>
-  <path d="M210 70 Q218 100 208 130" stroke="#ff2bd6" stroke-width="3" fill="none" opacity="0.55"/>
-  <!-- glyph -->
-  <text x="128" y="128" text-anchor="middle" dominant-baseline="central" font-size="92" font-family="Arial Black, Impact, sans-serif">🤦</text>
-  <!-- label -->
-  <text x="128" y="198" text-anchor="middle" fill="#ff2bd6" font-size="22" font-family="Arial Black, Impact, sans-serif" letter-spacing="1">額頭</text>
+  <rect x="30" y="34" width="196" height="196" rx="32" fill="#000" opacity="0.35" transform="rotate(3 128 132)"/>
+  <rect x="24" y="24" width="196" height="196" rx="32" fill="#14081f" stroke="#ff2bd6" stroke-width="7" filter="url(#g)" transform="rotate(-5 122 122)"/>
+  <rect x="90" y="10" width="76" height="20" rx="3" fill="#ffd76a" opacity="0.92" transform="rotate(-8 128 20)"/>
+  <path d="M38 70 Q46 100 40 125" stroke="#ff2bd6" stroke-width="4" fill="none" opacity="0.75"/>
+  <path d="M210 78 Q218 112 206 145" stroke="#ff2bd6" stroke-width="3" fill="none" opacity="0.55"/>
+  <ellipse cx="118" cy="128" rx="52" ry="58" fill="#ffd1b8" stroke="#0a0a0c" stroke-width="6"/>
+  <ellipse cx="118" cy="128" rx="46" ry="52" fill="#ffd9c4" stroke="#00e5ff" stroke-width="2"/>
+  <path d="M78 100 Q118 68 158 100" fill="#7c3aed" stroke="#0a0a0c" stroke-width="3"/>
+  <path d="M96 122 L108 132 L96 142" fill="none" stroke="#0a0a0c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M130 122 L142 132 L130 142" fill="none" stroke="#0a0a0c" stroke-width="4" stroke-linecap="round"/>
+  <rect x="98" y="78" width="64" height="20" rx="5" fill="#ffd76a" stroke="#0a0a0c" stroke-width="3" transform="rotate(-8 130 88)"/>
+  <path d="M168 78 Q198 90 200 118 Q190 138 168 128 Z" fill="#ffc4a8" stroke="#0a0a0c" stroke-width="4"/>
+  <rect x="176" y="58" width="10" height="22" rx="3" fill="#ffc4a8" stroke="#0a0a0c" stroke-width="2"/>
+  <rect x="188" y="56" width="10" height="24" rx="3" fill="#ffc4a8" stroke="#0a0a0c" stroke-width="2"/>
+  <circle cx="96" cy="78" r="5" fill="#ff2bd6"/>
+  <circle cx="150" cy="70" r="4" fill="#00e5ff"/>
 </svg>
