@@ -115,7 +115,7 @@ const STOCK_PUNISH: { id: string; Icon: LucideIcon }[] = [
 
 /** HOTFIX-PRACTICE-PENALTY — ART-PENALTY-001 + HUD-PENALTY-001 */
 const PENALTY_STEM: Record<string, string> = {
-  "喝半杯": "penalty-half-v2",
+  "喝半杯": "penalty-half-v3",
   "喝一杯": "penalty-full-v2",
   "體能訓練": "penalty-fitness-v2",
   "彈額頭": "penalty-forehead-v2",

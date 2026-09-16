@@ -142,6 +142,26 @@ function authPopupPlugin(): Plugin {
   };
 }
 
+/** Art/media on the live preview must not be cached — iOS Safari keeps old JPGs. */
+function noCacheArtPlugin(): Plugin {
+  const apply = (server: { middlewares: { use: (fn: (req: { url?: string }, res: { setHeader: (k: string, v: string) => void }, next: () => void) => void) => void } }) => {
+    server.middlewares.use((req, res, next) => {
+      const p = (req.url ?? "").split("?", 1)[0] ?? "";
+      if (p.includes("/art/") || /\.(jpg|jpeg|png|webp|mp4|json)$/i.test(p)) {
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+      }
+      next();
+    });
+  };
+  return {
+    name: "office-drink-draw:no-cache-art",
+    configureServer: apply,
+    configurePreviewServer: apply,
+  };
+}
+
 // `0.0.0.0:8080` is the live-preview contract — don't change host/port.
 // The dev server starts once `src/router.tsx` and `src/routes/` exist — see
 // AGENTS.md § "First scaffold".
@@ -165,6 +185,7 @@ export default defineConfig(({ command, isPreview }) => ({
     appEnvPlugin(),
     // PWA head + ?install=1 tutorial page; runs before Start/Nitro.
     grokPwaPlugin(),
+    noCacheArtPlugin(),
     tailwindcss(),
     tanstackStart(),
     ...(command === "build" || isPreview
