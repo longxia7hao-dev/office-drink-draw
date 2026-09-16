@@ -579,7 +579,7 @@ export const useGame = create<GameStore>((set, get) => ({
     }
     set({ phase: "recap", burstKey: s.burstKey + 1 });
   },
-  setPunishLabel: (label) => set({ punishLabel: label.trim() || "喝一口" }),
+  setPunishLabel: (label) => set({ punishLabel: label.trim() || "喝半杯" }),
   setAllow18: (v) => {
     try {
       localStorage.setItem("odd-18", v ? "1" : "0");

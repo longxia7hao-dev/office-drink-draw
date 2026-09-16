@@ -1,6 +1,7 @@
 /** 4 核心電玩派對：多數決 / 誰最可能 / 真心話 / 反應挑戰 + 混亂事件 */
 
-export const PUNISH_PRESETS = ["喝一口", "喝一杯", "做 10 下", "真心話一題", "罰一分"] as const;
+export const PUNISH_PRESETS = ["喝半杯", "喝一杯", "體能訓練", "彈額頭", "自行設定"] as const;
+export const DEFAULT_PUNISH = "喝半杯";
 
 /** 一份懲罰的說法：n>1 就加倍。懲罰內容由房主在開局時選，不寫死喝酒。 */
 export function punishPhrase(label: string, n = 1): string {

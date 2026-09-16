@@ -5,9 +5,13 @@ import {
   ChevronLeft,
   Crown,
   Dices,
+  Dumbbell,
+  GlassWater,
+  Hand,
   KeyRound,
   Layers,
   ListOrdered,
+  PencilLine,
   Play,
   Plus,
   Radio,
@@ -19,19 +23,21 @@ import {
   Users,
   Volume2,
   VolumeX,
+  Wine,
   X,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
 import { ROLE_ART, ART } from "@/game/art";
 import { FLIP_CATEGORIES, questionsForCat } from "@/game/flipQuestions";
 import { ROLES, claimedBy, getRole, isRoleAvailable } from "@/game/roles";
-import { PUNISH_PRESETS, fillPunish, punishPhrase } from "@/game/partyPlay";
+import { fillPunish, punishPhrase } from "@/game/partyPlay";
 import { currentFlipQuestion, flipVoteCounts, type GameState, type Player } from "@/game/state";
 import { isBgmMuted, sfxFlip, sfxTalk, sfxTick, toggleBgmMute, unlockSfx } from "@/game/sfx";
 import { hasSignaling } from "@/game/odd";
 import { useGame } from "@/game/store";
 import { RoleIcon, Screen, SprayBurst, usePress } from "./chrome";
-import { DrinkHud, FrameAnim, Portrait, RoleShowcase, RouletteDraw, SprayDraw } from "./artui";
+import { DrinkHud, Portrait, RoleShowcase, RouletteDraw, SprayDraw } from "./artui";
 import { AutoVideo } from "./AutoVideo";
 import { HomeLoopVideo } from "./HomeLoopVideo";
 
@@ -98,6 +104,56 @@ function HomeBack({ title }: { title: string }) {
   );
 }
 
+const STOCK_PUNISH: { id: string; Icon: LucideIcon }[] = [
+  { id: "喝半杯", Icon: GlassWater },
+  { id: "喝一杯", Icon: Wine },
+  { id: "體能訓練", Icon: Dumbbell },
+  { id: "彈額頭", Icon: Hand },
+  { id: "自行設定", Icon: PencilLine },
+];
+
+function PunishPicker() {
+  const punishLabel = useGame((s) => s.punishLabel);
+  const setPunishLabel = useGame((s) => s.setPunishLabel);
+  const stockIds = STOCK_PUNISH.slice(0, 4).map((p) => p.id);
+  const customOn = !stockIds.includes(punishLabel);
+  const [draft, setDraft] = useState(customOn && punishLabel !== "自行設定" ? punishLabel : "");
+  return (
+    <div className="punish-pick">
+      <div className="punish-icons">
+        {STOCK_PUNISH.map(({ id, Icon }) => {
+          const on = id === "自行設定" ? customOn : punishLabel === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              className={`punish-ico${on ? " on" : ""}`}
+              onClick={() => setPunishLabel(id === "自行設定" ? draft.trim() || "自行設定" : id)}
+            >
+              <Icon size={26} strokeWidth={2.4} />
+              <b>{id}</b>
+            </button>
+          );
+        })}
+      </div>
+      {customOn ? (
+        <input
+          className="punish-custom"
+          value={draft}
+          maxLength={16}
+          placeholder="自己寫，例如：伏地挺身 10 下"
+          aria-label="自訂懲罰"
+          onChange={(e) => {
+            const v = e.target.value;
+            setDraft(v);
+            setPunishLabel(v.trim() || "自行設定");
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
 export function RulesOverlay() {
   return (
     <Screen>
@@ -112,7 +168,7 @@ export function RulesOverlay() {
         <p><b>真心話</b> 回答，或接受懲罰。</p>
         <p><b>反應挑戰</b> 綠就拍、紅不准拍。</p>
         <p><b>混亂事件</b> 每 3 題插入加倍／拖人／免死。</p>
-        <p>懲罰在組隊時自訂：喝一口、伏地挺身、真心話都可以。</p>
+        <p>懲罰在組隊時自訂：喝半杯、體能訓練、彈額頭都可以。</p>
       </div>
     </Screen>
   );
@@ -182,8 +238,6 @@ export function BoardOverlay() {
 }
 
 export function SettingsOverlay() {
-  const punishLabel = useGame((s) => s.punishLabel);
-  const setPunishLabel = useGame((s) => s.setPunishLabel);
   const allow18 = useGame((s) => s.allow18);
   const setAllow18 = useGame((s) => s.setAllow18);
   const [musicOn, setMusicOn] = useState(!isBgmMuted());
@@ -194,18 +248,7 @@ export function SettingsOverlay() {
         設定
       </h1>
       <p className="mode-kicker">預設懲罰</p>
-      <div className="punish-row">
-        {PUNISH_PRESETS.map((p) => (
-          <button
-            key={p}
-            type="button"
-            className={`punish-chip${punishLabel === p ? " on" : ""}`}
-            onClick={() => setPunishLabel(p)}
-          >
-            {p}
-          </button>
-        ))}
-      </div>
+      <PunishPicker />
       <button className="btn btn-cyan" type="button" onClick={() => setMusicOn(!toggleBgmMute())}>
         {musicOn ? <Volume2 size={18} /> : <VolumeX size={18} />} {musicOn ? "音樂開" : "音樂關"}
       </button>
@@ -277,8 +320,6 @@ export function SetupScreen() {
   const setSetupBots = useGame((s) => s.setSetupBots);
   const confirmSetup = useGame((s) => s.confirmSetup);
   const goHome = useGame((s) => s.goHome);
-  const punishLabel = useGame((s) => s.punishLabel);
-  const setPunishLabel = useGame((s) => s.setPunishLabel);
 
   return (
     <Screen className="setup-screen">
@@ -312,20 +353,8 @@ export function SetupScreen() {
         ))}
       </div>
       <p className="mode-kicker">本局懲罰＝</p>
-      <div className="punish-row">
-        {PUNISH_PRESETS.map((p) => (
-          <button
-            key={p}
-            type="button"
-            className={`punish-chip${punishLabel === p ? " on" : ""}`}
-            onClick={() => setPunishLabel(p)}
-          >
-            {p}
-          </button>
-        ))}
-      </div>
-      <div className="setup-art" aria-hidden>
-        <FrameAnim frames={ART.internIdle} fps={5} className="setup-mascot" />
+      <div className="setup-art">
+        <PunishPicker />
       </div>
       <div className="btn-row">
         <button className="btn btn-lg" type="button" onClick={confirmSetup}>

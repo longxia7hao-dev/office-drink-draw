@@ -201,7 +201,7 @@ export function createInitialState(): GameState {
     truth: null,
     react: null,
     chaos: null,
-    punishLabel: "喝一口",
+    punishLabel: "喝半杯",
     practice: false,
     allow18: (() => {
       try {
@@ -301,7 +301,7 @@ export function addCups(state: GameState, ids: string[], n: number): void {
 }
 
 export function punishPhrase(state: GameState, n = 1): string {
-  const label = state.punishLabel || "喝一口";
+  const label = state.punishLabel || "喝半杯";
   return n > 1 ? `${label} ×${n}` : label;
 }
 
@@ -629,7 +629,7 @@ export function applySkill(
       return `${me?.name} 加班！${punishPhrase(state, 2)}，下輪免抽`;
     default:
       if (me) addCups(state, [me.id], roleDrinkCups(me.roleId));
-      return `${me?.name} ${fillPunish(getRole(me?.roleId ?? "worker").drink, state.punishLabel || "喝一口")}`;
+      return `${me?.name} ${fillPunish(getRole(me?.roleId ?? "worker").drink, state.punishLabel || "喝半杯")}`;
   }
 }
 
