@@ -38,6 +38,7 @@ import { hasSignaling } from "@/game/odd";
 import { useGame } from "@/game/store";
 import { RoleIcon, Screen, SprayBurst, usePress } from "./chrome";
 import { DrinkHud, Portrait, RoleShowcase, RouletteDraw, SprayDraw } from "./artui";
+import { StudioLottie } from "./StudioLottie";
 import { AutoVideo } from "./AutoVideo";
 import { HomeLoopVideo } from "./HomeLoopVideo";
 
@@ -112,14 +113,34 @@ const STOCK_PUNISH: { id: string; Icon: LucideIcon }[] = [
   { id: "自行設定", Icon: PencilLine },
 ];
 
+/** HOTFIX-PRACTICE-PENALTY — public/art/penalties + public/lottie/penalty */
+const PENALTY_STEM: Record<string, string> = {
+  "喝半杯": "penalty-half",
+  "喝一杯": "penalty-full",
+  "體能訓練": "penalty-fitness",
+  "彈額頭": "penalty-forehead",
+};
+
 function PunishPicker() {
   const punishLabel = useGame((s) => s.punishLabel);
   const setPunishLabel = useGame((s) => s.setPunishLabel);
   const stockIds = STOCK_PUNISH.slice(0, 4).map((p) => p.id);
   const customOn = !stockIds.includes(punishLabel);
   const [draft, setDraft] = useState(customOn && punishLabel !== "自行設定" ? punishLabel : "");
+  const artStem = stockIds.includes(punishLabel) ? PENALTY_STEM[punishLabel]! : "penalty-custom";
+  const base = import.meta.env.BASE_URL;
   return (
-    <div className="punish-pick">
+    <div className="punish-pick" id="penalty-picker">
+      <div className="penalty-stage" key={artStem}>
+        <img
+          className="penalty-art"
+          src={`${base}art/penalties/${artStem}.svg`}
+          alt=""
+          draggable={false}
+        />
+        <StudioLottie className="penalty-lottie" src={`${base}lottie/penalty/${artStem}.json`} loop />
+      </div>
+      <p className="penalty-caption">{punishLabel}</p>
       <div className="punish-icons">
         {STOCK_PUNISH.map(({ id, Icon }) => {
           const on = id === "自行設定" ? customOn : punishLabel === id;
@@ -130,7 +151,7 @@ function PunishPicker() {
               className={`punish-ico${on ? " on" : ""}`}
               onClick={() => setPunishLabel(id === "自行設定" ? draft.trim() || "自行設定" : id)}
             >
-              <Icon size={26} strokeWidth={2.4} />
+              <Icon size={22} strokeWidth={2.4} />
               <b>{id}</b>
             </button>
           );
@@ -333,7 +354,7 @@ export function SetupScreen() {
         練習模式
       </h1>
       <p className="hint">你只操作自己。電腦模擬同事投票、選角、反應。</p>
-      <div className="player-list">
+      <div className="player-list" id="practice-roster">
         <div className="player-chip">
           <span className="num">你</span>
           <input value={you} maxLength={12} aria-label="你的暱稱" onChange={(e) => setSetupYou(e.target.value)} />
@@ -356,7 +377,7 @@ export function SetupScreen() {
       <div className="setup-art">
         <PunishPicker />
       </div>
-      <div className="btn-row">
+      <div className="btn-row" id="btn-penalty-go">
         <button className="btn btn-lg" type="button" onClick={confirmSetup}>
           開始練習
         </button>
