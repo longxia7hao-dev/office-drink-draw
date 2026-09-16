@@ -38,7 +38,6 @@ import { hasSignaling } from "@/game/odd";
 import { useGame } from "@/game/store";
 import { RoleIcon, Screen, SprayBurst, usePress } from "./chrome";
 import { DrinkHud, Portrait, RoleShowcase, RouletteDraw, SprayDraw } from "./artui";
-import { StudioLottie } from "./StudioLottie";
 import { AutoVideo } from "./AutoVideo";
 import { HomeLoopVideo } from "./HomeLoopVideo";
 
@@ -134,11 +133,10 @@ function PunishPicker() {
       <div className="penalty-stage" key={artStem}>
         <img
           className="penalty-art"
-          src={`${base}art/${artStem}.svg`}
+          src={`${base}art/penalties/${artStem}.jpg`}
           alt=""
           draggable={false}
         />
-        <StudioLottie className="penalty-lottie" src={`${base}lottie/penalty/${artStem}.json`} loop />
       </div>
       <p className="penalty-caption">{punishLabel}</p>
       <div className="punish-icons">
