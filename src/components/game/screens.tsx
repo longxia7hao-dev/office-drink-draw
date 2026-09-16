@@ -28,7 +28,7 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
-import { ROLE_ART, ART } from "@/game/art";
+import { ART, roleArt } from "@/game/art";
 import { APP_VERSION } from "@/game/version";
 import { FLIP_CATEGORIES, questionsForCat } from "@/game/flipQuestions";
 import { ROLES, claimedBy, getRole, isRoleAvailable } from "@/game/roles";
@@ -641,7 +641,7 @@ function RoleCard({ player, roleId }: { player?: Player; roleId: string }) {
   return (
     <article className="crew-card" style={{ ["--neon" as string]: r.color }}>
       <div className="crew-art">
-        <img src={ROLE_ART[r.id] ?? ROLE_ART.worker} alt="" className="crew-port" draggable={false} />
+        <img src={roleArt(r.id)} alt="" className="crew-port" draggable={false} />
         <span className="crew-graffiti">{r.tag}</span>
         <div className="crew-plate">
           <strong>{player?.name ?? r.name}</strong>

@@ -765,11 +765,14 @@ button svg,
   height: 100% !important;
   max-height: none !important;
   object-fit: contain;
-  object-position: center 20%;
+  object-position: center bottom;
   pointer-events: none;
   display: block;
+  background: transparent;
+  border: 0;
   animation: idle-bob 3s ease-in-out infinite;
   transform-origin: center bottom;
+  filter: drop-shadow(2px 3px 0 #000);
 }
 .role-grid .crew-card:nth-child(2) .crew-port {
   animation-delay: 0.35s;
@@ -1208,6 +1211,10 @@ button.role-card {
   flex: 1 1 auto;
   min-height: 168px;
   height: auto;
+  background: transparent;
+  overflow: visible;
+  border: 0;
+  box-shadow: none;
 }
 
 .hero-art {
@@ -2076,7 +2083,10 @@ select:focus {
   object-position: bottom center;
   display: block;
   pointer-events: none;
-  filter: drop-shadow(3px 4px 0 #000);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  filter: drop-shadow(2px 3px 0 #000);
 }
 .portrait-wrap {
   width: 80px !important;
