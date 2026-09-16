@@ -138,6 +138,7 @@ export interface Player {
   isBot?: boolean;
   skillUsed?: boolean;
   nextMult?: number;
+  handoffId?: string | null;
 }
 
 export interface DrawResult {
@@ -234,6 +235,7 @@ export function makeLocalPlayers(names: string[], _seed: string, ids?: string[])
     cups: 0,
     skillUsed: false,
     nextMult: 1,
+    handoffId: null,
   }));
 }
 
@@ -297,8 +299,8 @@ export function heatOf(state: GameState): number {
   return Math.min(3, 1 + Math.floor(total / 8));
 }
 
-export function roleDrinkCups(roleId: string): number {
-  return roleId === "overtime" ? 2 : 1;
+export function roleDrinkCups(_roleId: string): number {
+  return 1;
 }
 
 export function addCups(state: GameState, ids: string[], n: number): void {
@@ -308,6 +310,12 @@ export function addCups(state: GameState, ids: string[], n: number): void {
   for (const id of unique) {
     const p = state.players.find((x) => x.id === id);
     if (!p) continue;
+    if (p.handoffId) {
+      const hid = p.handoffId;
+      p.handoffId = null;
+      if (hid && hid !== id) addCups(state, [hid], n * 3);
+      continue;
+    }
     const m = p.nextMult ?? 1;
     p.nextMult = 1;
     if (m === 0) continue;
@@ -695,12 +703,11 @@ export function applySkill(
       me.nextMult = 2;
       return `緊急上線！${me.name} 這次免罰，下次 ×2；${target.name} 下次免罰`;
     case "overtime":
+      if (!target || !me) return "請選擇";
       mark();
-      if (me) {
-        addCups(state, [me.id], 2);
-        me.nextMult = 0;
-      }
-      return `${me?.name} 加班！這次 ${punishPhrase(state, 2)}，下次免罰`;
+      addCups(state, [me.id], 2);
+      me.handoffId = target.id;
+      return `${me.name} 補休！這次罰兩次，下次懲罰交接給 ${target.name}（×3）`;
     default:
       mark();
       if (me) addCups(state, [me.id], 1);

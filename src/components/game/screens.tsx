@@ -1074,9 +1074,10 @@ export function SkillScreen() {
       break;
     case "overtime":
       body = (
-        <button className="btn btn-pink btn-lg" type="button" disabled={hostOnly} onClick={() => state.skillOpt("ot")}>
-          確認加班：這次 {punishPhrase(state.punishLabel, 2)}，下次免罰
-        </button>
+        <>
+          <p className="hint">這次你罰兩次。下次被罰時，業務交接給誰（對方 ×3）？</p>
+          <TargetBtns list={others} onPick={state.skillTarget} />
+        </>
       );
       break;
     default:
