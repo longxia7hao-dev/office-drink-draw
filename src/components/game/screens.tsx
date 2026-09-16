@@ -113,7 +113,7 @@ const STOCK_PUNISH: { id: string; Icon: LucideIcon }[] = [
   { id: "自行設定", Icon: PencilLine },
 ];
 
-/** HOTFIX-PRACTICE-PENALTY — public/art/penalties + public/lottie/penalty */
+/** HOTFIX-PRACTICE-PENALTY — ART-PENALTY-001 + HUD-PENALTY-001 */
 const PENALTY_STEM: Record<string, string> = {
   "喝半杯": "penalty-half",
   "喝一杯": "penalty-full",
@@ -134,7 +134,7 @@ function PunishPicker() {
       <div className="penalty-stage" key={artStem}>
         <img
           className="penalty-art"
-          src={`${base}art/penalties/${artStem}.svg`}
+          src={`${base}art/${artStem}.svg`}
           alt=""
           draggable={false}
         />
