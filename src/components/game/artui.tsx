@@ -210,7 +210,7 @@ export function DrinkHud() {
       <div className="hud-row">
         {players.map((p) => (
           <div
-            className={cn("hud-chip", punished?.has(p.id) && "is-minority-punished")}
+            className={cn("hud-chip", punished?.has(p.id) && "is-minority-hit")}
             key={p.id}
           >
             <Portrait roleId={p.roleId} size={28} />
