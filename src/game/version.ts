@@ -1,2 +1,2 @@
-/** Bump this on every shipped fix. Shown as V1.27 at the bottom-right. */
-export const APP_VERSION = "1.27";
+/** Bump this on every shipped fix. Shown as V1.28 at the bottom-right. */
+export const APP_VERSION = "1.28";
