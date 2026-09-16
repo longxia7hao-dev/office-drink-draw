@@ -29,6 +29,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ROLE_ART, ART } from "@/game/art";
+import { APP_VERSION } from "@/game/version";
 import { FLIP_CATEGORIES, questionsForCat } from "@/game/flipQuestions";
 import { ROLES, claimedBy, getRole, isRoleAvailable } from "@/game/roles";
 import { fillPunish, punishPhrase } from "@/game/partyPlay";
@@ -114,10 +115,10 @@ const STOCK_PUNISH: { id: string; Icon: LucideIcon }[] = [
 
 /** HOTFIX-PRACTICE-PENALTY — ART-PENALTY-001 + HUD-PENALTY-001 */
 const PENALTY_STEM: Record<string, string> = {
-  "喝半杯": "penalty-half",
-  "喝一杯": "penalty-full",
-  "體能訓練": "penalty-fitness",
-  "彈額頭": "penalty-forehead",
+  "喝半杯": "penalty-half-v2",
+  "喝一杯": "penalty-full-v2",
+  "體能訓練": "penalty-fitness-v2",
+  "彈額頭": "penalty-forehead-v2",
 };
 
 function PunishPicker() {
@@ -126,14 +127,14 @@ function PunishPicker() {
   const stockIds = STOCK_PUNISH.slice(0, 4).map((p) => p.id);
   const customOn = !stockIds.includes(punishLabel);
   const [draft, setDraft] = useState(customOn && punishLabel !== "自行設定" ? punishLabel : "");
-  const artStem = stockIds.includes(punishLabel) ? PENALTY_STEM[punishLabel]! : "penalty-custom";
+  const artStem = stockIds.includes(punishLabel) ? PENALTY_STEM[punishLabel]! : "penalty-custom-v2";
   const base = import.meta.env.BASE_URL;
   return (
     <div className="punish-pick" id="penalty-picker">
       <div className="penalty-stage" key={artStem}>
         <img
           className="penalty-art"
-          src={`${base}art/penalties/${artStem}.jpg`}
+          src={`${base}art/penalties/${artStem}.jpg?v=${APP_VERSION}`}
           alt=""
           draggable={false}
         />
