@@ -39,6 +39,7 @@ import { hasSignaling } from "@/game/odd";
 import { useGame } from "@/game/store";
 import { RoleIcon, Screen, SprayBurst, usePress } from "./chrome";
 import { DrinkHud, Portrait, RoleShowcase, RouletteDraw, SprayDraw } from "./artui";
+import { StudioLottie } from "./StudioLottie";
 import { AutoVideo } from "./AutoVideo";
 import { HomeLoopVideo } from "./HomeLoopVideo";
 
@@ -113,12 +114,12 @@ const STOCK_PUNISH: { id: string; Icon: LucideIcon }[] = [
   { id: "自行設定", Icon: PencilLine },
 ];
 
-/** HOTFIX-PRACTICE-PENALTY — ART-PENALTY-001 + HUD-PENALTY-001 */
+/** HOTFIX-PRACTICE-PENALTY — ART-PENALTY-002 PNG + HUD-PENALTY-001 */
 const PENALTY_STEM: Record<string, string> = {
-  "喝半杯": "penalty-half-v3",
-  "喝一杯": "penalty-full-v2",
-  "體能訓練": "penalty-fitness-v2",
-  "彈額頭": "penalty-forehead-v2",
+  "喝半杯": "penalty-half",
+  "喝一杯": "penalty-full",
+  "體能訓練": "penalty-fitness",
+  "彈額頭": "penalty-forehead",
 };
 
 function PunishPicker() {
@@ -127,17 +128,18 @@ function PunishPicker() {
   const stockIds = STOCK_PUNISH.slice(0, 4).map((p) => p.id);
   const customOn = !stockIds.includes(punishLabel);
   const [draft, setDraft] = useState(customOn && punishLabel !== "自行設定" ? punishLabel : "");
-  const artStem = stockIds.includes(punishLabel) ? PENALTY_STEM[punishLabel]! : "penalty-custom-v2";
+  const artStem = stockIds.includes(punishLabel) ? PENALTY_STEM[punishLabel]! : "penalty-custom";
   const base = import.meta.env.BASE_URL;
   return (
     <div className="punish-pick" id="penalty-picker">
       <div className="penalty-stage" key={artStem}>
         <img
           className="penalty-art"
-          src={`${base}art/penalties/${artStem}.jpg?v=${APP_VERSION}`}
+          src={`${base}art/${artStem}.png`}
           alt=""
           draggable={false}
         />
+        <StudioLottie className="penalty-lottie" src={`${base}lottie/penalty/${artStem}.json`} loop />
       </div>
       <p className="penalty-caption">{punishLabel}</p>
       <div className="punish-icons">
@@ -173,6 +175,7 @@ function PunishPicker() {
     </div>
   );
 }
+
 
 export function RulesOverlay() {
   return (
