@@ -36,7 +36,7 @@ function MakingOf() {
         </div>
         <div>
           <b>v2.0</b>
-          GitHub 凍結標籤
+          已上鎖還原點
         </div>
         <div>
           <b>239</b>
@@ -253,9 +253,9 @@ function MakingOf() {
         </p>
       </div>
       <div className="mo-card mo-ok">
-        <strong>V2.0 已線上備份</strong>
+        <strong>V2.0 已線上備份，而且上鎖了</strong>
         <p>
-          原始碼在 GitHub <b>grok-src</b>，凍結分支與標籤是 <b>v2.0</b>。11 角色、定稿技能、色卡反應、對對消、頒獎都在裡面。之後接回請用這個標籤，不要只靠沙盒工作檔。
+          原始碼工作區在 GitHub <b>grok-src</b>。還原點是凍結分支／標籤 <b>v2.0</b>，另外有一份 <b>backup/v2.0</b>。GitHub 已禁止覆蓋、強制推送、刪除這幾個備份。遊戲再被改壞，接回這個標籤就好。
         </p>
       </div>
 
