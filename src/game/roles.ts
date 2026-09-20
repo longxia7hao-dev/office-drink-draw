@@ -2,15 +2,17 @@
 
 export type SkillKind =
   | "none"
+  | "exam"
   | "slacker"
-  | "pick_drink2"
-  | "boss_choice"
-  | "intern_pass"
-  | "treat"
-  | "transfer"
-  | "tax"
-  | "deploy"
-  | "overtime";
+  | "treat_all"
+  | "protect"
+  | "split"
+  | "able"
+  | "hedge"
+  | "backup"
+  | "ot_skip"
+  | "cover"
+  | "veteran";
 
 export interface RoleDef {
   id: string;
@@ -51,7 +53,9 @@ export type RoleIconId =
   | "hr"
   | "accountant"
   | "engineer"
-  | "overtime";
+  | "overtime"
+  | "secretary"
+  | "veteran";
 
 export const ROLES: RoleDef[] = [
   {
@@ -59,9 +63,9 @@ export const ROLES: RoleDef[] = [
     name: "主管",
     tag: "BOSS UP",
     drink: "{P}",
-    skillName: "打小報告",
-    skillDesc: "指定一人代你受罰（雙倍）。你下次被罰變 2 倍。本模式限一次。",
-    skillKind: "pick_drink2",
+    skillName: "考績",
+    skillDesc: "當你受罰時，指定一名玩家接受與本次相同份量的懲罰。",
+    skillKind: "exam",
     color: "#FF3D71",
     icon: "manager",
     bio: "會議永遠開不完，酒局卻永遠到得最準。擅長把責任往下推，也擅長把酒往別人杯子裡倒。",
@@ -74,7 +78,7 @@ export const ROLES: RoleDef[] = [
     tag: "9to5",
     drink: "{P}",
     skillName: "摸魚",
-    skillDesc: "這次懲罰先跳過。若下次再被罰，變 3 倍。本模式限一次。",
+    skillDesc: "本次懲罰完全免除，但你的下次懲罰變成 2 倍。",
     skillKind: "slacker",
     color: "#4ECDC4",
     icon: "worker",
@@ -87,9 +91,9 @@ export const ROLES: RoleDef[] = [
     name: "老闆",
     tag: "BIG SHOT",
     drink: "{P}",
-    skillName: "老闆發話",
-    skillDesc: "全場一起{P}，或指定一人{P2}；你這次免罰。你下次被罰變 2 倍。本模式限一次。",
-    skillKind: "boss_choice",
+    skillName: "我請客",
+    skillDesc: "當你受罰時，其他所有玩家一起接受懲罰。",
+    skillKind: "treat_all",
     color: "#FFD700",
     icon: "ceo",
     bio: "買單的人、點名的人、說「再來一輪」的人。酒杯從不空，人情從不欠。",
@@ -101,9 +105,9 @@ export const ROLES: RoleDef[] = [
     name: "實習生",
     tag: "ROOKIE",
     drink: "{P}（可減半）",
-    skillName: "喊救命",
-    skillDesc: "把這次懲罰傳給指定的人。你下次被罰變 2 倍。本模式限一次。",
-    skillKind: "intern_pass",
+    skillName: "新人保護期",
+    skillDesc: "只能在其他玩家使用技能，使你受到懲罰時發動；完全免除該次懲罰。",
+    skillKind: "protect",
     color: "#A78BFA",
     icon: "intern",
     bio: "第一次跟長官喝酒，手還在發抖。酒量是裝飾品，求救才是生存技能。",
@@ -115,9 +119,9 @@ export const ROLES: RoleDef[] = [
     name: "業務",
     tag: "DEAL",
     drink: "{P}",
-    skillName: "請客",
-    skillDesc: "指定一人跟你一起各{P}。你逃不掉，但有人陪。本模式限一次。",
-    skillKind: "treat",
+    skillName: "一人一半",
+    skillDesc: "指定一名玩家與你平分本次懲罰，兩人各承擔一半。",
+    skillKind: "split",
     color: "#FF8C42",
     icon: "sales",
     bio: "名片比酒更快出手。陪笑、乾杯、把氣氛炒熱，是這場酒局的潤滑劑。",
@@ -129,9 +133,9 @@ export const ROLES: RoleDef[] = [
     name: "人資",
     tag: "HR",
     drink: "{P}",
-    skillName: "調職",
-    skillDesc: "與指定的人對調角色，並由對方代罰。你下次被罰變 2 倍。本模式限一次。",
-    skillKind: "transfer",
+    skillName: "能者多勞",
+    skillDesc: "本次懲罰減半；該回合積分榜最低分的玩家，額外接受一份本次懲罰。",
+    skillKind: "able",
     color: "#38BDF8",
     icon: "hr",
     bio: "看起來在紀錄誰沒喝、誰喝太多。調職令一下，今晚的角色重新洗牌。",
@@ -143,9 +147,9 @@ export const ROLES: RoleDef[] = [
     name: "會計",
     tag: "TAX",
     drink: "{P}",
-    skillName: "報帳",
-    skillDesc: "這次免罰。指定一人下次被罰變 2 倍，你自己下次也是 2 倍。本模式限一次。",
-    skillKind: "tax",
+    skillName: "風險對沖",
+    skillDesc: "本次懲罰減半；指定一名玩家的下次懲罰變成 2 倍，但你的下次懲罰也變成 2 倍。",
+    skillKind: "hedge",
     color: "#34D399",
     icon: "accountant",
     bio: "每一杯都要入帳。自己能少喝就少喝，但絕對算得出誰該多喝那一杯。",
@@ -157,9 +161,9 @@ export const ROLES: RoleDef[] = [
     name: "工程師",
     tag: "SHIP IT",
     drink: "{P}",
-    skillName: "緊急上線",
-    skillDesc: "這次免罰，指定一人下次免罰；你下次被罰變 2 倍。本模式限一次。",
-    skillKind: "deploy",
+    skillName: "緊急備援",
+    skillDesc: "本次懲罰減半；指定一名玩家的下次懲罰完全免除，但你的下次懲罰變成 2 倍。",
+    skillKind: "backup",
     color: "#60A5FA",
     icon: "engineer",
     bio: "不愛應酬卻意外能喝。緊急上線是口頭禪，也是他逃酒、救人的方法。",
@@ -171,14 +175,42 @@ export const ROLES: RoleDef[] = [
     name: "加班狗",
     tag: "OT",
     drink: "{P}",
-    skillName: "補休",
-    skillDesc: "這次罰兩次，並指定一人：你下次被罰時，直接交接給他罰 3 倍。本模式限一次。",
-    skillKind: "overtime",
+    skillName: "爆肝／補休",
+    skillDesc: "本次懲罰變成 2 倍；之後可自行選擇一次受罰時機，完全免除該次懲罰。",
+    skillKind: "ot_skip",
     color: "#F472B6",
     icon: "overtime",
     bio: "肝是拿來用的。今晚已經加班，酒局再加一場：這次自己扛兩杯，下次把業務甩出去。",
     line: "補休申請已送出，下次請找他。",
     stats: { drink: 5, manners: 1, social: 2 },
+  },
+  {
+    id: "secretary",
+    name: "秘書",
+    tag: "COVER",
+    drink: "{P}",
+    skillName: "替你擋酒",
+    skillDesc: "當其他玩家受罰時，可替他承擔該次懲罰；之後你第一次受罰時，直接改由該玩家替你承擔。",
+    skillKind: "cover",
+    color: "#FF5AD5",
+    icon: "secretary",
+    bio: "擋酒是專業，記帳是本能。",
+    line: "這杯我先擋，下次換你。",
+    stats: { drink: 3, manners: 4, social: 5 },
+  },
+  {
+    id: "veteran",
+    name: "老鳥",
+    tag: "SEEN IT",
+    drink: "{P}",
+    skillName: "見過大場面",
+    skillDesc: "若本次為一般懲罰，減為半份；若為 2 倍以上懲罰，則減為一份。",
+    skillKind: "veteran",
+    color: "#C8B8A0",
+    icon: "veteran",
+    bio: "自以為是，其實真的見過大場面。",
+    line: "這點份量，不夠看。",
+    stats: { drink: 5, manners: 2, social: 4 },
   },
 ];
 

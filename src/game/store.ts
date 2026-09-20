@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { newRoomCode, newSeed } from "./rng";
 import { BOT_NAMES } from "./bots";
+import { getRole } from "./roles";
 import {
   applyBaseDrink,
   applySkill,
@@ -32,9 +33,21 @@ import {
   confirmChaos,
   consumeDrag,
   launchCoreMode,
+  matchDeal,
+  matchTap,
+  matchFlipBack,
+  matchBeginSwap,
   reactAdvance,
   reactBegin,
+  reactFail,
   reactFinish,
+  reactMarkReady,
+  reactNextBeat,
+  reactSetHard,
+  reactTickCount,
+  reactTap,
+  reactTimeout,
+  goAward,
   startFlipBattle,
   startKing,
   startNever,
@@ -151,6 +164,18 @@ interface GameStore extends GameState {
   startReactPlay: () => void;
   finishReact: (misses: number) => void;
   nextReact: () => void;
+  setReactHard: (hard: boolean) => void;
+  markReactReady: (pid?: string) => void;
+  tickReactCount: () => void;
+  failReact: (pid?: string) => void;
+  beatReact: () => void;
+  tapReact: (pid?: string) => "miss" | "ok" | "ignore";
+  timeoutReact: () => void;
+  dealMatch: (n: 8 | 12 | 16) => void;
+  tapMatch: (i: number, pid?: string) => void;
+  flipMatch: () => void;
+  swapMatch: (pid?: string) => void;
+  advanceFlip: () => void;
 }
 
 function cloneState<T extends GameState>(s: T): T {
@@ -183,7 +208,20 @@ function cloneState<T extends GameState>(s: T): T {
     wheel: s.wheel ? { ...s.wheel, drinkerIds: [...s.wheel.drinkerIds] } : null,
     who: s.who ? { ...s.who, deck: [...s.who.deck], votes: { ...s.who.votes }, punishedIds: [...s.who.punishedIds] } : null,
     truth: s.truth ? { ...s.truth, deck: [...s.truth.deck] } : null,
-    react: s.react ? { ...s.react } : null,
+    react: s.react ? { ...s.react, ready: [...s.react.ready], dead: [...s.react.dead], tapped: [...(s.react.tapped ?? [])] } : null,
+    match: s.match
+      ? {
+          ...s.match,
+          tiles: s.match.tiles.map((t) => ({ ...t })),
+          pick: [...s.match.pick],
+          scores: { ...s.match.scores },
+          swapped: [...s.match.swapped],
+          swapPick: [...(s.match.swapPick ?? [])],
+        }
+      : null,
+    award: s.award ? { ...s.award, worst: [...s.award.worst], best: [...s.award.best] } : null,
+    hitAmt: { ...(s.hitAmt ?? {}) },
+    skillFlash: s.skillFlash ? { ...s.skillFlash } : null,
     chaos: s.chaos ? { ...s.chaos } : null,
   };
 }
@@ -472,7 +510,24 @@ export const useGame = create<GameStore>((set, get) => ({
     else if (mode === "wheel") get().beginWheel();
     else if (mode) get().startCeremony(mode);
   },
-  useSkill: () => set({ phase: "skill" }),
+  useSkill: () => {
+    const s = cloneState(get());
+    const me = s.players.find((p) => p.id === s.myPlayerId) ?? s.players.find((p) => !p.isBot);
+    if (!me) return;
+    if (s.phase !== "skill") s.skillReturnPhase = s.phase;
+    s.punishActorId = me.id;
+    const role = getRole(me.roleId);
+    s.lastResult = {
+      playerId: me.id,
+      mode: s.mode ?? "flip_battle",
+      message: `${me.name} 使用 ${role.skillName}`,
+      drinkHint: role.drink,
+      skillKind: role.skillKind,
+    };
+    s.skillPending = true;
+    s.phase = "skill";
+    set(s);
+  },
   skipSkill: () => {
     const s = cloneState(get());
     declineSkill(s);
@@ -489,10 +544,7 @@ export const useGame = create<GameStore>((set, get) => ({
   skillOpt: (opt) => {
     const s = cloneState(get());
     const kind = s.lastResult?.skillKind ?? "none";
-    let msg: string;
-    if (opt === "selfonly") msg = applySkill(s, "deploy");
-    else if (opt === "ot") msg = applySkill(s, "overtime");
-    else msg = applySkill(s, kind, undefined, opt);
+    const msg = applySkill(s, kind, undefined, opt);
     continueAfterSkill(s, msg);
     s.burstKey += 1;
     set(s);
@@ -657,6 +709,72 @@ export const useGame = create<GameStore>((set, get) => ({
   nextReact: () => {
     const s = cloneState(get());
     reactAdvance(s);
+    s.burstKey += 1;
+    set(s);
+  },
+  setReactHard: (hard) => {
+    const s = cloneState(get());
+    reactSetHard(s, hard);
+    set(s);
+  },
+  markReactReady: (pid) => {
+    const s = cloneState(get());
+    reactMarkReady(s, pid ?? s.myPlayerId ?? s.players[0]?.id ?? "");
+    set(s);
+  },
+  tickReactCount: () => {
+    const s = cloneState(get());
+    reactTickCount(s);
+    set(s);
+  },
+  failReact: (pid) => {
+    const s = cloneState(get());
+    reactFail(s, pid ?? s.myPlayerId ?? "");
+    s.burstKey += 1;
+    set(s);
+  },
+  beatReact: () => {
+    const s = cloneState(get());
+    reactNextBeat(s);
+    set(s);
+  },
+  tapReact: (pid) => {
+    const s = cloneState(get());
+    const result = reactTap(s, pid ?? s.myPlayerId ?? "");
+    s.burstKey += 1;
+    set(s);
+    return result;
+  },
+  timeoutReact: () => {
+    const s = cloneState(get());
+    reactTimeout(s);
+    s.burstKey += 1;
+    set(s);
+  },
+  dealMatch: (n) => {
+    const s = cloneState(get());
+    matchDeal(s, n);
+    set(s);
+  },
+  tapMatch: (i, pid) => {
+    const s = cloneState(get());
+    matchTap(s, i, pid ?? s.myPlayerId ?? s.match?.turn ?? "");
+    s.burstKey += 1;
+    set(s);
+  },
+  flipMatch: () => {
+    const s = cloneState(get());
+    matchFlipBack(s);
+    set(s);
+  },
+  swapMatch: (pid) => {
+    const s = cloneState(get());
+    matchBeginSwap(s, pid ?? s.myPlayerId ?? "");
+    set(s);
+  },
+  advanceFlip: () => {
+    const s = cloneState(get());
+    flipAdvance(s);
     s.burstKey += 1;
     set(s);
   },

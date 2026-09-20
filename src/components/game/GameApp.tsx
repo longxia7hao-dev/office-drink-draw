@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useP2PRoom } from "@/lib/multiplayer/use-p2p-room";
-import { flipAdvance } from "@/game/state";
 import { bootBgm, setBgmTrack, unlockSfx } from "@/game/sfx";
 import { APP_VERSION } from "@/game/version";
 import "@/game/odd";
@@ -31,7 +30,8 @@ import {
   SetupScreen,
   SkillScreen,
 } from "./screens";
-import { ChaosScreen, KingScreen, NeverScreen, RecapScreen, ReactScreen, TruthScreen, WheelScreen, WhoScreen } from "./partyScreens";
+import { AwardScreen, ChaosScreen, KingScreen, MatchScreen, NeverScreen, RecapScreen, ReactScreen, TruthScreen, WheelScreen, WhoScreen } from "./partyScreens";
+import { Portrait } from "./artui";
 
 function isNetMsg(data: unknown): data is NetMsg {
   return typeof data === "object" && data !== null && "t" in data && typeof (data as { t: unknown }).t === "string";
@@ -123,15 +123,7 @@ function OnlineBridge({
         const done = markReady(from);
         if (done) {
           window.setTimeout(() => {
-            const s = useGame.getState();
-            if (!s.flip) return;
-            const next = { ...s };
-            flipAdvance(next);
-            useGame.setState({
-              flip: next.flip,
-              drawCount: next.drawCount,
-              burstKey: s.burstKey + 1,
-            });
+            useGame.getState().advanceFlip();
           }, 350);
         }
       }
@@ -169,8 +161,11 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
   const soloReadyNext = useGame((s) => s.soloReadyNext);
   const markReady = useGame((s) => s.markReady);
   const pickRoleStore = useGame((s) => s.pickRole);
+  const skillFlash = useGame((s) => s.skillFlash);
+  const burstKey = useGame((s) => s.burstKey);
   const openedPreset = useRef(false);
   const [splash, setSplash] = useState(true);
+  const [flashOn, setFlashOn] = useState(false);
   usePracticeBots();
 
   useEffect(() => {
@@ -185,7 +180,22 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
   }, [splash]);
 
   useEffect(() => {
-    setBgmTrack(phase === "flip_battle" || phase === "who" || phase === "react" ? "flip" : "main");
+    if (!skillFlash) return;
+    setFlashOn(true);
+    const t = window.setTimeout(() => setFlashOn(false), 1800);
+    return () => window.clearTimeout(t);
+  }, [skillFlash, burstKey]);
+
+  useEffect(() => {
+    setBgmTrack(
+      phase === "who"
+        ? "who"
+        : phase === "truth"
+          ? "truth"
+          : phase === "flip_battle" || phase === "react" || phase === "match"
+            ? "flip"
+            : "main",
+    );
   }, [phase]);
 
   useEffect(() => {
@@ -242,16 +252,7 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
     const done = s.isOnline && s.myPlayerId ? markReady(s.myPlayerId) : soloReadyNext();
     if (done) {
       window.setTimeout(() => {
-        const cur = useGame.getState();
-        if (!cur.flip) return;
-        const next = { ...cur, flip: cur.flip ? { ...cur.flip, readyIds: [...cur.flip.readyIds] } : null };
-        if (!next.flip) return;
-        flipAdvance(next);
-        useGame.setState({
-          flip: next.flip,
-          drawCount: next.drawCount,
-          burstKey: cur.burstKey + 1,
-        });
+        useGame.getState().advanceFlip();
       }, 350);
     }
   }
@@ -310,6 +311,12 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
       case "react":
         view = <ReactScreen />;
         break;
+      case "match":
+        view = <MatchScreen />;
+        break;
+      case "award":
+        view = <AwardScreen />;
+        break;
       case "chaos":
         view = <ChaosScreen />;
         break;
@@ -351,6 +358,15 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
         />
       ) : null}
       {splash ? <StudioSplash onDone={() => setSplash(false)} /> : view}
+      {flashOn && skillFlash && phase !== "skill" ? (
+        <div className="skill-burst" role="status">
+          <Portrait roleId={skillFlash.roleId} size={96} />
+          <strong>
+            {skillFlash.name} 使用了 {skillFlash.skill}
+          </strong>
+          <p>{skillFlash.msg}</p>
+        </div>
+      ) : null}
       <TopFabs
         onSettings={() => {
           if (splash) setSplash(false);
@@ -361,6 +377,11 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
       <span className="app-ver" aria-hidden="true">
         V{APP_VERSION}
       </span>
+      {phase === "home" && !splash ? (
+        <a className="making-of-link" href="/making-of">
+          開發精華
+        </a>
+      ) : null}
     </div>
   );
 }

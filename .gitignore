@@ -14,3 +14,5 @@ attachments
 artifacts
 screenshots
 assets/sprites
+/tmp
+*.mp4.bak

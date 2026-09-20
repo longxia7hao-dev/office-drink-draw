@@ -28,7 +28,9 @@ export function unlockSfx(): void {
 const MUTE_KEY = "odd-mute";
 const TRACKS = {
   main: asset("/audio/palm-shadow-drive.mp3"),
-  flip: asset("/audio/apex-pursuit.mp3"),
+  flip: asset("/audio/midnight-authority.mp3"),
+  who: asset("/audio/apex-pursuit.mp3"),
+  truth: asset("/audio/asphalt-overdrive.mp3"),
 } as const;
 export type BgmTrack = keyof typeof TRACKS;
 
@@ -249,7 +251,18 @@ export function sfxWin(): void {
   beep(784, 0.2, "square", 0.07);
 }
 
-export function vibrate(ms = 28): void {
+export function playMeow(): void {
+  if (typeof window === "undefined" || muted) return;
+  try {
+    const a = new Audio(asset("/audio/studio-meow.mp3"));
+    a.volume = 0.85;
+    void a.play().catch(() => {});
+  } catch {
+    /* ignore */
+  }
+}
+
+export function vibrate(ms = 24): void {
   try {
     navigator.vibrate?.(ms);
   } catch {

@@ -466,6 +466,22 @@
   pointer-events: none;
   user-select: none;
 }
+.making-of-link {
+  position: absolute;
+  left: 8px;
+  bottom: calc(8px + var(--safe-b, 0px));
+  z-index: 50;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 2px solid #000;
+  border-radius: 10px;
+  background: #ffd24a;
+  color: #111;
+  font-size: 11px;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 2px 2px 0 #000;
+}
 .studio-splash video::-webkit-media-controls,
 .studio-splash video::-webkit-media-controls-start-playback-button,
 .studio-splash video::-webkit-media-controls-overlay-play-button {
@@ -3089,3 +3105,250 @@ input, select, textarea {
   font-size: 0.58rem;
   line-height: 1.1;
 }
+
+.kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  color: var(--spray-gold);
+  text-transform: uppercase;
+}
+
+.hud-hit {
+  font-style: normal;
+  font-weight: 900;
+  font-size: 0.72rem;
+  color: #111;
+  background: var(--spray-pink);
+  border: 2px solid #000;
+  border-radius: 999px;
+  padding: 0 6px;
+  margin-left: 2px;
+}
+.hud-buff {
+  font-style: normal;
+  font-size: 0.58rem;
+  font-weight: 900;
+  color: var(--spray-cyan);
+  background: #111;
+  border: 1px solid var(--spray-cyan);
+  border-radius: 999px;
+  padding: 0 5px;
+  letter-spacing: 0.04em;
+}
+
+.hs-mode-match {
+  left: auto;
+  right: 5%;
+  top: 72.6%;
+  width: 26%;
+  height: 7.4%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111 url("/art/stickers/cat.png") 8% center/34% no-repeat;
+  border: 3px solid #000;
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 #000;
+  color: #fff200;
+  font-family: var(--street);
+  font-size: clamp(0.8rem, 4vw, 1.1rem);
+  letter-spacing: 0.06em;
+  transform: rotate(-6deg);
+  z-index: 6;
+  text-shadow: 2px 2px 0 #000;
+}
+.hs-mode-recap {
+  left: 5.5%;
+  top: 78.6%;
+  width: 89%;
+  height: 7.2%;
+}
+
+.react-palette {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 4px 2px 8px;
+}
+.react-palette i {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid #000;
+  box-shadow: 2px 2px 0 #000;
+}
+.react-palette i.on {
+  outline: 3px solid #fff200;
+  outline-offset: 2px;
+  transform: scale(1.12);
+}
+.react-target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+  font-size: 1.05rem;
+}
+.react-target b {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 3px solid #000;
+  box-shadow: 2px 2px 0 #000;
+  display: inline-block;
+}
+.react-need {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+.react-count {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--street);
+  font-size: 7rem;
+  color: var(--spray-lime);
+  text-shadow: 6px 6px 0 #000;
+}
+.react-card {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: min(100%, 340px);
+  margin: 8px auto 0;
+  padding: 0;
+  overflow: hidden;
+  border: 5px solid #18d020;
+  border-radius: 18px;
+  box-shadow: 6px 6px 0 #000;
+  background: #0a0a0a;
+}
+.react-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: none;
+}
+.react-sticker {
+  position: absolute;
+  width: 28%;
+  height: auto;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  pointer-events: none;
+  filter: drop-shadow(2px 2px 0 #000);
+}
+
+.match-board {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 4), 1fr);
+  gap: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 2px 8px;
+}
+.match-tile {
+  aspect-ratio: 1;
+  padding: 0;
+  border: 3px solid #000;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #1a1210;
+  box-shadow: 2px 2px 0 #000;
+}
+.match-tile img,
+.match-back {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.match-tile.matched {
+  opacity: 0.42;
+  filter: grayscale(0.3);
+}
+.match-flash {
+  flex-shrink: 0;
+  text-align: center;
+  font-weight: 900;
+  color: var(--spray-gold);
+  background: #111;
+  border: 3px solid #000;
+  border-radius: 12px;
+  padding: 8px 10px;
+  box-shadow: 3px 3px 0 #000;
+}
+
+.screen-award {
+  gap: 10px;
+}
+.award-card {
+  background: #1a1210;
+  border: 3px solid #000;
+  border-radius: 16px;
+  box-shadow: 5px 5px 0 #000;
+  padding: 12px 14px;
+  text-align: center;
+}
+.award-card.worst {
+  border-color: var(--spray-pink);
+}
+.award-card.best {
+  border-color: var(--spray-lime);
+}
+.award-card h2,
+.award-faces {
+  margin: 6px 0;
+}
+.award-faces {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.award-who {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-weight: 900;
+}
+
+.skill-burst {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(8, 6, 10, 0.82);
+  padding: 24px;
+  text-align: center;
+  pointer-events: none;
+  animation: skillPop 180ms cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.skill-burst strong {
+  font-family: var(--street);
+  font-size: 1.6rem;
+  color: var(--spray-gold);
+  text-shadow: 3px 3px 0 #000;
+}
+.skill-burst p {
+  margin: 0;
+  font-weight: 800;
+  font-size: 1.05rem;
+  max-width: 22rem;
+}
+@keyframes skillPop {
+  from { transform: scale(0.86); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+

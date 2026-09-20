@@ -33,7 +33,7 @@ import { APP_VERSION } from "@/game/version";
 import { FLIP_CATEGORIES, questionsForCat } from "@/game/flipQuestions";
 import { ROLES, claimedBy, getRole, isRoleAvailable } from "@/game/roles";
 import { fillPunish, punishPhrase } from "@/game/partyPlay";
-import { currentFlipQuestion, flipVoteCounts, type GameState, type Player } from "@/game/state";
+import { canUseSkillNow, currentFlipQuestion, flipRuleLabel, flipVoteCounts, type GameState, type Player } from "@/game/state";
 import { isBgmMuted, sfxFlip, sfxTalk, sfxTick, toggleBgmMute, unlockSfx } from "@/game/sfx";
 import { hasSignaling } from "@/game/odd";
 import { useGame } from "@/game/store";
@@ -858,6 +858,17 @@ export function ModesScreen() {
           <button type="button" className="hs hs-mode-who" aria-label="誰最可能" disabled={hostOnly} {...pressWho} />
           <button type="button" className="hs hs-mode-truth" aria-label="真心話" disabled={hostOnly} {...pressTruth} />
           <button type="button" className="hs hs-mode-react" aria-label="反應挑戰" disabled={hostOnly} {...pressReact} />
+          <button
+            type="button"
+            className="hs hs-mode-match"
+            aria-label="對對消"
+            disabled={hostOnly}
+            onClick={() => {
+              if (!hostOnly) beginCore("match");
+            }}
+          >
+            對對消
+          </button>
           <button type="button" className="hs hs-mode-recap" aria-label="今晚結算" {...pressRecap} />
         </div>
       </div>
@@ -979,10 +990,10 @@ export function RevealScreen() {
         {canSkill ? (
           <>
             <button className="btn btn-pink btn-lg" type="button" disabled={hostOnly} onClick={state.useSkill}>
-              <Zap size={20} /> 發動技能
+              <Zap size={20} /> 使用技能
             </button>
             <button className="btn btn-lime" type="button" disabled={hostOnly} onClick={state.skipSkill}>
-              直接受罰 · 跳過技能
+              接受懲罰
             </button>
           </>
         ) : (
@@ -1023,6 +1034,9 @@ export function SkillScreen() {
   const me = state.players.find((p) => p.id === (state.punishActorId ?? r.playerId));
   const role = me ? getRole(me.roleId) : null;
   const others = state.players.filter((p) => p.id !== me?.id);
+  const drinkers = state.punishQueue.length
+    ? state.players.filter((p) => state.punishQueue.includes(p.id) && p.id !== me?.id)
+    : others;
   const hostOnly = state.isOnline && !state.isHost && state.myPlayerId !== me?.id;
   const used = Boolean(me?.skillUsed);
   let body: ReactNode = null;
@@ -1032,75 +1046,31 @@ export function SkillScreen() {
     case "slacker":
       body = (
         <button className="btn btn-pink btn-lg" type="button" disabled={hostOnly} onClick={() => state.skillOpt("slack")}>
-          確定摸魚：這次免罰，下次 ×3
+          確定摸魚：本次免罰，下次 ×2
         </button>
       );
       break;
-    case "pick_drink2":
+    case "exam":
+    case "split":
+    case "hedge":
+    case "backup":
+    case "cover":
       body = (
         <>
-          <p className="hint">指定一人代你受罰（雙倍）。你下次 ×2</p>
-          <TargetBtns list={others} onPick={state.skillTarget} />
+          <p className="hint">{fillPunish(role?.skillDesc ?? "", state.punishLabel)}</p>
+          <TargetBtns list={r.skillKind === "cover" && drinkers.length ? drinkers : others} onPick={state.skillTarget} />
         </>
       );
       break;
-    case "boss_choice":
+    case "treat_all":
+    case "able":
+    case "ot_skip":
+    case "veteran":
+    case "protect":
       body = (
-        <>
-          <button className="btn btn-pink" type="button" disabled={hostOnly} onClick={() => state.skillOpt("all")}>
-            全場{state.punishLabel}（你免罰，下次 ×2）
-          </button>
-          <p className="hint">或指定一人 {punishPhrase(state.punishLabel, 2)}：</p>
-          <TargetBtns list={others} onPick={state.skillTarget} />
-        </>
-      );
-      break;
-    case "intern_pass":
-      body = (
-        <>
-          <p className="hint">把這次懲罰傳給誰？你下次 ×2</p>
-          <TargetBtns list={others} onPick={state.skillTarget} />
-        </>
-      );
-      break;
-    case "treat":
-      body = (
-        <>
-          <p className="hint">請客對象（你們各{state.punishLabel}）</p>
-          <TargetBtns list={others} onPick={state.skillTarget} />
-        </>
-      );
-      break;
-    case "transfer":
-      body = (
-        <>
-          <p className="hint">與誰對調角色，並由對方代罰？你下次 ×2</p>
-          <TargetBtns list={others} onPick={state.skillTarget} />
-        </>
-      );
-      break;
-    case "tax":
-      body = (
-        <>
-          <p className="hint">這次免罰。誰下次 ×2？（你自己下次也 ×2）</p>
-          <TargetBtns list={others} onPick={state.skillTarget} />
-        </>
-      );
-      break;
-    case "deploy":
-      body = (
-        <>
-          <p className="hint">這次免罰。誰下次免罰？（你下次 ×2）</p>
-          <TargetBtns list={others} onPick={state.skillTarget} />
-        </>
-      );
-      break;
-    case "overtime":
-      body = (
-        <>
-          <p className="hint">這次你罰兩次。下次被罰時，業務交接給誰（對方 ×3）？</p>
-          <TargetBtns list={others} onPick={state.skillTarget} />
-        </>
+        <button className="btn btn-pink btn-lg" type="button" disabled={hostOnly} onClick={() => state.skillOpt("go")}>
+          使用技能：{role?.skillName}
+        </button>
       );
       break;
     default:
@@ -1211,6 +1181,8 @@ export function FlipBattleScreen({
   const punishLabel = useGame((s) => s.punishLabel);
   const chaos = useGame((s) => s.chaos);
   const dragExtra = useGame((s) => s.dragExtra);
+  const useSkill = useGame((s) => s.useSkill);
+  const showSkill = useGame((s) => canUseSkillNow(s, s.myPlayerId));
   const q = currentFlipQuestion({ flip } as GameState);
   const counts = flipVoteCounts({ players, flip } as GameState);
   const [dealt, setDealt] = useState(false);
@@ -1257,6 +1229,9 @@ export function FlipBattleScreen({
           {flip.index + 1}/{flip.deck.length}
         </span>
       </div>
+      <p className="kicker" style={{ margin: "0 4px", letterSpacing: "0.12em" }}>
+        懲罰條件 · {flipRuleLabel(flip.rule ?? "minority")}
+      </p>
       <div className="flip-q sticker">
         <div className="flip-q-label">二選一</div>
         <p className="flip-q-text">{q.q}</p>
@@ -1266,13 +1241,15 @@ export function FlipBattleScreen({
           ? practice
             ? myVoted
               ? "已選 · 等電腦投票"
-              : "選你的答案 · 電腦同步投票，少數派受罰"
+              : `選你的答案 · 電腦同步投票 · ${flipRuleLabel(flip.rule)}`
             : isOnline
               ? myVoted
                 ? "已選 · 等其他人"
-                : "選你的答案 · 少數派受罰"
-              : `輪到 ${answerer?.name ?? "下一位"} 選`
-          : "揭曉少數派"}
+                : `選你的答案 · ${flipRuleLabel(flip.rule)}`
+              : `輪到 ${answerer?.name ?? "下一位"} 選 · ${flipRuleLabel(flip.rule)}`
+          : flip.tie
+            ? "平手免罰"
+            : flipRuleLabel(flip.rule)}
       </p>
       <div className="flip-cards">
         {([0, 1] as const).map((i) => {
@@ -1302,11 +1279,11 @@ export function FlipBattleScreen({
       {flip.sub === "result" ? (
         <>
           <div className={`flip-result ${flip.tie ? "ok" : "bad"}`}>
-            <div className="flip-result-title">{flip.tie ? "平手免罰" : "少數派受罰"}</div>
+            <div className="flip-result-title">{flip.tie ? "平手免罰" : flipRuleLabel(flip.rule)}</div>
             <p className="hint" style={{ marginBottom: 0 }}>
               {flip.tie
-                ? "兩邊同票，沒人受罰"
-                : `${drinkers || "少數派"} · ${punishLabel}`}
+                ? "兩邊同票或條件未成立，沒人受罰"
+                : `${drinkers || "受罰者"} · ${punishLabel}`}
               {q.correct != null ? ` · 官方 ${officialLabel}` : ""}
             </p>
           </div>
@@ -1334,6 +1311,11 @@ export function FlipBattleScreen({
             })}
           </div>
           <div className="btn-row inline">
+            {showSkill ? (
+              <button className="btn btn-pink" type="button" onClick={useSkill}>
+                使用技能
+              </button>
+            ) : null}
             <button className="btn btn-lg" type="button" onClick={onReady}>
               下一題
             </button>

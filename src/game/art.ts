@@ -1,4 +1,5 @@
 import { APP_VERSION } from "./version";
+import { REACT_CARDS, type ReactColor } from "./reactCards";
 
 export function asset(path: string): string {
   const base = import.meta.env.BASE_URL || "/";
@@ -15,7 +16,23 @@ export const ROLE_ART: Record<string, string> = {
   accountant: asset("/art/roles/accountant.png"),
   engineer: asset("/art/roles/engineer.png"),
   overtime: asset("/art/roles/overtime.png"),
+  secretary: asset("/art/roles/secretary.png"),
+  veteran: asset("/art/roles/veteran.png"),
 };
+
+export const STICKER_ART = {
+  cat: asset("/art/stickers/cat.png"),
+  dog: asset("/art/stickers/dog.png"),
+  cow: asset("/art/stickers/cow.png"),
+} as const;
+
+export function reactCardSrc(file: string): string {
+  return `${asset(`/art/react/${file}`)}?v=${APP_VERSION}`;
+}
+
+export function cardsOf(color: ReactColor): string[] {
+  return REACT_CARDS.filter((c) => c.color === color).map((c) => c.file);
+}
 
 export const ART = {
   internIdle: [

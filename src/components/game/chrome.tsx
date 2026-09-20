@@ -9,6 +9,8 @@ import {
   Laptop,
   Timer,
   User,
+  Sparkles,
+  Heart,
   Volume2,
   VolumeX,
   Settings,
@@ -100,6 +102,8 @@ const ROLE_ICONS: Record<RoleIconId, LucideIcon> = {
   accountant: Calculator,
   engineer: Laptop,
   overtime: Timer,
+  secretary: Heart,
+  veteran: Sparkles,
 };
 
 export function RoleIcon({ id, size = 28, color }: { id: RoleIconId; size?: number; color?: string }) {

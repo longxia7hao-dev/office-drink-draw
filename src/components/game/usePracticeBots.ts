@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { botFlipVote, botReactMisses, botTruth, botWhoTarget } from "@/game/bots";
+import { botFlipVote, botTruth, botWhoTarget } from "@/game/bots";
+import { reactMustTap } from "@/game/state";
 import { useGame } from "@/game/store";
 
 /** 練習模式：電腦自動投票／真心話／反應，玩家只操作自己。 */
@@ -14,7 +15,10 @@ export function usePracticeBots() {
   const truthSub = useGame((s) => s.truth?.sub);
   const truthPid = useGame((s) => s.truth?.playerId);
   const reactSub = useGame((s) => s.react?.sub);
-  const reactPid = useGame((s) => s.react?.playerId);
+  const reactBeat = useGame((s) => s.react?.beat);
+  const matchTurn = useGame((s) => s.match?.turn);
+  const matchLock = useGame((s) => s.match?.lock);
+  const matchSub = useGame((s) => s.match?.sub);
 
   useEffect(() => {
     if (!practice) return;
@@ -62,15 +66,55 @@ export function usePracticeBots() {
       }
     }
 
-    if (phase === "react" && s.react?.sub === "ready") {
-      const actor = s.players.find((p) => p.id === s.react?.playerId);
-      if (actor?.isBot) {
+    if (phase === "react" && s.react?.sub === "play") {
+      const r = s.react;
+      const acc = 0.78 + (r.tempo / 2000) * 0.16;
+      s.players
+        .filter((p) => p.isBot && !r.dead.includes(p.id) && !(r.tapped ?? []).includes(p.id))
+        .forEach((p, i) => {
+          const delay = 220 + i * 80 + Math.random() * Math.max(180, r.tempo * 0.4);
+          timers.push(
+            window.setTimeout(() => {
+              const cur = useGame.getState();
+              if (cur.react?.sub !== "play" || cur.react.beat !== r.beat) return;
+              const must = reactMustTap(cur.react);
+              const roll = Math.random();
+              if (must) {
+                if (roll < acc) cur.tapReact(p.id);
+              } else if (roll < 0.07) {
+                cur.tapReact(p.id);
+              }
+            }, delay),
+          );
+        });
+    }
+
+    if (phase === "match" && s.match?.sub === "play" && !s.match.lock) {
+      const turn = s.players.find((p) => p.id === s.match?.turn);
+      if (turn?.isBot) {
         timers.push(
           window.setTimeout(() => {
             const cur = useGame.getState();
-            if (cur.react?.sub !== "ready" || cur.react.playerId !== actor.id) return;
-            cur.finishReact(botReactMisses(cur.seed, actor.id));
-          }, 1100),
+            if (cur.match?.turn !== turn.id || cur.match.lock || cur.match.sub !== "play") return;
+            const closed = cur.match.tiles
+              .map((t, i) => ({ t, i }))
+              .filter((x) => !x.t.open && !x.t.matched);
+            if (closed.length < 2) return;
+            const a = closed[Math.floor(Math.random() * closed.length)]!;
+            cur.tapMatch(a.i, turn.id);
+            timers.push(
+              window.setTimeout(() => {
+                const cur2 = useGame.getState();
+                if (cur2.match?.turn !== turn.id || cur2.match.sub !== "play") return;
+                const closed2 = cur2.match.tiles
+                  .map((t, i) => ({ t, i }))
+                  .filter((x) => !x.t.open && !x.t.matched);
+                if (closed2.length === 0) return;
+                const b = closed2[Math.floor(Math.random() * closed2.length)]!;
+                cur2.tapMatch(b.i, turn.id);
+              }, 420),
+            );
+          }, 700),
         );
       }
     }
@@ -78,5 +122,20 @@ export function usePracticeBots() {
     return () => {
       for (const t of timers) window.clearTimeout(t);
     };
-  }, [practice, phase, flipSub, flipIndex, whoSub, whoVoter, whoIndex, truthSub, truthPid, reactSub, reactPid]);
+  }, [
+    practice,
+    phase,
+    flipSub,
+    flipIndex,
+    whoSub,
+    whoVoter,
+    whoIndex,
+    truthSub,
+    truthPid,
+    reactSub,
+    reactBeat,
+    matchTurn,
+    matchLock,
+    matchSub,
+  ]);
 }

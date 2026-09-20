@@ -27,11 +27,13 @@
         "./src/*"
       ]
     },
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true
+    "allowImportingTsExtensions": true
   },
   "include": [
     "src",
     "server"
+  ],
+  "exclude": [
+    "server/odd"
   ]
 }

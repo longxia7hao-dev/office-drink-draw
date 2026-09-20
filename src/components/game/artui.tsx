@@ -190,15 +190,15 @@ export function DrinkHud() {
   const players = useGame((s) => s.players);
   const phase = useGame((s) => s.phase);
   const flip = useGame((s) => s.flip);
+  const hit = useGame((s) => s.hitAmt);
   const heat = useGame((s) => heatOf(s));
-  // FLIP minority reveal: highlight who drinks on the top scoreboard.
   const minorityPunished =
     phase === "flip_battle" &&
     flip != null &&
     flip.sub === "result" &&
     !flip.tie &&
     flip.drinkerIds.length > 0;
-  const punished = minorityPunished ? new Set(flip!.drinkerIds) : null;
+  const punished = minorityPunished ? new Set(flip!.drinkerIds) : new Set(Object.keys(hit ?? {}).filter((id) => (hit ?? {})[id] > 0));
   if (players.length === 0) return null;
   if (phase === "home" || phase === "setup" || phase === "lobby" || phase === "pick_role") return null;
   return (
@@ -217,6 +217,12 @@ export function DrinkHud() {
             <span className="hud-name">{p.name}</span>
             {p.isBot ? <span className="hud-bot">CPU</span> : null}
             <b className="hud-cups">{p.cups || 0}</b>
+            {hit?.[p.id] ? <i className="hud-hit">×{hit[p.id]}</i> : null}
+            {(p.nextMult ?? 1) > 1 ? <em className="hud-buff">下次×{p.nextMult}</em> : null}
+            {p.nextMult === 0 ? <em className="hud-buff">下次免</em> : null}
+            {p.skipToken ? <em className="hud-buff">補休</em> : null}
+            {p.oweCover ? <em className="hud-buff">要還</em> : null}
+            {p.coverFor ? <em className="hud-buff">擋酒中</em> : null}
           </div>
         ))}
       </div>
