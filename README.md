@@ -1,12 +1,18 @@
 # 公司酒局／五告哞聊
 
-派對喝酒遊戲 **V2.0** 正式備份。
+派對喝酒遊戲 **V2.0** 正式備份。**這份備份已上鎖，不能被覆寫。**
 
 - 倉庫：https://github.com/longxia7hao-dev/office-drink-draw
 - 線上站：https://longxia7hao-dev.github.io/office-drink-draw/
-- 凍結標籤／分支：`v2.0`（這版請當還原點，不要覆寫）
-- 日常原始碼：`grok-src`
+- **凍結還原點（禁止推送、強制覆蓋、刪除）**
+  - 分支 [`v2.0`](https://github.com/longxia7hao-dev/office-drink-draw/tree/v2.0)
+  - 分支 [`backup/v2.0`](https://github.com/longxia7hao-dev/office-drink-draw/tree/backup/v2.0)（第二份相同快照）
+  - 標籤 [`v2.0`](https://github.com/longxia7hao-dev/office-drink-draw/releases/tag/v2.0)
+  - 凍結 commit：`9c558271`
+- 日常改遊戲：只動 `grok-src`（工作分支，可以更新）
 - `gh-pages` 是編譯後靜態站；`main` 是較舊的版本
+
+請不要關掉 GitHub 規則「Freeze V2.0 backup branches」與「Freeze V2.0 tag」。關掉就等於把保險拆掉。
 
 ## V2.0 有什麼
 
@@ -32,11 +38,13 @@ npm run pages:build
 
 輸出在 `dist-pages/`，可直接放到 `gh-pages`。
 
-## 還原
+## 遊戲壞了怎麼接回
 
-接回這版請用 tag `v2.0` 或分支 `v2.0`：
+用凍結的 tag／分支 `v2.0`，**不要**用被改過的 `grok-src`：
 
 ```bash
 git fetch origin
 git checkout v2.0
 ```
+
+或直接下載這包 zip：https://github.com/longxia7hao-dev/office-drink-draw/archive/refs/tags/v2.0.zip
