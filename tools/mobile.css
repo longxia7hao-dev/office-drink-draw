@@ -1,0 +1,76 @@
+html, body, #root { width:100%; min-height:100%; margin:0; }
+html { height:100%; background:#07060a; }
+body { min-height:100vh; min-height:100dvh; overflow-x:clip; background:#07060a; }
+#root { height:100vh; height:100dvh; }
+.app-shell { height:100vh; height:100dvh; max-height:none; max-width:none; width:100%; border:0; border-radius:0; }
+.screen { overflow-y:auto; overflow-x:hidden; overscroll-behavior-y:contain; }
+.screen > * { flex-shrink:0; }
+.screen-home { overflow:hidden; }
+/* The poster and ALL hotspots share this exact 750x1584 coordinate system.
+   Fit the complete image inside available space; never use cover or max(width,height). */
+.home-stage {
+  position:relative; inset:auto; width:100%; height:100%; min-height:0; overflow:hidden; background:#07060a;
+  display:flex; align-items:center; justify-content:center;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+}
+.home-stage::before {
+  content:""; position:absolute; inset:-32px;
+  background:
+    linear-gradient(180deg, rgba(7,6,10,.15), rgba(7,6,10,.35)),
+    url("/office-drink-draw/art/ui/home-poster.jpg") center / cover no-repeat;
+  filter:blur(18px) saturate(1.18) brightness(.72);
+  transform:scale(1.08);
+  opacity:.95;
+}
+.home-stage::after {
+  content:""; position:absolute; inset:0;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 39, 198, .28), transparent 32%),
+    radial-gradient(circle at 88% 32%, rgba(0, 238, 255, .22), transparent 36%),
+    linear-gradient(90deg, rgba(7,6,10,.42), transparent 22%, transparent 78%, rgba(7,6,10,.42));
+  pointer-events:none;
+}
+.home-poster-wrap {
+  position:relative; z-index:1; top:auto; left:auto; transform:none;
+  width:min(100%, calc((100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) * 750 / 1584));
+  width:min(100%, calc((100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) * 750 / 1584));
+  aspect-ratio:750 / 1584; height:auto; flex:none;
+  box-shadow:0 0 34px rgba(0,0,0,.45);
+}
+.home-poster { object-fit:fill; }
+.home-party, .home-party-seq { display:none !important; }
+.hs-board { width:29.4%; height:5%; top:68.3%; left:33.6%; }
+.hs { touch-action:manipulation; }
+input, select, textarea { font-size:16px !important; max-width:100%; min-width:0; }
+.player-chip input { width:100%; }
+.hero-art, .portrait { object-fit:contain; }
+.pick-screen .role-hero { flex-shrink:0; }
+.role-hero { flex:0 0 auto !important; min-height:min-content !important; }
+.role-hero > *, .hero-stage, .hero-art-wrap { flex-shrink:0; }
+.hero-stage { flex:0 0 auto; min-height:min-content; }
+.hero-art-wrap { flex:0 0 auto; min-height:280px; }
+.hero-name, .hero-tag, .hero-bio { position:relative; z-index:1; }
+.hero-bio, .hero-skill p { display:block; overflow:visible; -webkit-line-clamp:unset; }
+.top-bar, .btn-row { flex-shrink:0; }
+.studio-splash { padding-bottom:calc(72px + env(safe-area-inset-bottom,0px)); touch-action:manipulation; }
+#landscape-hint { display:none; }
+#load-error:not([hidden]) {
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
+  position:fixed; inset:0; z-index:10000; background:#121212; color:white; padding:24px; text-align:center;
+}
+#reload-app { padding:14px 22px; border:2px solid #ffe14a; border-radius:12px; font-size:18px; color:#ffe14a; }
+.lite-mode *, .lite-mode *::before, .lite-mode *::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+@media (prefers-reduced-motion:reduce) {
+  *, *::before, *::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+}
+@media (orientation:landscape) {
+  #landscape-hint { display:block; text-align:center; color:#ffe14a; background:#121212; font-size:14px; line-height:28px; padding-top:env(safe-area-inset-top,0px); }
+  #root, .app-shell { height:calc(100dvh - 28px - env(safe-area-inset-top,0px)); }
+  .home-stage { padding-top:0; }
+  .home-poster-wrap { width:min(100%, calc((100dvh - 28px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) * 750 / 1584)); }
+}
+@media (orientation:portrait) and (max-width:600px) {
+  .screen-home { overflow-y:auto; overscroll-behavior-y:contain; }
+  .home-stage { height:auto; min-height:100%; align-items:flex-start; padding:0; }
+  .home-poster-wrap { width:100%; box-shadow:none; }
+}

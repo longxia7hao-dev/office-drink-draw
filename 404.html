@@ -2,34 +2,26 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="odd-version" content="e7dcce1979ad0338" />
     <title>公司酒局 Office Drink Draw</title>
     <meta name="theme-color" content="#121212" />
-    <meta
-      name="description"
-      content="公司酒局 — 美式嘻哈街頭塗鴉風上班族抽籤喝酒遊戲。單機傳手機或開房連線。"
-    />
-    <link rel="icon" type="image/svg+xml" href="/office-drink-draw/favicon.svg" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="description" content="公司酒局 — 美式嘻哈街頭塗鴉風上班族遊戲。單機練習或前往原站多人連線。" />
+    <link rel="icon" href="/office-drink-draw/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Bangers&family=Noto+Sans+TC:wght@500;700;900&display=swap"
-    />
-    <!--
-      這裡原本有 <link rel="preload" as="video">，但 `as="video"` 不是合法值，
-      瀏覽器直接忽略（console 會噴 unsupported `as` value），等於沒作用。
-      改成 as="fetch" 反而會整支先抓一次、video 元素再用 Range 抓第二次。
-      開場影片由 <video preload="auto"> 在 React 掛載時就開始抓，不需要這個提示。
-    -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Noto+Sans+TC:wght@500;700;900&display=swap" />
+    <link rel="stylesheet" href="/office-drink-draw/assets/index-C-opy5tM.css" />
+    <link rel="stylesheet" href="/office-drink-draw/assets/mobile-d000dd900d2d.css" />
     <script src="/office-drink-draw/config.js"></script>
-    <script type="module" crossorigin src="/office-drink-draw/assets/index-D59P7C6G.js"></script>
-    <link rel="stylesheet" crossorigin href="/office-drink-draw/assets/index-DTOq0K1M.css">
+    <script src="/office-drink-draw/assets/runtime-50540b1e66c8.js"></script>
+    <script type="module" data-app crossorigin src="/office-drink-draw/assets/mobile-1814d17a6a31.js"></script>
   </head>
   <body>
+    <aside id="landscape-hint" role="status">直向遊玩效果最佳</aside>
     <div id="root"></div>
     <section id="load-error" role="alert" hidden>
       <h1>載入失敗</h1>

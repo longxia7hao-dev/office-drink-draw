@@ -1,0 +1,125 @@
+{
+  "timestamp": "2026-09-14T20:59:58.227Z",
+  "contexts": [
+    {
+      "id": 0,
+      "console": [
+        "Access to fetch at 'https://monarch-finch-forge-summit.grok.me/api/rtc?room=oddCODEXPROBE&peer=codex-0&name=probe&since=0' from origin 'https://longxia7hao-dev.github.io' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "Failed to load resource: net::ERR_FAILED",
+        "Access to fetch at 'https://monarch-finch-forge-summit.grok.me/api/rtc' from origin 'https://longxia7hao-dev.github.io' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "Failed to load resource: net::ERR_FAILED",
+        "Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin",
+        "Failed to load resource: the server responded with a status of 500 ()",
+        "Failed to load resource: the server responded with a status of 500 ()",
+        "Failed to load resource: the server responded with a status of 500 ()",
+        "Failed to load resource: the server responded with a status of 500 ()",
+        "Failed to load resource: the server responded with a status of 500 ()",
+        "Failed to load resource: the server responded with a status of 500 ()",
+        "Failed to load resource: the server responded with a status of 500 ()",
+        "Failed to load resource: the server responded with a status of 500 ()",
+        "Failed to load resource: the server responded with a status of 500 ()"
+      ],
+      "responses": [
+        {
+          "url": "https://monarch-finch-forge-summit.grok.me/api/rtc?room=oddW8MX&peer=h-6c8ly203&name=Codex%E6%88%BF%E4%B8%BB&since=0",
+          "status": 500,
+          "allowOrigin": null
+        },
+        {
+          "url": "https://monarch-finch-forge-summit.grok.me/api/rtc?room=oddW8MX&peer=h-6c8ly203&name=Codex%E6%88%BF%E4%B8%BB&since=0",
+          "status": 500,
+          "allowOrigin": null
+        },
+        {
+          "url": "https://monarch-finch-forge-summit.grok.me/api/rtc?room=oddW8MX&peer=h-6c8ly203&name=Codex%E6%88%BF%E4%B8%BB&since=0",
+          "status": 500,
+          "allowOrigin": null
+        },
+        {
+          "url": "https://monarch-finch-forge-summit.grok.me/api/rtc?room=oddW8MX&peer=h-6c8ly203&name=Codex%E6%88%BF%E4%B8%BB&since=0",
+          "status": 500,
+          "allowOrigin": null
+        },
+        {
+          "url": "https://monarch-finch-forge-summit.grok.me/api/rtc?room=oddW8MX&peer=h-6c8ly203&name=Codex%E6%88%BF%E4%B8%BB&since=0",
+          "status": 500,
+          "allowOrigin": null
+        },
+        {
+          "url": "https://monarch-finch-forge-summit.grok.me/api/rtc?room=oddW8MX&peer=h-6c8ly203&name=Codex%E6%88%BF%E4%B8%BB&since=0",
+          "status": 500,
+          "allowOrigin": null
+        },
+        {
+          "url": "https://monarch-finch-forge-summit.grok.me/api/rtc?room=oddW8MX&peer=h-6c8ly203&name=Codex%E6%88%BF%E4%B8%BB&since=0",
+          "status": 500,
+          "allowOrigin": null
+        },
+        {
+          "url": "https://monarch-finch-forge-summit.grok.me/api/rtc?room=oddW8MX&peer=h-6c8ly203&name=Codex%E6%88%BF%E4%B8%BB&since=0",
+          "status": 500,
+          "allowOrigin": null
+        },
+        {
+          "url": "https://monarch-finch-forge-summit.grok.me/api/rtc?room=oddW8MX&peer=h-6c8ly203&name=Codex%E6%88%BF%E4%B8%BB&since=0",
+          "status": 500,
+          "allowOrigin": null
+        }
+      ],
+      "crossOrigin": [
+        {
+          "method": "GET",
+          "error": "TypeError: Failed to fetch"
+        },
+        {
+          "method": "POST",
+          "error": "TypeError: Failed to fetch"
+        }
+      ],
+      "ui": "W8MX\n房間\n\n連線：連線中 · 房主為抽籤權威 · 最多 8 人\n\n把房間碼或網址分給同事加入。\n\n網址可帶 ?room=W8MX\n\n複製邀請連結\nCodex房主\nYOU\n開始選角色",
+      "openOrJoinAttempted": true
+    },
+    {
+      "id": 1,
+      "console": [
+        "Access to fetch at 'https://monarch-finch-forge-summit.grok.me/api/rtc?room=oddCODEXPROBE&peer=codex-1&name=probe&since=0' from origin 'https://longxia7hao-dev.github.io' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "Failed to load resource: net::ERR_FAILED",
+        "Access to fetch at 'https://monarch-finch-forge-summit.grok.me/api/rtc' from origin 'https://longxia7hao-dev.github.io' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "Failed to load resource: net::ERR_FAILED",
+        "Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin",
+        "Failed to load resource: the server responded with a status of 500 ()",
+        "Failed to load resource: the server responded with a status of 500 ()"
+      ],
+      "responses": [
+        {
+          "url": "https://monarch-finch-forge-summit.grok.me/api/rtc?room=oddW8MX&peer=g-66uri35f&name=Codex%E7%8E%A9%E5%AE%B6&since=0",
+          "status": 500,
+          "allowOrigin": null
+        },
+        {
+          "url": "https://monarch-finch-forge-summit.grok.me/api/rtc?room=oddW8MX&peer=g-66uri35f&name=Codex%E7%8E%A9%E5%AE%B6&since=0",
+          "status": 500,
+          "allowOrigin": null
+        }
+      ],
+      "crossOrigin": [
+        {
+          "method": "GET",
+          "error": "TypeError: Failed to fetch"
+        },
+        {
+          "method": "POST",
+          "error": "TypeError: Failed to fetch"
+        }
+      ],
+      "ui": "W8MX\n房間\n\n連線：連線中 · 房主為抽籤權威 · 最多 8 人\n\n把房間碼或網址分給同事加入。\n\n網址可帶 ?room=W8MX\n\n複製邀請連結\nCodex玩家\nYOU\n\n等待房主開始…",
+      "openOrJoinAttempted": true
+    }
+  ],
+  "crossOriginUsable": false,
+  "rosterSync": false,
+  "roleSync": false,
+  "roundSync": false,
+  "room": "W8MX",
+  "conclusion": "Cross-origin fetch blocked / backend unavailable. No successful two-player roster, role or round synchronization demonstrated. Pages must use explicit original-site fallback."
+}

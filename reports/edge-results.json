@@ -1,0 +1,25 @@
+{
+  "version": "e7dcce1979ad0338",
+  "base": "http://127.0.0.1:4173/office-drink-draw/",
+  "timestamp": "2026-09-20T09:17:03.956Z",
+  "results": [
+    {
+      "engine": "chromium",
+      "initialIntroFrames": 6,
+      "studioFrameAdvanced": true,
+      "pointerSkip": true,
+      "idleAudioRequests": 0,
+      "scriptFailureAndReload": true,
+      "audioRequestsAfterTrustedTap": 2
+    },
+    {
+      "engine": "webkit",
+      "initialIntroFrames": 6,
+      "studioFrameAdvanced": true,
+      "pointerSkip": true,
+      "idleAudioRequests": 0,
+      "scriptFailureAndReload": true,
+      "audioRequestsAfterTrustedTap": 2
+    }
+  ]
+}
