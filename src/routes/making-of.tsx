@@ -31,12 +31,12 @@ function MakingOf() {
 
       <div className="mo-stats">
         <div>
-          <b>V2.0</b>
-          正式備份版
+          <b>V2.7</b>
+          目前遊戲／已上鎖
         </div>
         <div>
-          <b>v2.0</b>
-          已上鎖還原點
+          <b>V2.0</b>
+          更早的上鎖還原點
         </div>
         <div>
           <b>239</b>
@@ -253,9 +253,9 @@ function MakingOf() {
         </p>
       </div>
       <div className="mo-card mo-ok">
-        <strong>V2.0 已線上備份，而且上鎖了</strong>
+        <strong>V2.7 已線上備份，而且上鎖了</strong>
         <p>
-          原始碼工作區在 GitHub <b>grok-src</b>。還原點是凍結分支／標籤 <b>v2.0</b>，另外有一份 <b>backup/v2.0</b>。GitHub 已禁止覆蓋、強制推送、刪除這幾個備份。遊戲再被改壞，接回這個標籤就好。
+          原始碼工作區在 GitHub <b>grok-src</b>。現在的還原點是凍結分支／標籤 <b>v2.7</b>，另外有一份 <b>backup/v2.7</b>。更早的 <b>v2.0</b> 也還在、一樣上鎖。GitHub 已禁止覆蓋這幾個備份。遊戲再被改壞，接回 v2.7（或更早接 v2.0）就好。
         </p>
       </div>
 
@@ -286,7 +286,7 @@ function MakingOf() {
       </div>
       <div className="mo-tl">
         <b>最後</b>
-        對對消 + 貓背 → 當機清空 → 從 grok-src V1.31 接回 → 補成 V2.0 並打進 GitHub。
+        對對消 + 貓背 → 當機清空 → 從 grok-src V1.31 接回 → 補成 V2.0 並打進 GitHub → V2.1 換成你這批角色圖。
       </div>
 
       <h2>題庫還沒全量匯入</h2>
@@ -297,7 +297,7 @@ function MakingOf() {
 
       <p className="mo-kicker">END OF REEL</p>
       <Link to="/" search={{ room: undefined }} className="mo-back">
-        <ChevronLeft size={18} /> 回遊戲繼續玩 V2.0
+        <ChevronLeft size={18} /> 回遊戲繼續玩 V2.1
       </Link>
     </main>
   );

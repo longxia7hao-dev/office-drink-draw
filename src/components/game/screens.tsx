@@ -565,32 +565,26 @@ export function PickRoleScreen({ onPick }: { onPick: (playerId: string, roleId: 
             ? "左右換角色。每人選自己的，被搶走就不能再選。"
             : "先點玩家，左右換角色。被搶走的不能再選。"}
       </p>
-      <div className="pick-crew">
+      <div className="pick-crew" style={{ ["--n" as string]: String(Math.min(players.length, 4)) }}>
         {players.map((p) => {
           const active = p.id === actorId;
           const pr = p.roleId ? getRole(p.roleId) : null;
+          const label = p.isBot ? p.name.replace(/^電腦[·・]/, "") : p.name;
+          const badge = p.isBot ? "CPU" : p.id === myPlayerId ? "YOU" : null;
           return (
             <button
               type="button"
               key={p.id}
-              className={`pick-chip${active ? " on" : ""}${p.roleId ? " done" : ""}`}
+              className={`pick-chip${active ? " on" : ""}${p.roleId ? " done" : ""}${p.isBot ? " bot" : ""}`}
               disabled={isOnline || practice}
               onClick={() => {
                 hop.current += 1;
                 setFocusId(p.id);
               }}
             >
-              {p.roleId ? <Portrait roleId={p.roleId} size={28} /> : <span className="pick-empty">?</span>}
-              <span>{p.name}</span>
-              {p.isBot ? (
-                <span className="tag-pill" style={{ fontSize: "0.6rem" }}>
-                  CPU
-                </span>
-              ) : p.id === myPlayerId ? (
-                <span className="tag-pill" style={{ fontSize: "0.65rem" }}>
-                  YOU
-                </span>
-              ) : null}
+              {badge ? <span className={`pick-badge ${p.isBot ? "cpu" : "you"}`}>{badge}</span> : null}
+              {p.roleId ? <Portrait roleId={p.roleId} size={40} /> : <span className="pick-empty">?</span>}
+              <strong className="pick-name">{label}</strong>
               <span className="who">{pr ? pr.name : p.isBot ? "待機" : "未選"}</span>
             </button>
           );

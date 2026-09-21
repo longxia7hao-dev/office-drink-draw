@@ -1,2 +1,2 @@
-/** Bump this on every shipped fix. Shown at the bottom-right. */
-export const APP_VERSION = "2.0";
+/** Shown bottom-right. Every shipped update +0.1 (2.0 → 2.1 → 2.2). */
+export const APP_VERSION = "2.7";

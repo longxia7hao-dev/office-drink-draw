@@ -118,26 +118,28 @@ export function RoleShowcase({
         }}
       >
         <div className={`hero-art-wrap${speaking ? " talking" : ""}`} key={role.id}>
-          <Portrait roleId={role.id} size={260} className="hero-art idle" />
+          <div className="hero-id">
+            <h2 className="hero-name">{role.name}</h2>
+            <div className="hero-tag">{role.tag}</div>
+          </div>
+          <Portrait roleId={role.id} size={320} className="hero-art idle" />
           {speaking ? <p className="hero-bubble">「{role.line}」</p> : null}
           {stamp}
-        </div>
-        <div className="hero-pager">
-          <button className="nav-arrow" type="button" onClick={onPrev} aria-label="上一個角色">
-            <ChevronLeft size={22} strokeWidth={3} />
-          </button>
-          <div className="hero-dots" aria-hidden>
-            {Array.from({ length: total }, (_, i) => (
-              <span key={i} className={i === index ? "on" : ""} />
-            ))}
+          <div className="hero-pager">
+            <button className="nav-arrow" type="button" onClick={onPrev} aria-label="上一個角色">
+              <ChevronLeft size={22} strokeWidth={3} />
+            </button>
+            <div className="hero-dots" aria-hidden>
+              {Array.from({ length: total }, (_, i) => (
+                <span key={i} className={i === index ? "on" : ""} />
+              ))}
+            </div>
+            <button className="nav-arrow" type="button" onClick={onNext} aria-label="下一個角色">
+              <ChevronRight size={22} strokeWidth={3} />
+            </button>
           </div>
-          <button className="nav-arrow" type="button" onClick={onNext} aria-label="下一個角色">
-            <ChevronRight size={22} strokeWidth={3} />
-          </button>
         </div>
       </div>
-      <h2 className="hero-name">{role.name}</h2>
-      <div className="hero-tag">{role.tag}</div>
       <p className="hero-bio">{role.bio}</p>
       <div className="hero-skill">
         <span className="hero-skill-kicker">技能</span>
@@ -202,19 +204,21 @@ export function DrinkHud() {
   if (players.length === 0) return null;
   if (phase === "home" || phase === "setup" || phase === "lobby" || phase === "pick_role") return null;
   return (
-    <div className="drink-hud">
+    <div className="drink-hud" style={{ ["--n" as string]: String(Math.min(players.length, 4)) }}>
       <div className={`heat-pip heat-${heat}`}>
         <Flame size={14} />
         <span>熱度 {heat}</span>
       </div>
       <div className="hud-row">
-        {players.map((p) => (
+        {players.map((p) => {
+          const label = p.isBot ? p.name.replace(/^電腦[·・]/, "") : p.name;
+          return (
           <div
             className={cn("hud-chip", punished?.has(p.id) && "is-minority-hit")}
             key={p.id}
           >
             <Portrait roleId={p.roleId} size={28} />
-            <span className="hud-name">{p.name}</span>
+            <span className="hud-name">{label}</span>
             {p.isBot ? <span className="hud-bot">CPU</span> : null}
             <b className="hud-cups">{p.cups || 0}</b>
             {hit?.[p.id] ? <i className="hud-hit">×{hit[p.id]}</i> : null}
@@ -224,7 +228,8 @@ export function DrinkHud() {
             {p.oweCover ? <em className="hud-buff">要還</em> : null}
             {p.coverFor ? <em className="hud-buff">擋酒中</em> : null}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
