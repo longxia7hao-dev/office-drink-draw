@@ -3,6 +3,7 @@ import {
   BarChart3,
   BookOpen,
   ChevronLeft,
+  ChevronRight,
   Crown,
   Dices,
   Dumbbell,
@@ -28,18 +29,18 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
-import { ART, roleArt } from "@/game/art";
+import { ART, modeArt, roleArt } from "@/game/art";
 import { APP_VERSION } from "@/game/version";
 import { FLIP_CATEGORIES, questionsForCat } from "@/game/flipQuestions";
 import { ROLES, claimedBy, getRole, isRoleAvailable } from "@/game/roles";
 import { fillPunish, punishPhrase } from "@/game/partyPlay";
-import { canUseSkillNow, currentFlipQuestion, flipRuleLabel, flipVoteCounts, type GameState, type Player } from "@/game/state";
+import { currentFlipQuestion, flipVoteCounts, type GameState, type Player } from "@/game/state";
 import { isBgmMuted, sfxFlip, sfxTalk, sfxTick, toggleBgmMute, unlockSfx } from "@/game/sfx";
 import { hasSignaling } from "@/game/odd";
 import { useGame } from "@/game/store";
 import { RoleIcon, Screen, SprayBurst, usePress } from "./chrome";
 import { DrinkHud, Portrait, RoleShowcase, RouletteDraw, SprayDraw } from "./artui";
-import { StudioLottie } from "./StudioLottie";
+import { StudioLottie, ModeLogoBob } from "./StudioLottie";
 import { AutoVideo } from "./AutoVideo";
 import { HomeLoopVideo } from "./HomeLoopVideo";
 
@@ -544,7 +545,7 @@ export function PickRoleScreen({ onPick }: { onPick: (playerId: string, roleId: 
   else if (overflow) stamp = <div className="taken-stamp overflow-stamp">可重複</div>;
 
   return (
-    <Screen className="pick-screen">
+    <Screen className={`pick-screen${players.length >= 5 ? " crowd" : ""}`}>
       <div className="top-bar">
         {hostGate ? (
           <span className="tag-pill">PICK</span>
@@ -565,26 +566,37 @@ export function PickRoleScreen({ onPick }: { onPick: (playerId: string, roleId: 
             ? "左右換角色。每人選自己的，被搶走就不能再選。"
             : "先點玩家，左右換角色。被搶走的不能再選。"}
       </p>
-      <div className="pick-crew" style={{ ["--n" as string]: String(Math.min(players.length, 4)) }}>
+      <div
+        className="pick-crew"
+        style={{
+          ["--n" as string]: String(players.length <= 4 ? Math.max(players.length, 1) : players.length <= 6 ? 3 : 4),
+        }}
+      >
         {players.map((p) => {
           const active = p.id === actorId;
           const pr = p.roleId ? getRole(p.roleId) : null;
-          const label = p.isBot ? p.name.replace(/^電腦[·・]/, "") : p.name;
-          const badge = p.isBot ? "CPU" : p.id === myPlayerId ? "YOU" : null;
           return (
             <button
               type="button"
               key={p.id}
-              className={`pick-chip${active ? " on" : ""}${p.roleId ? " done" : ""}${p.isBot ? " bot" : ""}`}
+              className={`pick-chip${active ? " on" : ""}${p.roleId ? " done" : ""}`}
               disabled={isOnline || practice}
               onClick={() => {
                 hop.current += 1;
                 setFocusId(p.id);
               }}
             >
-              {badge ? <span className={`pick-badge ${p.isBot ? "cpu" : "you"}`}>{badge}</span> : null}
-              {p.roleId ? <Portrait roleId={p.roleId} size={40} /> : <span className="pick-empty">?</span>}
-              <strong className="pick-name">{label}</strong>
+              {p.roleId ? <Portrait roleId={p.roleId} size={28} /> : <span className="pick-empty">?</span>}
+              <span>{p.name}</span>
+              {p.isBot ? (
+                <span className="tag-pill" style={{ fontSize: "0.6rem" }}>
+                  CPU
+                </span>
+              ) : p.id === myPlayerId ? (
+                <span className="tag-pill" style={{ fontSize: "0.65rem" }}>
+                  YOU
+                </span>
+              ) : null}
               <span className="who">{pr ? pr.name : p.isBot ? "待機" : "未選"}</span>
             </button>
           );
@@ -825,46 +837,148 @@ export function ModesScreen() {
   const toFlipCats = useGame((s) => s.toFlipCats);
   const toRecap = useGame((s) => s.toRecap);
   const hostOnly = isOnline && !isHost;
-  const pressBack = usePress(() => {
-    if (!hostOnly) backRoles();
-  });
-  const pressFlip = usePress(() => {
-    if (!hostOnly) toFlipCats();
-  });
-  const pressWho = usePress(() => {
-    if (!hostOnly) beginCore("who");
-  });
-  const pressTruth = usePress(() => {
-    if (!hostOnly) beginCore("truth");
-  });
-  const pressReact = usePress(() => {
-    if (!hostOnly) beginCore("react");
-  });
-  const pressRecap = usePress(() => toRecap());
+  const [idx, setIdx] = useState(0);
+  const startX = useRef<number | null>(null);
+
+  const options: {
+    id: string;
+    title: string;
+    desc: string;
+    accent: string;
+    go: () => void;
+  }[] = [
+    {
+      id: "flip",
+      title: "多數決",
+      desc: "16 題輪換：多數／少數／落單×2／全員同邊×2",
+      accent: "var(--spray-pink)",
+      go: () => toFlipCats(),
+    },
+    {
+      id: "who",
+      title: "誰最可能",
+      desc: "全場互投，票最高的人受罰",
+      accent: "var(--spray-gold)",
+      go: () => beginCore("who"),
+    },
+    {
+      id: "truth",
+      title: "真心話大冒險",
+      desc: "回答這題，或接受懲罰・五種題庫",
+      accent: "var(--spray-cyan)",
+      go: () => beginCore("truth"),
+    },
+    {
+      id: "react",
+      title: "反應挑戰",
+      desc: "60 拍、2 秒起跳，看指定色就拍",
+      accent: "var(--spray-lime)",
+      go: () => beginCore("react"),
+    },
+    {
+      id: "match",
+      title: "對對碰",
+      desc: "三局一場。對到繼續，對錯換人。終場配對最少的喝。",
+      accent: "var(--spray-orange)",
+      go: () => beginCore("match"),
+    },
+  ];
+  const n = options.length;
+  const cur = ((idx % n) + n) % n;
+  const m = options[cur]!;
+  const prev = () => setIdx((x) => x - 1);
+  const next = () => setIdx((x) => x + 1);
+  const play = () => {
+    if (hostOnly) return;
+    unlockSfx();
+    sfxTick();
+    m.go();
+  };
 
   return (
-    <Screen className="screen-home">
-      <div className="home-stage">
-        <div className="home-poster-wrap">
-          <img className="home-poster" src={ART.modesPoster} alt="" draggable={false} />
-          <button type="button" className="hs hs-mode-back" aria-label="返回" disabled={hostOnly} {...pressBack} />
-          <button type="button" className="hs hs-mode-flip" aria-label="多數決" disabled={hostOnly} {...pressFlip} />
-          <button type="button" className="hs hs-mode-who" aria-label="誰最可能" disabled={hostOnly} {...pressWho} />
-          <button type="button" className="hs hs-mode-truth" aria-label="真心話" disabled={hostOnly} {...pressTruth} />
-          <button type="button" className="hs hs-mode-react" aria-label="反應挑戰" disabled={hostOnly} {...pressReact} />
-          <button
-            type="button"
-            className="hs hs-mode-match"
-            aria-label="對對消"
-            disabled={hostOnly}
-            onClick={() => {
-              if (!hostOnly) beginCore("match");
-            }}
-          >
-            對對消
-          </button>
-          <button type="button" className="hs hs-mode-recap" aria-label="今晚結算" {...pressRecap} />
+    <Screen className="screen-modes">
+      <div className="top-bar">
+        <button
+          className="btn btn-ghost btn-sm"
+          type="button"
+          disabled={hostOnly}
+          onClick={() => {
+            if (!hostOnly) backRoles();
+          }}
+          aria-label="返回"
+        >
+          <ChevronLeft size={18} />
+        </button>
+        <span className="pick-title">選模式</span>
+        <span className="tag-pill pink">
+          {cur + 1}/{n}
+        </span>
+      </div>
+      <DrinkHud />
+      <div
+        className="mode-stage"
+        style={{ ["--accent" as string]: m.accent }}
+        onPointerDown={(e) => {
+          startX.current = e.clientX;
+        }}
+        onPointerUp={(e) => {
+          if (startX.current == null) return;
+          const dx = e.clientX - startX.current;
+          startX.current = null;
+          if (dx > 48) prev();
+          else if (dx < -48) next();
+        }}
+        onPointerCancel={() => {
+          startX.current = null;
+        }}
+      >
+        <ModeLogoBob key={m.id} src={modeArt(m.id)} className="mode-logo-bob" />
+        <div className="mode-thumbs">
+          {[-2, -1, 0, 1, 2].map((off) => {
+            const opt = options[(cur + off + n) % n]!;
+            const on = off === 0;
+            return (
+              <button
+                key={`${opt.id}-${off}`}
+                className={`mode-thumb ${on ? "is-now" : "is-side"}${Math.abs(off) === 2 ? " is-far" : ""}`}
+                type="button"
+                onClick={() => (on ? play() : setIdx(cur + off))}
+                aria-label={on ? opt.title : off < 0 ? `上一個：${opt.title}` : `下一個：${opt.title}`}
+              >
+                <img src={modeArt(opt.id)} alt="" draggable={false} />
+                <span>{opt.title}</span>
+              </button>
+            );
+          })}
         </div>
+        <div className="mode-copy">
+          <h2>{m.title}</h2>
+          <p>{m.desc}</p>
+        </div>
+        <div className="mode-pager">
+          <button className="nav-arrow" type="button" onClick={prev} aria-label="上一個模式">
+            <ChevronLeft size={22} strokeWidth={3} />
+          </button>
+          <button className="btn btn-lg mode-go" type="button" disabled={hostOnly} onClick={play}>
+            開打
+          </button>
+          <button className="nav-arrow" type="button" onClick={next} aria-label="下一個模式">
+            <ChevronRight size={22} strokeWidth={3} />
+          </button>
+        </div>
+      </div>
+      <div className="btn-row">
+        <button
+          className="btn btn-ghost"
+          type="button"
+          onClick={() => {
+            unlockSfx();
+            sfxTick();
+            toRecap();
+          }}
+        >
+          <Trophy size={18} /> 今晚結算
+        </button>
       </div>
     </Screen>
   );
@@ -984,10 +1098,10 @@ export function RevealScreen() {
         {canSkill ? (
           <>
             <button className="btn btn-pink btn-lg" type="button" disabled={hostOnly} onClick={state.useSkill}>
-              <Zap size={20} /> 使用技能
+              <Zap size={20} /> 發動技能
             </button>
             <button className="btn btn-lime" type="button" disabled={hostOnly} onClick={state.skipSkill}>
-              接受懲罰
+              直接受罰 · 跳過技能
             </button>
           </>
         ) : (
@@ -1175,8 +1289,6 @@ export function FlipBattleScreen({
   const punishLabel = useGame((s) => s.punishLabel);
   const chaos = useGame((s) => s.chaos);
   const dragExtra = useGame((s) => s.dragExtra);
-  const useSkill = useGame((s) => s.useSkill);
-  const showSkill = useGame((s) => canUseSkillNow(s, s.myPlayerId));
   const q = currentFlipQuestion({ flip } as GameState);
   const counts = flipVoteCounts({ players, flip } as GameState);
   const [dealt, setDealt] = useState(false);
@@ -1223,9 +1335,6 @@ export function FlipBattleScreen({
           {flip.index + 1}/{flip.deck.length}
         </span>
       </div>
-      <p className="kicker" style={{ margin: "0 4px", letterSpacing: "0.12em" }}>
-        懲罰條件 · {flipRuleLabel(flip.rule ?? "minority")}
-      </p>
       <div className="flip-q sticker">
         <div className="flip-q-label">二選一</div>
         <p className="flip-q-text">{q.q}</p>
@@ -1235,15 +1344,13 @@ export function FlipBattleScreen({
           ? practice
             ? myVoted
               ? "已選 · 等電腦投票"
-              : `選你的答案 · 電腦同步投票 · ${flipRuleLabel(flip.rule)}`
+              : "選你的答案 · 電腦同步投票，少數派受罰"
             : isOnline
               ? myVoted
                 ? "已選 · 等其他人"
-                : `選你的答案 · ${flipRuleLabel(flip.rule)}`
-              : `輪到 ${answerer?.name ?? "下一位"} 選 · ${flipRuleLabel(flip.rule)}`
-          : flip.tie
-            ? "平手免罰"
-            : flipRuleLabel(flip.rule)}
+                : "選你的答案 · 少數派受罰"
+              : `輪到 ${answerer?.name ?? "下一位"} 選`
+          : "揭曉少數派"}
       </p>
       <div className="flip-cards">
         {([0, 1] as const).map((i) => {
@@ -1273,11 +1380,11 @@ export function FlipBattleScreen({
       {flip.sub === "result" ? (
         <>
           <div className={`flip-result ${flip.tie ? "ok" : "bad"}`}>
-            <div className="flip-result-title">{flip.tie ? "平手免罰" : flipRuleLabel(flip.rule)}</div>
+            <div className="flip-result-title">{flip.tie ? "平手免罰" : "少數派受罰"}</div>
             <p className="hint" style={{ marginBottom: 0 }}>
               {flip.tie
-                ? "兩邊同票或條件未成立，沒人受罰"
-                : `${drinkers || "受罰者"} · ${punishLabel}`}
+                ? "兩邊同票，沒人受罰"
+                : `${drinkers || "少數派"} · ${punishLabel}`}
               {q.correct != null ? ` · 官方 ${officialLabel}` : ""}
             </p>
           </div>
@@ -1305,11 +1412,6 @@ export function FlipBattleScreen({
             })}
           </div>
           <div className="btn-row inline">
-            {showSkill ? (
-              <button className="btn btn-pink" type="button" onClick={useSkill}>
-                使用技能
-              </button>
-            ) : null}
             <button className="btn btn-lg" type="button" onClick={onReady}>
               下一題
             </button>

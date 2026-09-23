@@ -175,3 +175,41 @@ export const REACT_CARDS: { file: string; color: ReactColor }[] = [
   { file: "orange-019.jpg", color: "orange" },
   { file: "orange-020.jpg", color: "orange" },
 ];
+
+function shuffleIn<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j]!, a[i]!];
+  }
+  return a;
+}
+
+/** Fresh mix each deal: round-robin colors then shuffle so boards don't repeat. */
+export function pickMatchFaces(n: number): { file: string; color: ReactColor }[] {
+  const by = new Map<ReactColor, { file: string; color: ReactColor }[]>();
+  for (const c of REACT_CARDS) {
+    const list = by.get(c.color) ?? [];
+    list.push(c);
+    by.set(c.color, list);
+  }
+  const colors = shuffleIn([...by.keys()]);
+  for (const col of colors) by.set(col, shuffleIn(by.get(col)!));
+  const picked: { file: string; color: ReactColor }[] = [];
+  const cursor: Partial<Record<ReactColor, number>> = {};
+  while (picked.length < n) {
+    let added = false;
+    for (const col of colors) {
+      if (picked.length >= n) break;
+      const list = by.get(col) ?? [];
+      const i = cursor[col] ?? 0;
+      if (i < list.length) {
+        picked.push(list[i]!);
+        cursor[col] = i + 1;
+        added = true;
+      }
+    }
+    if (!added) break;
+  }
+  return shuffleIn(picked);
+}

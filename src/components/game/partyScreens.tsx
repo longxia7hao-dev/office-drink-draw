@@ -4,7 +4,7 @@ import { getKingCmd, NEVER_PROMPTS, recapTitle, WHEEL } from "@/game/party";
 import { getTruth, getWho, fillPunish, punishPhrase } from "@/game/partyPlay";
 import { useGame } from "@/game/store";
 import { sfxDrink, sfxSlam, sfxSpin, sfxTick, sfxWin, unlockSfx, vibrate, playMeow } from "@/game/sfx";
-import { ART, reactCardSrc, STICKER_ART } from "@/game/art";
+import { ART, modeArt, preloadReactCards, reactCardSrc, whenReactCardsReady, STICKER_ART } from "@/game/art";
 import { REACT_COLOR_META, REACT_COLORS } from "@/game/reactCards";
 import { canUseSkillNow } from "@/game/state";
 import { Screen, usePress } from "./chrome";
@@ -166,7 +166,7 @@ export function WhoScreen() {
             </p>
           </div>
           <DragPicker exclude={who.punishedIds} />
-          <div className="btn-row inline">
+          <div className="btn-row">
             <SkillUseBtn />
             <button className="btn btn-lg" type="button" onClick={nextWho}>下一題</button>
             <ModeSwitchBtn />
@@ -363,7 +363,7 @@ export function ReactScreen() {
               {r.dead.map((id) => players.find((p) => p.id === id)?.name).join("、") || "時間到"}
             </p>
           </div>
-          <div className="btn-row inline">
+          <div className="btn-row">
             <SkillUseBtn />
             <button className="btn btn-lg" type="button" onClick={next}>
               本局頒獎
@@ -744,92 +744,229 @@ export function WheelScreen() {
   );
 }
 
+function MatchStarterReel({
+  players,
+  winnerId,
+  onDone,
+}: {
+  players: { id: string; name: string; roleId: string }[];
+  winnerId: string;
+  onDone: () => void;
+}) {
+  const n = Math.max(1, players.length);
+  const winner = Math.max(0, players.findIndex((p) => p.id === winnerId));
+  const [idx, setIdx] = useState(0);
+  const [locked, setLocked] = useState(false);
+  const doneRef = useRef(onDone);
+  doneRef.current = onDone;
+
+  useEffect(() => {
+    let stop = false;
+    let step = 0;
+    const spins = n * 4 + winner;
+    let timer = 0;
+    const tick = () => {
+      if (stop) return;
+      if (step >= spins) {
+        setIdx(winner);
+        setLocked(true);
+        sfxSlam();
+        vibrate(36);
+        timer = window.setTimeout(() => {
+          if (!stop) doneRef.current();
+        }, 520);
+        return;
+      }
+      setIdx(step % n);
+      sfxTick();
+      const delay = Math.min(70 + step * 16, 260);
+      step += 1;
+      timer = window.setTimeout(tick, delay);
+    };
+    timer = window.setTimeout(tick, 60);
+    return () => {
+      stop = true;
+      window.clearTimeout(timer);
+    };
+  }, [n, winner]);
+
+  const current = players[idx];
+  const label = current?.name.replace(/^電腦[·・]/, "") ?? "";
+  return (
+    <div className="match-spin" role="status">
+      <p className="match-spin-kicker">誰先開始</p>
+      <div className={`match-slot${locked ? " locked" : ""}`}>
+        {current ? <Portrait roleId={current.roleId} size={148} className="match-slot-art" /> : null}
+      </div>
+      <strong className="match-spin-name">{locked ? `${label} 先手` : label}</strong>
+      <div className="match-spin-row">
+        {players.map((p, i) => (
+          <span key={p.id} className={`match-spin-pip${i === idx ? " on" : ""}`}>
+            <Portrait roleId={p.roleId} size={36} />
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function MatchScreen() {
   const m = useGame((s) => s.match);
   const deal = useGame((s) => s.dealMatch);
   const tap = useGame((s) => s.tapMatch);
   const flipBack = useGame((s) => s.flipMatch);
   const swap = useGame((s) => s.swapMatch);
+  const readySwap = useGame((s) => s.readyMatchSwap);
+  const commitSwap = useGame((s) => s.commitMatchSwap);
+  const arm = useGame((s) => s.armMatch);
   const myId = useGame((s) => s.myPlayerId);
   const players = useGame((s) => s.players);
   const next = useGame((s) => s.nextReact);
 
   useEffect(() => {
+    if (!m?.tiles.length) return;
+    preloadReactCards(m.tiles.map((t) => t.file));
+  }, [m?.round, m?.size, m?.tiles.length]);
+
+  useEffect(() => {
     if (!m?.lock) return;
-    const t = window.setTimeout(() => flipBack(), 820);
-    return () => window.clearTimeout(t);
+    let stop = false;
+    const files = (m.pick ?? []).map((i) => m.tiles[i]?.file).filter(Boolean) as string[];
+    const started = Date.now();
+    const hold = 1200;
+    void (async () => {
+      await whenReactCardsReady(files, 2000);
+      const wait = Math.max(0, hold - (Date.now() - started));
+      await new Promise((r) => window.setTimeout(r, wait));
+      if (!stop) flipBack();
+    })();
+    const fallback = window.setTimeout(() => {
+      if (!stop) flipBack();
+    }, 3200);
+    return () => {
+      stop = true;
+      window.clearTimeout(fallback);
+    };
   }, [m?.lock, flipBack]);
+
+  useEffect(() => {
+    if (m?.sub !== "next") return;
+    const t = window.setTimeout(() => deal(m.size), 1200);
+    return () => window.clearTimeout(t);
+  }, [m?.sub, m?.size, deal]);
+
+  useEffect(() => {
+    if (!m?.swapping || !m.swapBurst) return;
+    const t = window.setTimeout(() => readySwap(), 1000);
+    return () => window.clearTimeout(t);
+  }, [m?.swapping, m?.swapBurst, readySwap]);
+
+  useEffect(() => {
+    if (!m?.swapping || m.swapPick.length !== 2) return;
+    const t = window.setTimeout(() => commitSwap(), 420);
+    return () => window.clearTimeout(t);
+  }, [m?.swapping, m?.swapPick.length, commitSwap]);
 
   if (!m) return <Screen><p className="hint">載入中…</p></Screen>;
   const myTurn = m.turn === myId;
-  const canSwap = myTurn && !m.swapped.includes(myId ?? "") && !m.lock && m.sub === "play";
+  const canSwap = myTurn && !m.swapped.includes(myId ?? "") && !m.lock && m.sub === "play" && !m.swapping;
+  const showSwapGlow = m.swapping && m.swapBy === myId;
+  const turnName = players.find((p) => p.id === m.turn)?.name.replace(/^電腦[·・]/, "") ?? "";
 
   return (
     <Screen className="screen-match">
       <DrinkHud />
       <div className="top-bar">
         <span className="tag-pill">MATCH</span>
-        <span className="tag-pill pink">對對消</span>
+        <span className="tag-pill pink">對對碰 {m.round > 0 ? `${m.round}/${m.roundMax || 3}` : ""}</span>
       </div>
       {m.sub === "size" ? (
-        <>
-          <p className="hint">翻兩張，一樣就消。配錯受罰。每局限用一次調換。卡背是哞聊貓。</p>
-          <div className="btn-row">
-            {([8, 12, 16] as const).map((n) => (
-              <button key={n} className="btn" type="button" onClick={() => deal(n)}>
-                {n} 對
+        <div className="match-setup">
+          <img className="match-setup-art" src={modeArt("match")} alt="" draggable={false} />
+          <p className="hint">三局一場。對到繼續，對錯換人。終場配對最少的喝。自己回合可調換一次，牌面不亮。</p>
+          <div className="match-sizes">
+            {(
+              [
+                { n: 8 as const, grid: "4×4" },
+                { n: 12 as const, grid: "6×4" },
+                { n: 18 as const, grid: "6×6" },
+              ]
+            ).map((opt) => (
+              <button key={opt.n} className="match-size" type="button" onClick={() => deal(opt.n)}>
+                <strong>{opt.n} 對</strong>
+                <span>{opt.grid} · 共 3 局</span>
               </button>
             ))}
           </div>
-        </>
+        </div>
       ) : null}
-      {m.sub === "play" ? (
+      {m.sub === "next" ? (
+        <p className="hint">第 {m.round} 局結束，接著第 {(m.round || 1) + 1} 局…</p>
+      ) : null}
+      {m.sub === "play" || m.sub === "spin" ? (
         <>
           <p className="hint">
-            輪到 {players.find((p) => p.id === m.turn)?.name}
-            {m.swapping ? " · 點兩張調換" : ""}
+            第 {m.round}/{m.roundMax || 3} 局 · {m.sub === "spin" ? "抽誰先開始…" : `輪到 ${turnName}`}
+            {m.swapping ? (m.swapBurst ? " · 調換特效" : " · 點兩張蓋牌，卡背會亮黃") : ""}
           </p>
-          {m.flash ? <div className="match-flash">{m.flash}</div> : null}
-          <div className="match-board" style={{ ["--n" as string]: String(m.cols || 4) }}>
+          <div className={`match-board${m.cols >= 6 ? " grid-6" : ""}`} style={{ ["--n" as string]: String(m.cols || 4) }}>
             {m.tiles.map((t, i) => (
               <button
                 key={i}
-                className={`match-tile ${t.open || t.matched ? "open" : ""} ${t.matched ? "matched" : ""}`}
+                className={`match-tile ${t.open || t.matched ? "open" : ""} ${t.matched ? "matched" : ""} ${showSwapGlow && m.swapPick.includes(i) ? "swap-on" : ""}`}
                 type="button"
-                disabled={!myTurn || m.lock}
+                disabled={m.sub !== "play" || !myTurn || m.lock || Boolean(m.swapBurst) || m.swapPick.length >= 2}
                 onClick={() => {
                   unlockSfx();
                   tap(i, myId ?? undefined);
                 }}
               >
-                {t.open || t.matched ? (
-                  <img src={reactCardSrc(t.file)} alt="" draggable={false} />
-                ) : (
-                  <img className="match-back" src={ART.cardBack} alt="" draggable={false} />
-                )}
+                <img className="match-back" src={ART.cardBack} alt="" draggable={false} />
+                <img className="match-face" src={reactCardSrc(t.file)} alt="" draggable={false} />
               </button>
             ))}
           </div>
-          {canSwap ? (
-            <button className="btn btn-pink" type="button" onClick={() => swap(myId ?? undefined)}>
-              調換兩張（限一次）
-            </button>
+          {m.sub === "spin" ? (
+            <MatchStarterReel
+              key={`${m.round}-${m.turn}`}
+              players={players}
+              winnerId={m.turn}
+              onDone={arm}
+            />
           ) : null}
-          <SkillUseBtn />
+          <div className="match-actions">
+            <button
+              className="btn btn-pink"
+              type="button"
+              disabled={!canSwap}
+              onClick={() => {
+                if (!canSwap) return;
+                unlockSfx();
+                swap(myId ?? undefined);
+              }}
+            >
+              調換
+            </button>
+            <ModeSwitchBtn />
+          </div>
         </>
       ) : null}
       {m.sub === "result" ? (
         <>
-          <p className="hint">配對最少再罰一次</p>
-          <div className="btn-row inline">
+          <p className="hint">三局結束，配對最少的喝。現在可以放技能。</p>
+          <div className="btn-row">
             <SkillUseBtn />
             <button className="btn btn-lg" type="button" onClick={next}>
               本局頒獎
             </button>
+            <ModeSwitchBtn />
           </div>
         </>
+      ) : m.sub === "size" || m.sub === "next" ? (
+        <div className="btn-row">
+          <ModeSwitchBtn />
+        </div>
       ) : null}
-      <ModeSwitchBtn />
     </Screen>
   );
 }

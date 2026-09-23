@@ -10,7 +10,7 @@ import {
   type KingKind,
 } from "./party";
 import { CHAOS_CARDS, TRUTH_QUESTIONS, WHO_QUESTIONS, fillPunish } from "./partyPlay";
-import { REACT_CARDS, REACT_COLORS, type ReactColor } from "./reactCards";
+import { REACT_CARDS, REACT_COLORS, pickMatchFaces, type ReactColor } from "./reactCards";
 
 export type Phase =
   | "home"
@@ -154,21 +154,24 @@ export interface MatchTile {
   matched: boolean;
 }
 export interface MatchState {
-  size: 8 | 12 | 16;
+  size: 8 | 12 | 18;
   cols: number;
-  sub: "size" | "play" | "result";
+  sub: "size" | "spin" | "play" | "next" | "result";
   tiles: MatchTile[];
   pick: number[];
   scores: Record<string, number>;
   turn: string;
   swapped: string[];
   swapping: boolean;
+  swapBurst: boolean;
   swapBy: string | null;
   swapPick: number[];
   flash: string | null;
   lock: boolean;
   found: number;
   pairs: number;
+  round: number;
+  roundMax: number;
 }
 
 export interface AwardState {
@@ -860,46 +863,68 @@ export function startMatch(state: GameState): void {
     turn: state.players[0]?.id ?? "",
     swapped: [],
     swapping: false,
+    swapBurst: false,
     swapBy: null,
     swapPick: [],
     flash: null,
     lock: false,
     found: 0,
     pairs: 0,
+    round: 0,
+    roundMax: 3,
   };
 }
 
-export function matchDeal(state: GameState, size: 8 | 12 | 16): void {
+export function matchDeal(state: GameState, size: 8 | 12 | 18): void {
   const m = state.match;
   if (!m) return;
+  const continuing = m.sub === "next" || (m.round > 0 && m.sub !== "size");
   const pairs = size;
-  const cols = size === 8 ? 4 : size === 12 ? 6 : 8;
-  const pool = [...REACT_CARDS];
-  const keys: MatchTile[] = [];
-  for (let i = 0; i < pairs; i++) {
-    const c = pool[i % pool.length]!;
-    keys.push({ key: `${c.color}:${c.file}:${i}`, file: c.file, color: c.color, open: false, matched: false });
-  }
-  const doubled = [...keys, ...keys.map((k) => ({ ...k }))];
+  const cols = size === 8 ? 4 : 6;
+  const faces = pickMatchFaces(pairs);
+  const keys: MatchTile[] = faces.map((c, i) => ({
+    key: `${c.color}:${c.file}:${i}`,
+    file: c.file,
+    color: c.color,
+    open: false,
+    matched: false,
+  }));
+  const doubled = [
+    ...keys.map((k) => ({ ...k, key: `${k.key}:a` })),
+    ...keys.map((k) => ({ ...k, key: `${k.key}:b` })),
+  ];
   for (let i = doubled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [doubled[i], doubled[j]] = [doubled[j]!, doubled[i]!];
   }
   m.size = size;
   m.cols = cols;
-  m.sub = "play";
+  m.sub = "spin";
   m.tiles = doubled;
   m.pick = [];
   m.found = 0;
   m.pairs = pairs;
-  m.scores = Object.fromEntries(state.players.map((p) => [p.id, 0]));
-  m.turn = state.players[0]?.id ?? "";
+  if (!continuing) {
+    m.scores = Object.fromEntries(state.players.map((p) => [p.id, 0]));
+    m.round = 1;
+  } else {
+    m.round = Math.min((m.round || 1) + 1, m.roundMax || 3);
+  }
+  const start = state.players[Math.floor(Math.random() * Math.max(1, state.players.length))];
+  m.turn = start?.id ?? state.players[0]?.id ?? "";
   m.swapped = [];
   m.swapping = false;
+  m.swapBurst = false;
   m.swapBy = null;
   m.swapPick = [];
   m.flash = null;
   m.lock = false;
+}
+
+export function matchArm(state: GameState): void {
+  const m = state.match;
+  if (!m || m.sub !== "spin") return;
+  m.sub = "play";
 }
 
 export function matchBeginSwap(state: GameState, pid: string): void {
@@ -908,9 +933,41 @@ export function matchBeginSwap(state: GameState, pid: string): void {
   if (m.turn !== pid) return;
   if (m.swapped.includes(pid) || m.swapping) return;
   m.swapping = true;
+  m.swapBurst = true;
   m.swapBy = pid;
   m.swapPick = [];
-  m.flash = "點兩張牌調換位置";
+  m.flash = null;
+  const who = state.players.find((p) => p.id === pid);
+  if (who) {
+    state.skillFlash = {
+      roleId: who.roleId,
+      name: who.name.replace(/^電腦[·・]/, ""),
+      skill: "調換",
+      msg: "點兩張蓋著的牌對調。卡背會亮黃，只有你看得到。牌面不亮。",
+    };
+  }
+}
+
+export function matchSwapReady(state: GameState): void {
+  const m = state.match;
+  if (!m?.swapping || !m.swapBurst) return;
+  m.swapBurst = false;
+  if (state.skillFlash?.skill === "調換") state.skillFlash = null;
+}
+
+export function matchCommitSwap(state: GameState): void {
+  const m = state.match;
+  if (!m?.swapping || m.swapPick.length !== 2) return;
+  const [a, b] = m.swapPick;
+  const tmp = m.tiles[a!]!;
+  m.tiles[a!] = m.tiles[b!]!;
+  m.tiles[b!] = tmp;
+  if (m.swapBy) m.swapped.push(m.swapBy);
+  m.swapping = false;
+  m.swapBurst = false;
+  m.swapBy = null;
+  m.swapPick = [];
+  m.flash = null;
 }
 
 export function matchTap(state: GameState, i: number, pid: string): void {
@@ -919,21 +976,14 @@ export function matchTap(state: GameState, i: number, pid: string): void {
   if (m.turn !== pid) return;
   if (state.punishQueue.length && !m.swapping) flushPunish(state);
   if (m.swapping && m.swapBy === pid) {
-    if (m.swapPick.includes(i)) return;
+    if (m.swapBurst) return;
     const tile = m.tiles[i];
-    if (!tile || tile.matched) return;
+    if (!tile || tile.matched || tile.open) return;
+    if (m.swapPick.includes(i)) {
+      m.swapPick = m.swapPick.filter((x) => x !== i);
+      return;
+    }
     m.swapPick = [...m.swapPick, i];
-    if (m.swapPick.length < 2) return;
-    const [a, b] = m.swapPick;
-    const tmp = m.tiles[a!]!;
-    m.tiles[a!] = m.tiles[b!]!;
-    m.tiles[b!] = tmp;
-    m.swapped.push(pid);
-    const name = state.players.find((p) => p.id === pid)?.name ?? "玩家";
-    m.flash = `${name} 調換了兩張牌`;
-    m.swapping = false;
-    m.swapBy = null;
-    m.swapPick = [];
     return;
   }
   const tile = m.tiles[i];
@@ -942,23 +992,27 @@ export function matchTap(state: GameState, i: number, pid: string): void {
   m.pick = [...m.pick, i];
   if (m.pick.length < 2) return;
   const [a, b] = m.pick;
-  if (m.tiles[a!]!.key === m.tiles[b!]!.key) {
+  if (m.tiles[a!]!.file === m.tiles[b!]!.file && m.tiles[a!]!.color === m.tiles[b!]!.color) {
     m.tiles[a!]!.matched = true;
     m.tiles[b!]!.matched = true;
     m.scores[pid] = (m.scores[pid] ?? 0) + 1;
     m.found += 1;
     m.pick = [];
     if (m.found >= m.pairs) {
-      const min = Math.min(...Object.values(m.scores));
-      const losers = Object.entries(m.scores)
-        .filter(([, v]) => v === min)
-        .map(([k]) => k);
-      settlePunish(state, losers, 1);
-      m.sub = "result";
+      if (m.round < (m.roundMax || 3)) {
+        m.sub = "next";
+        m.flash = `第 ${m.round} 局結束`;
+      } else {
+        const min = Math.min(...Object.values(m.scores));
+        const losers = Object.entries(m.scores)
+          .filter(([, v]) => v === min)
+          .map(([k]) => k);
+        settlePunish(state, losers, 1);
+        m.sub = "result";
+      }
     }
     return;
   }
-  settlePunish(state, [pid], 1);
   m.lock = true;
 }
 

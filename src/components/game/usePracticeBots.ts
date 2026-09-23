@@ -19,6 +19,7 @@ export function usePracticeBots() {
   const matchTurn = useGame((s) => s.match?.turn);
   const matchLock = useGame((s) => s.match?.lock);
   const matchSub = useGame((s) => s.match?.sub);
+  const matchFound = useGame((s) => s.match?.found);
 
   useEffect(() => {
     if (!practice) return;
@@ -137,5 +138,6 @@ export function usePracticeBots() {
     matchTurn,
     matchLock,
     matchSub,
+    matchFound,
   ]);
 }

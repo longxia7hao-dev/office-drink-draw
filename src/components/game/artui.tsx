@@ -108,7 +108,8 @@ export function RoleShowcase({
   }
 
   return (
-    <article className="role-hero" style={{ ["--hero-color" as string]: role.color }}>
+    <article className={`role-hero${speaking ? " talking" : ""}`} style={{ ["--hero-color" as string]: role.color }}>
+      {speaking ? <p className="hero-bubble">「{role.line}」</p> : null}
       <div
         className="hero-stage"
         onPointerDown={onPointerDown}
@@ -123,17 +124,12 @@ export function RoleShowcase({
             <div className="hero-tag">{role.tag}</div>
           </div>
           <Portrait roleId={role.id} size={320} className="hero-art idle" />
-          {speaking ? <p className="hero-bubble">「{role.line}」</p> : null}
           {stamp}
           <div className="hero-pager">
             <button className="nav-arrow" type="button" onClick={onPrev} aria-label="上一個角色">
               <ChevronLeft size={22} strokeWidth={3} />
             </button>
-            <div className="hero-dots" aria-hidden>
-              {Array.from({ length: total }, (_, i) => (
-                <span key={i} className={i === index ? "on" : ""} />
-              ))}
-            </div>
+            <span />
             <button className="nav-arrow" type="button" onClick={onNext} aria-label="下一個角色">
               <ChevronRight size={22} strokeWidth={3} />
             </button>
@@ -201,10 +197,12 @@ export function DrinkHud() {
     !flip.tie &&
     flip.drinkerIds.length > 0;
   const punished = minorityPunished ? new Set(flip!.drinkerIds) : new Set(Object.keys(hit ?? {}).filter((id) => (hit ?? {})[id] > 0));
+  const match = useGame((s) => s.match);
+  const showPairs = phase === "match" && match && match.sub !== "size";
   if (players.length === 0) return null;
   if (phase === "home" || phase === "setup" || phase === "lobby" || phase === "pick_role") return null;
   return (
-    <div className="drink-hud" style={{ ["--n" as string]: String(Math.min(players.length, 4)) }}>
+    <div className="drink-hud">
       <div className={`heat-pip heat-${heat}`}>
         <Flame size={14} />
         <span>熱度 {heat}</span>
@@ -218,9 +216,9 @@ export function DrinkHud() {
             key={p.id}
           >
             <Portrait roleId={p.roleId} size={28} />
-            <span className="hud-name">{label}</span>
-            {p.isBot ? <span className="hud-bot">CPU</span> : null}
+            <span className={cn("hud-name", p.isBot && "is-bot")}>{label}</span>
             <b className="hud-cups">{p.cups || 0}</b>
+            {showPairs ? <em className="hud-pairs">{match.scores[p.id] ?? 0}對</em> : null}
             {hit?.[p.id] ? <i className="hud-hit">×{hit[p.id]}</i> : null}
             {(p.nextMult ?? 1) > 1 ? <em className="hud-buff">下次×{p.nextMult}</em> : null}
             {p.nextMult === 0 ? <em className="hud-buff">下次免</em> : null}

@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { newRoomCode, newSeed } from "./rng";
 import { BOT_NAMES } from "./bots";
 import { getRole } from "./roles";
+import { playMeow } from "./sfx";
+import { preloadReactCards } from "./art";
 import {
   applyBaseDrink,
   applySkill,
@@ -36,7 +38,10 @@ import {
   matchDeal,
   matchTap,
   matchFlipBack,
+  matchArm,
   matchBeginSwap,
+  matchSwapReady,
+  matchCommitSwap,
   reactAdvance,
   reactBegin,
   reactFail,
@@ -171,10 +176,13 @@ interface GameStore extends GameState {
   beatReact: () => void;
   tapReact: (pid?: string) => "miss" | "ok" | "ignore";
   timeoutReact: () => void;
-  dealMatch: (n: 8 | 12 | 16) => void;
+  dealMatch: (n: 8 | 12 | 18) => void;
+  armMatch: () => void;
   tapMatch: (i: number, pid?: string) => void;
   flipMatch: () => void;
   swapMatch: (pid?: string) => void;
+  readyMatchSwap: () => void;
+  commitMatchSwap: () => void;
   advanceFlip: () => void;
 }
 
@@ -755,11 +763,21 @@ export const useGame = create<GameStore>((set, get) => ({
     const s = cloneState(get());
     matchDeal(s, n);
     set(s);
+    preloadReactCards((s.match?.tiles ?? []).map((t) => t.file));
+  },
+  armMatch: () => {
+    const s = cloneState(get());
+    matchArm(s);
+    set(s);
   },
   tapMatch: (i, pid) => {
     const s = cloneState(get());
+    const before = s.match?.found ?? 0;
     matchTap(s, i, pid ?? s.myPlayerId ?? s.match?.turn ?? "");
-    s.burstKey += 1;
+    if ((s.match?.found ?? 0) > before) {
+      playMeow();
+      s.burstKey += 1;
+    }
     set(s);
   },
   flipMatch: () => {
@@ -770,6 +788,17 @@ export const useGame = create<GameStore>((set, get) => ({
   swapMatch: (pid) => {
     const s = cloneState(get());
     matchBeginSwap(s, pid ?? s.myPlayerId ?? "");
+    s.burstKey += 1;
+    set(s);
+  },
+  readyMatchSwap: () => {
+    const s = cloneState(get());
+    matchSwapReady(s);
+    set(s);
+  },
+  commitMatchSwap: () => {
+    const s = cloneState(get());
+    matchCommitSwap(s);
     set(s);
   },
   advanceFlip: () => {

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import lottie, { type AnimationItem } from "lottie-web";
 
 export function StudioLottie({
@@ -90,5 +90,89 @@ export function StudioLottie({
     };
   }, [src, loop]);
 
+  return <div ref={box} className={className} aria-hidden="true" />;
+}
+
+function bobAnimation(src: string, size = 800) {
+  const c = size / 2;
+  const ease = { i: { x: [0.67], y: [1] }, o: { x: [0.33], y: [0] } };
+  return {
+    v: "5.7.4",
+    fr: 30,
+    ip: 0,
+    op: 90,
+    w: size,
+    h: size,
+    nm: "logo-bob",
+    ddd: 0,
+    assets: [{ id: "logo", w: size, h: size, u: "", p: src, e: 1 }],
+    layers: [
+      {
+        ddd: 0,
+        ind: 1,
+        ty: 2,
+        nm: "logo",
+        refId: "logo",
+        sr: 1,
+        ks: {
+          o: { a: 0, k: 100 },
+          r: { a: 0, k: 0 },
+          p: {
+            a: 1,
+            k: [
+              { t: 0, s: [c, c + 10, 0], ...ease },
+              { t: 45, s: [c, c - 10, 0], ...ease },
+              { t: 90, s: [c, c + 10, 0] },
+            ],
+          },
+          a: { a: 0, k: [c, c, 0] },
+          s: { a: 0, k: [100, 100, 100] },
+        },
+        ao: 0,
+        ip: 0,
+        op: 90,
+        st: 0,
+        bm: 0,
+      },
+    ],
+  };
+}
+
+/** Lottie bob: logo floats a few pixels up and down. Falls back to a CSS bob. */
+export function ModeLogoBob({ src, className }: { src: string; className?: string }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [fail, setFail] = useState(false);
+
+  useEffect(() => {
+    if (fail) return;
+    const el = box.current;
+    if (!el) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      setFail(true);
+      return;
+    }
+    let anim: AnimationItem | null = null;
+    try {
+      anim = lottie.loadAnimation({
+        container: el,
+        renderer: "svg",
+        loop: true,
+        autoplay: true,
+        animationData: bobAnimation(src),
+        rendererSettings: { preserveAspectRatio: "xMidYMid meet" },
+      });
+    } catch {
+      setFail(true);
+      return;
+    }
+    return () => {
+      anim?.destroy();
+    };
+  }, [src, fail]);
+
+  if (fail) {
+    return <img className={`${className ?? ""} mode-logo-fallback`} src={src} alt="" draggable={false} />;
+  }
   return <div ref={box} className={className} aria-hidden="true" />;
 }

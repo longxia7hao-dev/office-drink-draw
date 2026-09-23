@@ -180,11 +180,15 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
   }, [splash]);
 
   useEffect(() => {
-    if (!skillFlash) return;
+    if (!skillFlash) {
+      setFlashOn(false);
+      return;
+    }
     setFlashOn(true);
-    const t = window.setTimeout(() => setFlashOn(false), 1800);
+    const ms = skillFlash.skill === "調換" ? 1000 : 1800;
+    const t = window.setTimeout(() => setFlashOn(false), ms);
     return () => window.clearTimeout(t);
-  }, [skillFlash, burstKey]);
+  }, [burstKey, skillFlash?.skill]);
 
   useEffect(() => {
     setBgmTrack(
@@ -359,8 +363,8 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
       ) : null}
       {splash ? <StudioSplash onDone={() => setSplash(false)} /> : view}
       {flashOn && skillFlash && phase !== "skill" ? (
-        <div className="skill-burst" role="status">
-          <Portrait roleId={skillFlash.roleId} size={96} />
+        <div className={`skill-burst${skillFlash.skill === "調換" ? " is-hold" : ""}`} role="status">
+          <Portrait roleId={skillFlash.roleId} size={192} />
           <strong>
             {skillFlash.name} 使用了 {skillFlash.skill}
           </strong>
