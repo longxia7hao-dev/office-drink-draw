@@ -141,7 +141,6 @@ export function RoleShowcase({
         <span className="hero-skill-kicker">技能</span>
         <strong style={{ color: role.color }}>{role.skillName}</strong>
         <p>{fillPunish(role.skillDesc, punishLabel)}</p>
-        <span className="hero-drink">{fillPunish(role.drink, punishLabel)}</span>
       </div>
       {footer}
     </article>
@@ -190,6 +189,7 @@ export function DrinkHud() {
   const flip = useGame((s) => s.flip);
   const hit = useGame((s) => s.hitAmt);
   const heat = useGame((s) => heatOf(s));
+  const punishLabel = useGame((s) => s.punishLabel);
   const minorityPunished =
     phase === "flip_battle" &&
     flip != null &&
@@ -197,6 +197,9 @@ export function DrinkHud() {
     !flip.tie &&
     flip.drinkerIds.length > 0;
   const punished = minorityPunished ? new Set(flip!.drinkerIds) : new Set(Object.keys(hit ?? {}).filter((id) => (hit ?? {})[id] > 0));
+  const react = useGame((s) => s.react);
+  const showSlips = phase === "react" && !!react;
+  const slipCount = (id: string) => (react?.slips ?? []).filter((x) => x === id).length;
   const match = useGame((s) => s.match);
   const showPairs = phase === "match" && match && match.sub !== "size";
   if (players.length === 0) return null;
@@ -206,6 +209,7 @@ export function DrinkHud() {
       <div className={`heat-pip heat-${heat}`}>
         <Flame size={14} />
         <span>熱度 {heat}</span>
+        <span className="hud-punish">{punishLabel}</span>
       </div>
       <div className="hud-row">
         {players.map((p) => {
@@ -219,6 +223,7 @@ export function DrinkHud() {
             <span className={cn("hud-name", p.isBot && "is-bot")}>{label}</span>
             <b className="hud-cups">{p.cups || 0}</b>
             {showPairs ? <em className="hud-pairs">{match.scores[p.id] ?? 0}對</em> : null}
+            {showSlips && slipCount(p.id) > 0 ? <em className="hud-slips">錯{slipCount(p.id)}</em> : null}
             {hit?.[p.id] ? <i className="hud-hit">×{hit[p.id]}</i> : null}
             {(p.nextMult ?? 1) > 1 ? <em className="hud-buff">下次×{p.nextMult}</em> : null}
             {p.nextMult === 0 ? <em className="hud-buff">下次免</em> : null}

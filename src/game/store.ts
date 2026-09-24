@@ -43,11 +43,13 @@ import {
   matchSwapReady,
   matchCommitSwap,
   reactAdvance,
+  reactAgain,
   reactBegin,
   reactFail,
   reactFinish,
   reactMarkReady,
-  reactNextBeat,
+  reactContinue,
+  reactRelease,
   reactSetHard,
   reactTickCount,
   reactTap,
@@ -169,11 +171,13 @@ interface GameStore extends GameState {
   startReactPlay: () => void;
   finishReact: (misses: number) => void;
   nextReact: () => void;
+  againReact: () => void;
   setReactHard: (hard: boolean) => void;
   markReactReady: (pid?: string) => void;
   tickReactCount: () => void;
   failReact: (pid?: string) => void;
   beatReact: () => void;
+  releaseReact: () => void;
   tapReact: (pid?: string) => "miss" | "ok" | "ignore";
   timeoutReact: () => void;
   dealMatch: (n: 8 | 12 | 18) => void;
@@ -720,6 +724,12 @@ export const useGame = create<GameStore>((set, get) => ({
     s.burstKey += 1;
     set(s);
   },
+  againReact: () => {
+    const s = cloneState(get());
+    reactAgain(s);
+    s.burstKey += 1;
+    set(s);
+  },
   setReactHard: (hard) => {
     const s = cloneState(get());
     reactSetHard(s, hard);
@@ -743,19 +753,27 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   beatReact: () => {
     const s = cloneState(get());
-    reactNextBeat(s);
+    reactContinue(s);
+    set(s);
+  },
+  releaseReact: () => {
+    const s = cloneState(get());
+    reactRelease(s);
     set(s);
   },
   tapReact: (pid) => {
     const s = cloneState(get());
     const result = reactTap(s, pid ?? s.myPlayerId ?? "");
+    if (result === "miss") playMeow();
     s.burstKey += 1;
     set(s);
     return result;
   },
   timeoutReact: () => {
     const s = cloneState(get());
+    const wasPlay = s.react?.sub === "play";
     reactTimeout(s);
+    if (wasPlay && s.react && s.react.sub !== "play") playMeow();
     s.burstKey += 1;
     set(s);
   },

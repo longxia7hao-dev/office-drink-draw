@@ -7,23 +7,24 @@ export function asset(path: string): string {
 }
 
 export const ROLE_ART: Record<string, string> = {
-  ceo: asset("/art/roles/ceo.png"),
-  manager: asset("/art/roles/manager.png"),
-  worker: asset("/art/roles/worker.png"),
-  intern: asset("/art/roles/intern.png"),
-  sales: asset("/art/roles/sales.png"),
-  hr: asset("/art/roles/hr.png"),
-  accountant: asset("/art/roles/accountant.png"),
-  engineer: asset("/art/roles/engineer.png"),
-  overtime: asset("/art/roles/overtime.png"),
-  secretary: asset("/art/roles/secretary.png"),
-  veteran: asset("/art/roles/veteran.png"),
+  ceo: asset("/art/roles/ceo.webp"),
+  manager: asset("/art/roles/manager.webp"),
+  worker: asset("/art/roles/worker.webp"),
+  intern: asset("/art/roles/intern.webp"),
+  sales: asset("/art/roles/sales.webp"),
+  hr: asset("/art/roles/hr.webp"),
+  accountant: asset("/art/roles/accountant.webp"),
+  engineer: asset("/art/roles/engineer.webp"),
+  overtime: asset("/art/roles/overtime.webp"),
+  secretary: asset("/art/roles/secretary.webp"),
+  veteran: asset("/art/roles/veteran.webp"),
 };
 
 export const STICKER_ART = {
-  cat: asset("/art/stickers/cat.png"),
-  dog: asset("/art/stickers/dog.png"),
-  cow: asset("/art/stickers/cow.png"),
+  cat: `${asset("/art/stickers/cat.png")}?v=${APP_VERSION}`,
+  dog: `${asset("/art/stickers/dog.png")}?v=${APP_VERSION}`,
+  cow: `${asset("/art/stickers/cow.png")}?v=${APP_VERSION}`,
+  panda: `${asset("/art/stickers/panda.png")}?v=${APP_VERSION}`,
 } as const;
 
 export function reactCardSrc(file: string): string {
@@ -112,11 +113,11 @@ export const ART = {
 };
 
 export const MODE_ART: Record<string, string> = {
-  flip: asset("/art/modes/flip.png"),
-  who: asset("/art/modes/who.png"),
-  truth: asset("/art/modes/truth.png"),
-  react: asset("/art/modes/react.png"),
-  match: asset("/art/modes/match.png"),
+  flip: asset("/art/modes/flip.webp"),
+  who: asset("/art/modes/who.webp"),
+  truth: asset("/art/modes/truth.webp"),
+  react: asset("/art/modes/react.webp"),
+  match: asset("/art/modes/match.webp"),
 };
 
 export function modeArt(id: string): string {
@@ -131,3 +132,24 @@ export function roleArt(roleId: string): string {
   const src = ROLE_ART[roleId] ?? ROLE_ART.worker!;
   return `${src}?v=${APP_VERSION}`;
 }
+
+const pinned: HTMLImageElement[] = [];
+
+/** Decode role and mode art as soon as the app script loads, before those screens open. */
+export function warmPickArt(): void {
+  if (typeof window === "undefined") return;
+  const srcs = [
+    ...Object.values(ROLE_ART).map((src) => `${src}?v=${APP_VERSION}`),
+    ...Object.values(MODE_ART).map((src) => `${src}?v=${APP_VERSION}`),
+    ...Object.values(STICKER_ART),
+  ];
+  for (const src of srcs) {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = src;
+    pinned.push(img);
+    void img.decode?.().catch(() => {});
+  }
+}
+
+warmPickArt();

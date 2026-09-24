@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import lottie, { type AnimationItem } from "lottie-web";
+import { prefetchLottie } from "@/game/preload";
 
 export function StudioLottie({
   src,
@@ -69,12 +70,11 @@ export function StudioLottie({
       if (!dead && !started) ended.current?.();
     };
 
-    fetch(src)
-      .then((r) => {
-        if (!r.ok) throw new Error("lottie fetch");
-        return r.json();
+    prefetchLottie(src)
+      .then((data) => {
+        if (data) start(data);
+        else fail();
       })
-      .then(start)
       .catch(fail);
 
     const watchdog = window.setTimeout(fail, 4000);

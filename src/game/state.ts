@@ -10,7 +10,7 @@ import {
   type KingKind,
 } from "./party";
 import { CHAOS_CARDS, TRUTH_QUESTIONS, WHO_QUESTIONS, fillPunish } from "./partyPlay";
-import { REACT_CARDS, REACT_COLORS, pickMatchFaces, type ReactColor } from "./reactCards";
+import { REACT_CARDS, REACT_COLORS, REACT_DECOYS, pickMatchFaces, type ReactColor } from "./reactCards";
 
 export type Phase =
   | "home"
@@ -124,13 +124,14 @@ export interface TruthState {
   dragFrom: string | null;
 }
 
-export type ReactSticker = "cat" | "dog" | "cow";
+export type ReactSticker = "cat" | "dog" | "cow" | "panda";
 export interface ReactState {
-  sub: "ready" | "count" | "play" | "result" | "drag";
+  sub: "ready" | "count" | "play" | "between" | "result" | "drag";
   hard: boolean;
   ready: string[];
   count: number;
   beat: number;
+  card: number;
   color: string;
   file: string;
   sticker: ReactSticker | null;
@@ -138,8 +139,10 @@ export interface ReactState {
   stickerX: number;
   stickerY: number;
   tempo: number;
+  hold: boolean;
   dead: string[];
   tapped: string[];
+  slips: string[];
   playerId: string;
   misses: number;
   punished: boolean;
@@ -240,6 +243,7 @@ export interface GameState {
   who: WhoState | null;
   truth: TruthState | null;
   react: ReactState | null;
+  reactLock: { color: string; need: ReactSticker | null } | null;
   match: MatchState | null;
   award: AwardState | null;
   hitAmt: Record<string, number>;
@@ -279,6 +283,7 @@ export function createInitialState(): GameState {
     who: null,
     truth: null,
     react: null,
+    reactLock: null,
     match: null,
     award: null,
     hitAmt: {},
@@ -450,6 +455,7 @@ export function currentDrinkers(state: GameState): string[] {
 }
 
 export function canUseSkillNow(state: GameState, pid: string | null | undefined): boolean {
+  if (state.phase === "react" || state.mode === "react") return false;
   if (!pid) return false;
   const p = state.players.find((x) => x.id === pid);
   if (!p || p.skillUsed || p.isBot) return false;
@@ -679,6 +685,7 @@ export function startReact(state: GameState): void {
     ready: [],
     count: 3,
     beat: 0,
+    card: 0,
     color: "lime",
     file: REACT_CARDS[0]?.file ?? "",
     sticker: null,
@@ -686,8 +693,10 @@ export function startReact(state: GameState): void {
     stickerX: 50,
     stickerY: 50,
     tempo: 2000,
+    hold: false,
     dead: [],
     tapped: [],
+    slips: [],
     playerId: "",
     misses: 0,
     punished: false,
@@ -710,33 +719,68 @@ export function reactMarkReady(state: GameState, pid: string): void {
     if (!r.ready.includes(p.id)) r.ready.push(p.id);
   });
   if (r.ready.length >= state.players.length) {
+    Object.assign(r, pickReactBeat(state, r.hard));
+    r.card += 1;
     r.sub = "count";
     r.count = 3;
+    r.beat = 0;
+    r.tempo = 2000;
+    r.dead = [];
+    r.tapped = [];
+    r.slips = [];
   }
 }
 
-function pickReactBeat(hard: boolean): Pick<ReactState, "color" | "file" | "sticker" | "need" | "stickerX" | "stickerY"> {
-  const target = REACT_COLORS[Math.floor(Math.random() * REACT_COLORS.length)]!;
-  const matchColor = Math.random() < 0.42;
-  const shown = matchColor
-    ? target
-    : REACT_COLORS.filter((c) => c !== target)[Math.floor(Math.random() * (REACT_COLORS.length - 1))]!;
-  const pool = REACT_CARDS.filter((c) => c.color === shown);
-  const card = pool[Math.floor(Math.random() * pool.length)] ?? REACT_CARDS[Math.floor(Math.random() * REACT_CARDS.length)]!;
-  const stickers: ReactSticker[] = ["cat", "dog", "cow"];
-  const need = hard ? stickers[Math.floor(Math.random() * 3)]! : null;
+function ensureReactLock(state: GameState, hard: boolean): { color: string; need: ReactSticker | null } {
+  const stickers: ReactSticker[] = ["cat", "dog", "cow", "panda"];
+  if (!state.reactLock) {
+    state.reactLock = {
+      color: REACT_COLORS[Math.floor(Math.random() * REACT_COLORS.length)]!,
+      need: hard ? stickers[Math.floor(Math.random() * stickers.length)]! : null,
+    };
+    return state.reactLock;
+  }
+  if (hard && !state.reactLock.need) {
+    state.reactLock = {
+      ...state.reactLock,
+      need: stickers[Math.floor(Math.random() * stickers.length)]!,
+    };
+  }
+  return state.reactLock;
+}
+
+function pickReactBeat(state: GameState, hard: boolean): Pick<ReactState, "color" | "file" | "sticker" | "need" | "stickerX" | "stickerY"> {
+  const lock = ensureReactLock(state, hard);
+  const target = lock.color;
+  const need = hard ? lock.need : null;
+  const roll = Math.random();
+  let file: string;
+  if (roll < 0.4) {
+    const pool = REACT_CARDS.filter((c) => c.color === target);
+    file = pool[Math.floor(Math.random() * pool.length)]!.file;
+  } else if (roll < 0.64 && REACT_DECOYS.length) {
+    const traps = REACT_DECOYS.filter((d) => d.looks === target);
+    const pool = traps.length ? traps : REACT_DECOYS;
+    file = pool[Math.floor(Math.random() * pool.length)]!.file;
+  } else {
+    const shown = REACT_COLORS.filter((c) => c !== target)[Math.floor(Math.random() * (REACT_COLORS.length - 1))]!;
+    const pool = REACT_CARDS.filter((c) => c.color === shown);
+    file = pool[Math.floor(Math.random() * pool.length)]!.file;
+  }
+  const stickers: ReactSticker[] = ["cat", "dog", "cow", "panda"];
   let sticker: ReactSticker | null = null;
-  if (hard) {
+  if (hard && need) {
     const matchSticker = Math.random() < 0.45;
-    sticker = matchSticker ? need : stickers.filter((s) => s !== need)[Math.floor(Math.random() * 2)]!;
+    const wrong = stickers.filter((s) => s !== need);
+    sticker = matchSticker ? need : wrong[Math.floor(Math.random() * wrong.length)]!;
   }
   return {
     color: target,
-    file: card.file,
+    file,
     sticker,
     need,
-    stickerX: 14 + Math.random() * 62,
-    stickerY: 14 + Math.random() * 62,
+    stickerX: 28 + Math.random() * 44,
+    stickerY: 26 + Math.random() * 48,
   };
 }
 
@@ -747,12 +791,11 @@ export function reactTickCount(state: GameState): void {
     r.count -= 1;
     return;
   }
-  const beat = pickReactBeat(r.hard);
-  Object.assign(r, beat);
+  if (!r.file) {
+    Object.assign(r, pickReactBeat(state, r.hard));
+    r.card += 1;
+  }
   r.sub = "play";
-  r.beat = 0;
-  r.tempo = 2000;
-  r.dead = [];
   r.tapped = [];
 }
 
@@ -763,61 +806,104 @@ export function reactMustTap(r: ReactState): boolean {
   return colorOk && stickerOk;
 }
 
+function settleReact(state: GameState): void {
+  const r = state.react;
+  if (!r) return;
+  const counts: Record<string, number> = {};
+  for (const id of r.slips) counts[id] = (counts[id] ?? 0) + 1;
+  const ids = Object.keys(counts);
+  r.dead = ids;
+  r.punished = ids.length > 0;
+  r.sub = "result";
+  r.hold = false;
+  if (r.punished) {
+    settlePunish(state, ids, 1);
+    for (const id of ids) {
+      const times = counts[id] ?? 1;
+      state.hitAmt[id] = (state.hitAmt[id] ?? 0) * times;
+    }
+    state.punishAmt = Math.max(1, ...Object.values(counts));
+  }
+  state.reactLock = null;
+}
+
+function endReactRound(state: GameState, losers: string[]): void {
+  const r = state.react;
+  if (!r || r.sub !== "play") return;
+  const ids = [...new Set(losers.filter(Boolean))];
+  r.dead = ids;
+  r.slips.push(...ids);
+  r.hold = false;
+  r.punished = ids.length > 0;
+  r.sub = "result";
+  state.reactLock = null;
+  if (ids.length) settlePunish(state, ids, 1);
+}
+
+function reactNextCard(state: GameState): void {
+  const r = state.react;
+  if (!r || r.sub !== "play") return;
+  Object.assign(r, pickReactBeat(state, r.hard));
+  r.card += 1;
+  r.tapped = [];
+  r.hold = false;
+  r.tempo = Math.max(600, r.tempo - 100);
+}
+
 export function reactFail(state: GameState, pid: string): void {
   const r = state.react;
   if (!r || r.sub !== "play") return;
-  if (r.dead.includes(pid)) return;
-  r.dead.push(pid);
-  r.punished = true;
-  r.sub = "result";
-  settlePunish(state, [pid], 1);
+  endReactRound(state, [pid]);
 }
 
 export function reactTap(state: GameState, pid: string): "miss" | "ok" | "ignore" {
   const r = state.react;
   if (!r || r.sub !== "play") return "ignore";
-  if (!pid || r.dead.includes(pid) || r.tapped.includes(pid)) return "ignore";
+  if (!pid || r.tapped.includes(pid)) return "ignore";
   if (!reactMustTap(r)) {
     reactFail(state, pid);
     return "miss";
   }
   r.tapped.push(pid);
-  const alive = state.players.filter((p) => !r.dead.includes(p.id));
-  if (alive.length > 0 && alive.every((p) => r.tapped.includes(p.id))) reactNextBeat(state);
+  if (state.players.every((p) => r.tapped.includes(p.id))) r.hold = true;
   return "ok";
+}
+
+export function reactRelease(state: GameState): void {
+  const r = state.react;
+  if (!r || r.sub !== "play" || !r.hold) return;
+  r.hold = false;
+  reactNextCard(state);
 }
 
 export function reactTimeout(state: GameState): void {
   const r = state.react;
-  if (!r || r.sub !== "play") return;
+  if (!r || r.sub !== "play" || r.hold) return;
   if (!reactMustTap(r)) {
-    reactNextBeat(state);
+    reactNextCard(state);
     return;
   }
-  const missed = state.players.filter((p) => !r.dead.includes(p.id) && !r.tapped.includes(p.id)).map((p) => p.id);
-  if (missed.length) {
-    r.dead.push(...missed);
-    r.punished = true;
-    r.sub = "result";
-    settlePunish(state, missed, 1);
-    return;
-  }
-  reactNextBeat(state);
+  const missed = state.players.filter((p) => !r.tapped.includes(p.id)).map((p) => p.id);
+  endReactRound(state, missed);
 }
 
-export function reactNextBeat(state: GameState): void {
+export function reactContinue(state: GameState): void {
   const r = state.react;
-  if (!r || r.sub !== "play") return;
-  if (r.beat + 1 >= 60) {
-    r.sub = "result";
-    r.punished = false;
+  if (!r || r.sub !== "between") return;
+  if (r.beat + 1 >= 3) {
+    settleReact(state);
     return;
   }
-  const beat = pickReactBeat(r.hard);
-  Object.assign(r, beat);
   r.beat += 1;
+  state.reactLock = null;
+  Object.assign(r, pickReactBeat(state, r.hard));
+  r.card += 1;
+  r.sub = "count";
+  r.count = 3;
+  r.tempo = 2000;
+  r.hold = false;
+  r.dead = [];
   r.tapped = [];
-  r.tempo = Math.max(800, r.tempo - 100);
 }
 
 export function reactBegin(state: GameState): void {
@@ -1033,6 +1119,27 @@ export function matchFlipBack(state: GameState): void {
 export function reactAdvance(state: GameState): void {
   flushPunish(state);
   goAward(state);
+}
+
+export function reactAgain(state: GameState): void {
+  const hard = state.react?.hard ?? false;
+  flushPunish(state);
+  state.reactLock = null;
+  startReact(state);
+  const r = state.react;
+  if (!r) return;
+  r.hard = hard;
+  Object.assign(r, pickReactBeat(state, hard));
+  r.card = 1;
+  r.sub = "count";
+  r.count = 3;
+  r.beat = 0;
+  r.tempo = 2000;
+  r.dead = [];
+  r.tapped = [];
+  r.slips = [];
+  r.hold = false;
+  r.punished = false;
 }
 
 export function peekDrawOne(state: GameState): DrawResult {

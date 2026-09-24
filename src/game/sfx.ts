@@ -146,7 +146,7 @@ function getSting(): HTMLAudioElement | null {
 }
 
 export function warmupStudioSting(): void {
-  /* sting loads on first tap */
+  warmupMeow();
 }
 
 export function playStudioSting(): void {
@@ -251,15 +251,29 @@ export function sfxWin(): void {
   beep(784, 0.2, "square", 0.07);
 }
 
+let meow: HTMLAudioElement | null = null;
+
+export function warmupMeow(): void {
+  if (typeof window === "undefined" || meow) return;
+  meow = new Audio(asset("/audio/studio-meow.mp3"));
+  meow.preload = "auto";
+  meow.volume = 0.85;
+  meow.setAttribute("playsinline", "true");
+  meow.load();
+}
+
 export function playMeow(): void {
   if (typeof window === "undefined" || muted) return;
+  if (!meow) warmupMeow();
+  const a = meow;
+  if (!a) return;
   try {
-    const a = new Audio(asset("/audio/studio-meow.mp3"));
-    a.volume = 0.85;
-    void a.play().catch(() => {});
+    a.pause();
+    if (a.readyState >= 1) a.currentTime = 0;
   } catch {
-    /* ignore */
+    /* seek before metadata is fine */
   }
+  void a.play().catch(() => {});
 }
 
 export function vibrate(ms = 24): void {

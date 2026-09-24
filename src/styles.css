@@ -2267,6 +2267,13 @@ select:focus {
   color: var(--spray-gold);
   text-shadow: 0 0 8px var(--spray-gold);
 }
+.hud-punish {
+  margin-left: 10px;
+  color: var(--spray-lime);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  font-size: 0.95rem;
+}
 .hud-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -3298,6 +3305,83 @@ input, select, textarea {
   outline-offset: 2px;
   transform: scale(1.12);
 }
+.react-rules {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+}
+.react-rule {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: #140e12;
+  border: 3px solid #3a3a3a;
+  border-radius: 14px;
+  padding: 8px 10px;
+  box-shadow: none;
+  cursor: pointer;
+}
+.react-rule.is-on {
+  border-color: var(--spray-lime);
+  box-shadow: 0 0 0 2px var(--spray-lime);
+  background: #182014;
+}
+.react-rule-head {
+  font-weight: 900;
+  font-size: 1.2rem;
+  color: var(--spray-gold);
+  text-shadow: 1px 1px 0 #000;
+}
+.react-swatches,
+.react-rule-icons {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  margin: 10px 0 8px;
+  flex-wrap: wrap;
+}
+.react-swatches i,
+.react-swatch {
+  display: block;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  border: 3px solid #000;
+  box-shadow: 2px 2px 0 #000;
+  flex: 0 0 auto;
+}
+.react-rule-pet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 64px;
+}
+.react-rule-pet img {
+  width: 62px;
+  height: 62px;
+  object-fit: contain;
+}
+.react-rule-pet b {
+  font-size: 0.9rem;
+  color: #fff;
+}
+.react-rule p {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 800;
+  line-height: 1.4;
+  color: var(--muted);
+}
 .react-target {
   display: flex;
   align-items: center;
@@ -3318,15 +3402,28 @@ input, select, textarea {
   height: 36px;
   object-fit: contain;
 }
-.react-count {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.react-ready-foot {
+  flex-shrink: 0;
+  margin-top: 8px;
+}
+.react-count-only {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: #fff;
   font-family: var(--street);
   font-size: 7rem;
-  color: var(--spray-lime);
-  text-shadow: 6px 6px 0 #000;
+  line-height: 1;
+  text-shadow: 5px 5px 0 #000;
+}
+.react-preload {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 .react-card {
   position: relative;
@@ -3336,25 +3433,34 @@ input, select, textarea {
   margin: 8px auto 0;
   padding: 0;
   overflow: hidden;
-  border: 5px solid #18d020;
+  border: 5px solid #111;
   border-radius: 18px;
   box-shadow: 6px 6px 0 #000;
   background: #0a0a0a;
 }
-.react-card img {
+.react-card.is-ok {
+  border-color: #e8ff6a;
+  box-shadow:
+    0 0 0 5px #39ff14,
+    6px 6px 0 #000;
+}
+.react-card > img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
   background: none;
 }
-.react-sticker {
+.react-card img.react-sticker {
   position: absolute;
-  width: 28%;
+  width: 32%;
   height: auto;
-  transform: translate(-50%, -50%) rotate(-8deg);
+  max-height: 36%;
+  object-fit: contain;
+  transform: translate(-50%, -50%);
   pointer-events: none;
   filter: drop-shadow(2px 2px 0 #000);
+  z-index: 2;
 }
 
 .match-board {
@@ -3807,6 +3913,13 @@ input, select, textarea {
   font-size: 0.68rem;
   font-weight: 800;
   color: var(--spray-gold);
+  flex-shrink: 0;
+}
+.hud-slips {
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #ff4d6a;
   flex-shrink: 0;
 }
 

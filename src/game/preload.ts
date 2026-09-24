@@ -1,12 +1,30 @@
-import { ART, ROLE_ART, STUDIO_FRAMES } from "./art";
+import { ART, MODE_ART, ROLE_ART, STICKER_ART, STUDIO_FRAMES, modeArt, preloadReactCards } from "./art";
+import { REACT_CARDS, REACT_DECOYS } from "./reactCards";
 import { warmupBgm, warmupStudioSting } from "./sfx";
 
+const lottieCache = new Map<string, Promise<unknown>>();
+
+export function prefetchLottie(src: string): Promise<unknown> {
+  const hit = lottieCache.get(src);
+  if (hit) return hit;
+  const job = fetch(src, { credentials: "same-origin" })
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
+  lottieCache.set(src, job);
+  return job;
+}
+
 function loadImage(src: string): Promise<void> {
+  if (typeof window === "undefined" || typeof Image === "undefined") return Promise.resolve();
   return new Promise((resolve) => {
     const img = new Image();
-    img.onload = () => resolve();
-    img.onerror = () => resolve();
+    img.decoding = "async";
     img.src = src;
+    if (typeof img.decode === "function") void img.decode().then(resolve, resolve);
+    else {
+      img.onload = () => resolve();
+      img.onerror = () => resolve();
+    }
   });
 }
 
@@ -23,24 +41,43 @@ function reportHomeLoop(pct: number) {
 }
 
 export function warmupSplash(): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
   if (splashStarted) return splashStarted;
   splashStarted = (async () => {
     warmupBgm();
     warmupStudioSting();
+    void prefetchHomeLoop(() => {});
+    void prefetchLottie(ART.studioSting);
+    void prefetchLottie(ART.catWalk);
+    const modes = Object.keys(MODE_ART).map((id) => loadImage(modeArt(id)));
+    const stickers = Object.values(STICKER_ART).map(loadImage);
     await Promise.all([
       loadImage(STUDIO_FRAMES[0]!),
       loadImage(ART.homePoster),
+      prefetchLottie(ART.studioSting),
       document.fonts ? document.fonts.ready.then(() => undefined) : Promise.resolve(),
     ]);
+    void Promise.all([...modes, ...stickers, prefetchLottie(ART.catWalk)]);
   })();
   return splashStarted;
 }
 
 export function warmupGame(): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
   if (gameStarted) return gameStarted;
   gameStarted = (async () => {
-    await loadImage(ART.homePoster);
-    void Promise.all([...Object.values(ROLE_ART).map(loadImage), loadImage(ART.logo)]);
+    const base = import.meta.env.BASE_URL || "/";
+    const penalty = ["half", "full", "forehead", "fitness", "custom"].map((id) =>
+      prefetchLottie(`${base}lottie/penalty/penalty-${id}.json`),
+    );
+    await Promise.all([
+      loadImage(ART.homePoster),
+      loadImage(ART.logo),
+      ...Object.values(ROLE_ART).map(loadImage),
+      ...Object.keys(MODE_ART).map((id) => loadImage(modeArt(id))),
+      ...penalty,
+    ]);
+    void preloadReactCards([...REACT_CARDS.map((c) => c.file), ...REACT_DECOYS.map((c) => c.file)]);
   })();
   return gameStarted;
 }
@@ -80,6 +117,11 @@ async function runHomeLoopPrefetch(): Promise<void> {
     const blob = new Blob(chunks, { type: "video/mp4" });
     if (homeLoopBlobUrl) URL.revokeObjectURL(homeLoopBlobUrl);
     homeLoopBlobUrl = URL.createObjectURL(blob);
+    const warm = document.createElement("video");
+    warm.muted = true;
+    warm.preload = "auto";
+    warm.src = homeLoopBlobUrl;
+    warm.load();
     reportHomeLoop(100);
   } catch {
     reportHomeLoop(100);

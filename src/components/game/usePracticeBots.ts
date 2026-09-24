@@ -15,7 +15,7 @@ export function usePracticeBots() {
   const truthSub = useGame((s) => s.truth?.sub);
   const truthPid = useGame((s) => s.truth?.playerId);
   const reactSub = useGame((s) => s.react?.sub);
-  const reactBeat = useGame((s) => s.react?.beat);
+  const reactCard = useGame((s) => s.react?.card);
   const matchTurn = useGame((s) => s.match?.turn);
   const matchLock = useGame((s) => s.match?.lock);
   const matchSub = useGame((s) => s.match?.sub);
@@ -69,20 +69,20 @@ export function usePracticeBots() {
 
     if (phase === "react" && s.react?.sub === "play") {
       const r = s.react;
-      const acc = 0.78 + (r.tempo / 2000) * 0.16;
+      const acc = 0.99;
       s.players
-        .filter((p) => p.isBot && !r.dead.includes(p.id) && !(r.tapped ?? []).includes(p.id))
+        .filter((p) => p.isBot && !r.hold && !(r.tapped ?? []).includes(p.id))
         .forEach((p, i) => {
-          const delay = 220 + i * 80 + Math.random() * Math.max(180, r.tempo * 0.4);
+          const delay = 120 + i * 40 + Math.random() * Math.min(140, Math.max(80, r.tempo * 0.18));
           timers.push(
             window.setTimeout(() => {
               const cur = useGame.getState();
-              if (cur.react?.sub !== "play" || cur.react.beat !== r.beat) return;
+              if (cur.react?.sub !== "play" || cur.react.hold || cur.react.card !== r.card) return;
               const must = reactMustTap(cur.react);
               const roll = Math.random();
               if (must) {
                 if (roll < acc) cur.tapReact(p.id);
-              } else if (roll < 0.07) {
+              } else if (roll < 0.008) {
                 cur.tapReact(p.id);
               }
             }, delay),
@@ -134,7 +134,7 @@ export function usePracticeBots() {
     truthSub,
     truthPid,
     reactSub,
-    reactBeat,
+    reactCard,
     matchTurn,
     matchLock,
     matchSub,

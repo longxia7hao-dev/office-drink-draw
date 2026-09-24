@@ -5,6 +5,8 @@ import { prefetchHomeLoop, warmupGame, warmupSplash } from "@/game/preload";
 import { bootBgm, unlockSfx } from "@/game/sfx";
 import { StudioLottie } from "./StudioLottie";
 
+if (typeof window !== "undefined") void warmupSplash();
+
 export function StudioSplash({ onDone }: { onDone: () => void }) {
   const finished = useRef(false);
   const warmed = useRef(false);
@@ -36,21 +38,17 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
       const t = window.setTimeout(() => finish(), 0);
       return () => window.clearTimeout(t);
     }
-    const started = Date.now();
-    let hold = 0;
     let cancelled = false;
     void prefetchHomeLoop((p) => {
       if (!cancelled) setPct(p);
     }).then(() => {
       if (cancelled || finished.current) return;
       setPct(100);
-      const wait = Math.max(0, 1200 - (Date.now() - started));
-      hold = window.setTimeout(() => finish(), wait);
+      finish();
     });
     const cap = window.setTimeout(() => finish(), 6500);
     return () => {
       cancelled = true;
-      window.clearTimeout(hold);
       window.clearTimeout(cap);
     };
   }, []);

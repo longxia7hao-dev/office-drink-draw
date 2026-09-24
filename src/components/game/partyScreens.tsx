@@ -3,9 +3,9 @@ import { Crown, RotateCw, Zap } from "lucide-react";
 import { getKingCmd, NEVER_PROMPTS, recapTitle, WHEEL } from "@/game/party";
 import { getTruth, getWho, fillPunish, punishPhrase } from "@/game/partyPlay";
 import { useGame } from "@/game/store";
-import { sfxDrink, sfxSlam, sfxSpin, sfxTick, sfxWin, unlockSfx, vibrate, playMeow } from "@/game/sfx";
+import { sfxDrink, sfxSlam, sfxSpin, sfxTick, sfxWin, unlockSfx, vibrate } from "@/game/sfx";
 import { ART, modeArt, preloadReactCards, reactCardSrc, whenReactCardsReady, STICKER_ART } from "@/game/art";
-import { REACT_COLOR_META, REACT_COLORS } from "@/game/reactCards";
+import { REACT_CARDS, REACT_COLOR_META, REACT_COLORS, REACT_DECOYS } from "@/game/reactCards";
 import { canUseSkillNow } from "@/game/state";
 import { Screen, usePress } from "./chrome";
 import { DrinkHud, FateWheel, Portrait } from "./artui";
@@ -262,9 +262,20 @@ export function ReactScreen() {
   const tick = useGame((s) => s.tickReactCount);
   const tapReact = useGame((s) => s.tapReact);
   const timeoutReact = useGame((s) => s.timeoutReact);
-  const next = useGame((s) => s.nextReact);
+  const again = useGame((s) => s.againReact);
+  const nextRound = useGame((s) => s.beatReact);
+  const release = useGame((s) => s.releaseReact);
+  const [okFlash, setOkFlash] = useState(false);
   const colorMeta = r ? REACT_COLOR_META[r.color as keyof typeof REACT_COLOR_META] : null;
-  const needLabel = r?.need === "cat" ? "貓" : r?.need === "dog" ? "狗" : r?.need === "cow" ? "牛" : "";
+  const needLabel =
+    r?.need === "cat" ? "貓" : r?.need === "dog" ? "狗" : r?.need === "cow" ? "牛" : r?.need === "panda" ? "熊貓" : "";
+  const faceKey = `${r?.card ?? 0}:${r?.file ?? ""}`;
+  const [readyKey, setReadyKey] = useState("");
+  const faceReady = r?.sub === "play" && readyKey === faceKey;
+
+  useEffect(() => {
+    preloadReactCards([...REACT_CARDS.map((c) => c.file), ...REACT_DECOYS.map((c) => c.file)]);
+  }, []);
 
   useEffect(() => {
     if (r?.sub !== "count") return;
@@ -273,10 +284,20 @@ export function ReactScreen() {
   }, [r?.sub, r?.count, tick]);
 
   useEffect(() => {
-    if (r?.sub !== "play") return;
+    setOkFlash(false);
+  }, [r?.card]);
+
+  useEffect(() => {
+    if (r?.sub !== "play" || !r.hold) return;
+    const t = window.setTimeout(() => release(), 420);
+    return () => window.clearTimeout(t);
+  }, [r?.sub, r?.hold, r?.card, release]);
+
+  useEffect(() => {
+    if (r?.sub !== "play" || !faceReady || r.hold) return;
     const t = window.setTimeout(() => timeoutReact(), r.tempo);
     return () => window.clearTimeout(t);
-  }, [r?.sub, r?.beat, r?.tempo, timeoutReact]);
+  }, [r?.sub, r?.card, r?.tempo, faceReady, timeoutReact]);
 
   if (!r) return <Screen><p className="hint">載入中…</p></Screen>;
   const live = r;
@@ -286,11 +307,13 @@ export function ReactScreen() {
     unlockSfx();
     const result = tapReact(myId ?? undefined);
     if (result === "miss") {
-      playMeow();
       vibrate(40);
       return;
     }
-    if (result === "ok") sfxWin();
+    if (result === "ok") {
+      setOkFlash(true);
+      sfxWin();
+    }
   }
 
   return (
@@ -299,39 +322,89 @@ export function ReactScreen() {
       <div className="top-bar">
         <span className="tag-pill">REACT</span>
         <span className="tag-pill pink">
-          {r.sub === "play" ? `${r.beat + 1}/60 · ${(r.tempo / 1000).toFixed(1)}s` : "60 拍 · 最快 0.8s"}
+          {r.sub === "play" || r.sub === "count" || r.sub === "between"
+            ? "按錯立刻結束"
+            : "一場定輸贏 · 按錯就罰"}
         </span>
       </div>
-      <div className="react-palette">
-        {REACT_COLORS.map((c) => (
-          <i
-            key={c}
-            className={r.color === c ? "on" : ""}
-            style={{ background: REACT_COLOR_META[c].hex }}
-            title={REACT_COLOR_META[c].name}
-          />
-        ))}
-      </div>
+      {r.sub === "play" || r.sub === "count" ? (
+        <div className="react-palette">
+          {REACT_COLORS.map((c) => (
+            <i
+              key={c}
+              className={r.color === c ? "on" : ""}
+              style={{ background: REACT_COLOR_META[c].hex }}
+              title={REACT_COLOR_META[c].name}
+            />
+          ))}
+        </div>
+      ) : null}
       {r.sub === "ready" ? (
         <>
-          <p className="hint">指定色出現才點。進階還要對上動物貼紙。點錯或逾時出局受罰。</p>
-          <div className="btn-row">
-            <button className={`btn ${!r.hard ? "btn-lime" : "btn-ghost"}`} type="button" onClick={() => hard(false)}>
-              一般
+          <div className="react-rules">
+            <button className={`react-rule${!r.hard ? " is-on" : ""}`} type="button" onClick={() => hard(false)}>
+              <div className="react-rule-head">一般・色卡</div>
+              <div className="react-swatches">
+                {REACT_COLORS.map((c) => (
+                  <i key={c} style={{ background: REACT_COLOR_META[c].hex }} title={REACT_COLOR_META[c].name} />
+                ))}
+              </div>
+              <p>看背景顏色，白底不算、不要按。同一題一直出，直到有人按錯。按錯立刻貓叫並結束，直接受罰。不能用技能。</p>
             </button>
-            <button className={`btn ${r.hard ? "btn-lime" : "btn-ghost"}`} type="button" onClick={() => hard(true)}>
-              進階
+            <button className={`react-rule${r.hard ? " is-on" : ""}`} type="button" onClick={() => hard(true)}>
+              <div className="react-rule-head">進階・動物貼紙</div>
+              <div className="react-rule-icons">
+                <i className="react-swatch" style={{ background: REACT_COLOR_META.red.hex }} title="紅" />
+                {(
+                  [
+                    ["cat", "貓"],
+                    ["dog", "狗"],
+                    ["cow", "牛"],
+                    ["panda", "熊貓"],
+                  ] as const
+                ).map(([id, name]) => (
+                  <span key={id} className="react-rule-pet">
+                    <img src={STICKER_ART[id]} alt={name} draggable={false} />
+                    <b>{name}</b>
+                  </span>
+                ))}
+              </div>
+              <p>看背景顏色，白底不算、不要按。顏色和動物都要對。按錯立刻貓叫並結束，直接受罰。不能用技能。</p>
             </button>
           </div>
-          <button className="btn btn-lg" type="button" onClick={() => { unlockSfx(); mark(); }}>
-            準備
-          </button>
-          <p className="hint">
-            {r.ready.length}/{players.length} 已準備
-          </p>
+          <div className="react-ready-foot">
+            <button className="btn btn-lg" type="button" onClick={() => { unlockSfx(); mark(); }}>
+              準備
+            </button>
+            <p className="hint">
+              {r.ready.length}/{players.length} 已準備
+            </p>
+          </div>
         </>
       ) : null}
-      {r.sub === "count" ? <div className="react-count">{r.count}</div> : null}
+      {r.sub === "count" ? (
+        <>
+          <div className="react-target">
+            <b style={{ background: colorMeta?.hex }} />
+            <span>
+              點「{colorMeta?.name}」
+              {r.hard ? `＋${needLabel}` : ""}
+            </span>
+            {r.hard && r.need ? <img src={STICKER_ART[r.need]} alt="" className="react-need" /> : null}
+          </div>
+          <div className="react-count-only">{r.count}</div>
+          <img
+            className="react-preload"
+            alt=""
+            src={reactCardSrc(r.file)}
+            decoding="sync"
+            ref={(el) => {
+              if (el?.complete && el.naturalWidth > 0) setReadyKey(faceKey);
+            }}
+            onLoad={() => setReadyKey(faceKey)}
+          />
+        </>
+      ) : null}
       {r.sub === "play" ? (
         <>
           <div className="react-target">
@@ -342,8 +415,19 @@ export function ReactScreen() {
             </span>
             {r.hard && r.need ? <img src={STICKER_ART[r.need]} alt="" className="react-need" /> : null}
           </div>
-          <button type="button" className="react-card" onPointerDown={tap}>
-            <img src={reactCardSrc(r.file)} alt="" draggable={false} />
+          <button type="button" className={`react-card${okFlash || r.hold ? " is-ok" : ""}`} onPointerDown={tap}>
+            <img
+              key={faceKey}
+              src={reactCardSrc(r.file)}
+              alt=""
+              draggable={false}
+              decoding="sync"
+              ref={(el) => {
+                if (el?.complete && el.naturalWidth > 0) setReadyKey(faceKey);
+              }}
+              onLoad={() => setReadyKey(faceKey)}
+              onError={() => setReadyKey(faceKey)}
+            />
             {r.sticker ? (
               <img
                 className="react-sticker"
@@ -355,18 +439,30 @@ export function ReactScreen() {
           </button>
         </>
       ) : null}
+      {r.sub === "between" ? (
+        <>
+          <div className="flip-result bad">
+            <div className="flip-result-title">第 {r.beat + 1}/3 次結束</div>
+            <p className="hint">
+              {r.dead.map((id) => players.find((p) => p.id === id)?.name).filter(Boolean).join("、") || "有人"} 按錯
+            </p>
+          </div>
+          <button className="btn btn-lg" type="button" onClick={nextRound}>
+            {r.beat + 1 >= 9 ? "結算" : "下一次"}
+          </button>
+        </>
+      ) : null}
       {r.sub === "result" || r.sub === "drag" ? (
         <>
           <div className={`flip-result ${r.punished ? "bad" : "ok"}`}>
-            <div className="flip-result-title">{r.punished ? "出局受罰" : "撐完全場"}</div>
+            <div className="flip-result-title">{r.punished ? "按錯，直接受罰" : "沒人按錯"}</div>
             <p className="hint">
               {r.dead.map((id) => players.find((p) => p.id === id)?.name).join("、") || "時間到"}
             </p>
           </div>
           <div className="btn-row">
-            <SkillUseBtn />
-            <button className="btn btn-lg" type="button" onClick={next}>
-              本局頒獎
+            <button className="btn btn-lg" type="button" onClick={again}>
+              再來一局
             </button>
             <ModeSwitchBtn />
           </div>

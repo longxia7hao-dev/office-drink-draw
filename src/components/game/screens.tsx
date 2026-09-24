@@ -40,7 +40,7 @@ import { hasSignaling } from "@/game/odd";
 import { useGame } from "@/game/store";
 import { RoleIcon, Screen, SprayBurst, usePress } from "./chrome";
 import { DrinkHud, Portrait, RoleShowcase, RouletteDraw, SprayDraw } from "./artui";
-import { StudioLottie, ModeLogoBob } from "./StudioLottie";
+import { StudioLottie } from "./StudioLottie";
 import { AutoVideo } from "./AutoVideo";
 import { HomeLoopVideo } from "./HomeLoopVideo";
 
@@ -871,7 +871,7 @@ export function ModesScreen() {
     {
       id: "react",
       title: "反應挑戰",
-      desc: "60 拍、2 秒起跳，看指定色就拍",
+      desc: "一場定輸贏，按錯立刻受罰",
       accent: "var(--spray-lime)",
       go: () => beginCore("react"),
     },
@@ -932,7 +932,9 @@ export function ModesScreen() {
           startX.current = null;
         }}
       >
-        <ModeLogoBob key={m.id} src={modeArt(m.id)} className="mode-logo-bob" />
+        <div className="mode-logo-bob">
+          <img className="mode-logo-fallback" src={modeArt(m.id)} alt="" draggable={false} decoding="sync" />
+        </div>
         <div className="mode-thumbs">
           {[-2, -1, 0, 1, 2].map((off) => {
             const opt = options[(cur + off + n) % n]!;
