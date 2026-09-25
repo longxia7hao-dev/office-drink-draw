@@ -1,0 +1,30 @@
+/* iPhone X 短可視高度專用。iPhone 17／較高機型不加 .iphone-x-short，版面不變。 */
+html.iphone-x-short,
+html.iphone-x-short body {
+  height: var(--vvh, 100%);
+  max-height: var(--vvh, 100%);
+  overflow: hidden;
+}
+html.iphone-x-short #app {
+  height: var(--vvh, 100%);
+  max-height: var(--vvh, 100%);
+}
+html.iphone-x-short .screen {
+  min-height: 0;
+}
+html.iphone-x-short .graffiti-title {
+  font-size: clamp(1.7rem, 8vw, 2.4rem);
+  margin: 4px 0 2px;
+}
+html.iphone-x-short .street-row {
+  margin: 4px 0 8px;
+  font-size: 1.4rem;
+}
+html.iphone-x-short .btn-lg {
+  min-height: 56px;
+  padding: 14px 16px;
+  font-size: 1.15rem;
+}
+html.iphone-x-short .btn-row {
+  padding-top: 10px;
+}
