@@ -132,7 +132,6 @@ function setUi(ui: typeof uiOverlay) {
   uiOverlay = ui
 }
 
-
 function clearFlipTimer() {
   if (flipTimer != null) {
     window.clearInterval(flipTimer)
@@ -297,7 +296,6 @@ app.addEventListener('click', (ev) => {
       break
     }
     case 'confirm-setup': {
-      // read inputs
       const inputs = app.querySelectorAll<HTMLInputElement>('[data-name-idx]')
       inputs.forEach((inp) => {
         const i = Number(inp.dataset.nameIdx)
@@ -321,7 +319,6 @@ app.addEventListener('click', (ev) => {
       }
       state.seed = newSeed()
       state.players = makeLocalPlayers(names, state.seed)
-      // align ids with roster so sync is stable
       state.players.forEach((p, i) => {
         const r = roster[i]
         if (r) {
@@ -387,7 +384,6 @@ app.addEventListener('click', (ev) => {
     }
     case 'flip-ready-all': {
       if (state.isOnline && !state.isHost) return
-      // 傳手機：每次按「下一題」標記下一位尚未就緒者；全到齊自動進下一題
       if (state.isOnline && state.myPlayerId) {
         flipMarkReady(state, state.myPlayerId)
       } else {
@@ -447,7 +443,6 @@ app.addEventListener('click', (ev) => {
   }
 })
 
-// live-edit names without full re-render on every keystroke — sync on confirm only
 app.addEventListener('change', (ev) => {
   const inp = ev.target as HTMLInputElement
   if (inp.matches('[data-name-idx]')) {
@@ -456,7 +451,31 @@ app.addEventListener('change', (ev) => {
   }
 })
 
-// deep link ?room=ABCD
+function isIphoneXClass(): boolean {
+  const w = Math.min(window.screen.width, window.innerWidth)
+  const h = window.screen.height
+  // X / XS / 11 Pro 約 375×812；iPhone 17 約 402×874，不會進這扇門
+  return w >= 350 && w <= 390 && h <= 824
+}
+
+function syncVisibleFrame() {
+  const root = document.documentElement
+  if (!isIphoneXClass()) {
+    root.classList.remove('iphone-x-short')
+    root.style.removeProperty('--vvh')
+    return
+  }
+  const h = window.visualViewport?.height ?? window.innerHeight
+  root.style.setProperty('--vvh', `${Math.round(h)}px`)
+  root.classList.add('iphone-x-short')
+}
+
+syncVisibleFrame()
+window.visualViewport?.addEventListener('resize', syncVisibleFrame)
+window.visualViewport?.addEventListener('scroll', syncVisibleFrame)
+window.addEventListener('resize', syncVisibleFrame)
+window.addEventListener('orientationchange', () => window.setTimeout(syncVisibleFrame, 250))
+
 const params = new URLSearchParams(location.search)
 const roomParam = params.get('room')
 if (roomParam) {
