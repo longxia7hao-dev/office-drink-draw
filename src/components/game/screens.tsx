@@ -34,12 +34,13 @@ import { APP_VERSION } from "@/game/version";
 import { FLIP_CATEGORIES, questionsForCat } from "@/game/flipQuestions";
 import { ROLES, claimedBy, getRole, isRoleAvailable } from "@/game/roles";
 import { fillPunish, punishPhrase } from "@/game/partyPlay";
-import { currentFlipQuestion, flipVoteCounts, type GameState, type Player } from "@/game/state";
+import { currentFlipQuestion, flipRuleHint, flipRuleLabel, flipVoteCounts, type GameState, type Player } from "@/game/state";
 import { isBgmMuted, sfxFlip, sfxTalk, sfxTick, toggleBgmMute, unlockSfx } from "@/game/sfx";
 import { hasSignaling } from "@/game/odd";
 import { useGame } from "@/game/store";
 import { RoleIcon, Screen, SprayBurst, usePress } from "./chrome";
 import { DrinkHud, Portrait, RoleShowcase, RouletteDraw, SprayDraw } from "./artui";
+import { SkillUseBtn } from "./partyScreens";
 import { StudioLottie } from "./StudioLottie";
 import { AutoVideo } from "./AutoVideo";
 import { HomeLoopVideo } from "./HomeLoopVideo";
@@ -187,7 +188,7 @@ export function RulesOverlay() {
       </h1>
       <div className="rules-list">
         <p><b>連線局</b> 模式與題庫類型由房主選，其他人同步進場。</p>
-        <p><b>多數決</b> 選 A 或 B，少數派受罰。</p>
+        <p><b>二選一</b> 選 A 或 B。每局隨機一種懲罰：多數、少數、單獨一人、全部相同。</p>
         <p><b>誰最可能</b> 點名互嘴，票最高受罰。</p>
         <p><b>真心話</b> 回答，或接受懲罰。</p>
         <p><b>反應挑戰</b> 綠就拍、紅不准拍。</p>
@@ -199,27 +200,13 @@ export function RulesOverlay() {
 }
 
 export function PacksOverlay() {
-  const allow18 = useGame((s) => s.allow18);
   return (
     <Screen>
       <HomeBack title="PACKS" />
       <h1 className="graffiti-title" style={{ fontSize: "1.8rem" }}>
         題庫
       </h1>
-      <div className="cat-grid packs">
-        {FLIP_CATEGORIES.map((c) => {
-          const n = questionsForCat(c.id, true).length;
-          const locked = c.age === "18+" && !allow18;
-          return (
-            <div key={c.id} className={`cat-btn${locked ? " locked" : ""}`}>
-              <span className="cat-ic">{c.icon}</span>
-              <b>{c.id}</b>
-              <small>{locked ? "需 18+" : `${n} 題`}</small>
-            </div>
-          );
-        })}
-      </div>
-      <p className="hint">12 類 × 100 題＝1,200。成人話題在設定開 18+。</p>
+      <p className="hint">二選一 {questionsForCat(null, true).length} 題，不分類。每局從題庫隨機抽，懲罰方式也隨機。</p>
     </Screen>
   );
 }
@@ -587,15 +574,11 @@ export function PickRoleScreen({ onPick }: { onPick: (playerId: string, roleId: 
               }}
             >
               {p.roleId ? <Portrait roleId={p.roleId} size={28} /> : <span className="pick-empty">?</span>}
-              <span>{p.name}</span>
+              <span className="pick-name">{p.name}</span>
               {p.isBot ? (
-                <span className="tag-pill" style={{ fontSize: "0.6rem" }}>
-                  CPU
-                </span>
+                <span className="pick-badge cpu">CPU</span>
               ) : p.id === myPlayerId ? (
-                <span className="tag-pill" style={{ fontSize: "0.65rem" }}>
-                  YOU
-                </span>
+                <span className="pick-badge you">YOU</span>
               ) : null}
               <span className="who">{pr ? pr.name : p.isBot ? "待機" : "未選"}</span>
             </button>
@@ -650,7 +633,9 @@ function RoleCard({ player, roleId }: { player?: Player; roleId: string }) {
   return (
     <article className="crew-card" style={{ ["--neon" as string]: r.color }}>
       <div className="crew-art">
-        <img src={roleArt(r.id)} alt="" className="crew-port" draggable={false} />
+        <div className="crew-port-fit">
+          <img src={roleArt(r.id)} alt="" className="crew-port" draggable={false} />
+        </div>
         <span className="crew-graffiti">{r.tag}</span>
         <div className="crew-plate">
           <strong>{player?.name ?? r.name}</strong>
@@ -834,7 +819,6 @@ export function ModesScreen() {
   const isHost = useGame((s) => s.isHost);
   const backRoles = useGame((s) => s.backRoles);
   const beginCore = useGame((s) => s.beginCore);
-  const toFlipCats = useGame((s) => s.toFlipCats);
   const toRecap = useGame((s) => s.toRecap);
   const hostOnly = isOnline && !isHost;
   const [idx, setIdx] = useState(0);
@@ -849,22 +833,22 @@ export function ModesScreen() {
   }[] = [
     {
       id: "flip",
-      title: "多數決",
-      desc: "16 題輪換：多數／少數／落單×2／全員同邊×2",
+      title: "二選一",
+      desc: "1000 題不分類。每局隨機懲罰。受罰時可釋放角色技能",
       accent: "var(--spray-pink)",
-      go: () => toFlipCats(),
+      go: () => beginCore("flip_battle"),
     },
     {
       id: "who",
       title: "誰最可能",
-      desc: "全場互投，票最高的人受罰",
+      desc: "全場互投，票最高的人受罰。受罰時可釋放角色技能",
       accent: "var(--spray-gold)",
       go: () => beginCore("who"),
     },
     {
       id: "truth",
       title: "真心話大冒險",
-      desc: "回答這題，或接受懲罰・五種題庫",
+      desc: "回答這題，或接受懲罰。受罰時可釋放角色技能",
       accent: "var(--spray-cyan)",
       go: () => beginCore("truth"),
     },
@@ -1099,7 +1083,7 @@ export function RevealScreen() {
       <div className="btn-row">
         {canSkill ? (
           <>
-            <button className="btn btn-pink btn-lg" type="button" disabled={hostOnly} onClick={state.useSkill}>
+            <button className="btn btn-pink btn-lg" type="button" disabled={hostOnly} onClick={() => state.useSkill()}>
               <Zap size={20} /> 發動技能
             </button>
             <button className="btn btn-lime" type="button" disabled={hostOnly} onClick={state.skipSkill}>
@@ -1122,12 +1106,20 @@ export function RevealScreen() {
   );
 }
 
-function TargetBtns({ list, onPick }: { list: Player[]; onPick: (id: string) => void }) {
+function TargetBtns({
+  list,
+  onPick,
+  disabled,
+}: {
+  list: Player[];
+  onPick: (id: string) => void;
+  disabled?: boolean;
+}) {
   if (list.length === 0) return <p className="hint">沒有可選對象</p>;
   return (
     <div className="king-grid skill-targets">
       {list.map((p) => (
-        <button className="king-seat" type="button" key={p.id} onClick={() => onPick(p.id)}>
+        <button className="king-seat" type="button" key={p.id} disabled={disabled} onClick={() => onPick(p.id)}>
           <Portrait roleId={p.roleId} size={56} />
           <strong>{p.name}</strong>
           <span>{getRole(p.roleId).name}</span>
@@ -1156,7 +1148,7 @@ export function SkillScreen() {
     case "slacker":
       body = (
         <button className="btn btn-pink btn-lg" type="button" disabled={hostOnly} onClick={() => state.skillOpt("slack")}>
-          確定摸魚：本次免罰，下次 ×2
+          確定摸魚：這次免罰，下次被抓到加倍
         </button>
       );
       break;
@@ -1168,7 +1160,12 @@ export function SkillScreen() {
       body = (
         <>
           <p className="hint">{fillPunish(role?.skillDesc ?? "", state.punishLabel)}</p>
-          <TargetBtns list={r.skillKind === "cover" && drinkers.length ? drinkers : others} onPick={state.skillTarget} />
+          <TargetBtns
+            list={
+              (r.skillKind === "cover" || r.skillKind === "backup") && drinkers.length ? drinkers : others
+            }
+            onPick={state.skillTarget}
+          />
         </>
       );
       break;
@@ -1176,13 +1173,24 @@ export function SkillScreen() {
     case "able":
     case "ot_skip":
     case "veteran":
-    case "protect":
       body = (
         <button className="btn btn-pink btn-lg" type="button" disabled={hostOnly} onClick={() => state.skillOpt("go")}>
           使用技能：{role?.skillName}
         </button>
       );
       break;
+    case "protect": {
+      const humans = state.players.filter((p) => !p.isBot);
+      const internLocked = humans.length > 1 && state.myPlayerId === me?.id;
+      body = (
+        <>
+          <p className="hint">其他玩家一起指派：要幫誰做一件事</p>
+          <TargetBtns list={others} onPick={state.skillTarget} disabled={internLocked} />
+          {internLocked ? <p className="hint">你是實習生，請其他人點選要你幫忙的人</p> : null}
+        </>
+      );
+      break;
+    }
     default:
       body = (
         <button className="btn" type="button" onClick={state.skipSkill}>
@@ -1315,8 +1323,15 @@ export function FlipBattleScreen({
     );
   }
 
-  const answerer = flip.answererId ? players.find((p) => p.id === flip.answererId) : null;
+  const ruleName = flipRuleLabel(flip.rule);
+  const ruleHint = flipRuleHint(flip.rule);
   const officialLabel = q.correct === 0 ? "A" : "B";
+  const tieHint =
+    flip.rule === "solo"
+      ? "沒有單獨一人，免罰"
+      : flip.rule === "allsame"
+        ? "沒有全員選同一邊，免罰"
+        : "兩邊同票，沒人受罰";
   const myVoted = myPlayerId ? myPlayerId in flip.votes : false;
   const practice = useGame((s) => s.practice);
   const canPick =
@@ -1332,37 +1347,27 @@ export function FlipBattleScreen({
       <DrinkHud />
       <div className="top-bar">
         <span className="tag-pill">FLIP</span>
-        {flip.cat ? <span className="tag-pill pink">{flip.cat}</span> : <span className="tag-pill pink">混搭</span>}
         <span className="tag-pill">
           {flip.index + 1}/{flip.deck.length}
         </span>
+      </div>
+      <div className={`flip-rule is-${flip.rule}`} role="status">
+        <span>本局懲罰</span>
+        <strong>{ruleName}</strong>
+        <em>{flip.sub === "result" && flip.tie ? tieHint : ruleHint}</em>
       </div>
       <div className="flip-q sticker">
         <div className="flip-q-label">二選一</div>
         <p className="flip-q-text">{q.q}</p>
       </div>
-      <p className="flip-ux-hint">
-        {flip.sub === "choose"
-          ? practice
-            ? myVoted
-              ? "已選 · 等電腦投票"
-              : "選你的答案 · 電腦同步投票，少數派受罰"
-            : isOnline
-              ? myVoted
-                ? "已選 · 等其他人"
-                : "選你的答案 · 少數派受罰"
-              : `輪到 ${answerer?.name ?? "下一位"} 選`
-          : "揭曉少數派"}
-      </p>
       <div className="flip-cards">
         {([0, 1] as const).map((i) => {
           let cls = "flip-card-3d";
           if (dealt) cls += " dealt";
           if (flip.sub === "result") {
-            if (flip.majoritySide != null && !flip.tie) {
-              cls += i === flip.majoritySide ? " is-majority" : " is-minority";
-            }
-            if (q.correct != null && q.correct === i) cls += " is-official";
+            if (flip.majoritySide != null && !flip.tie && i === flip.majoritySide) cls += " is-majority";
+          } else if (myPlayerId && flip.votes[myPlayerId] === i) {
+            cls += " is-mine";
           }
           const voteN = i === 0 ? counts.a : counts.b;
           return (
@@ -1382,11 +1387,11 @@ export function FlipBattleScreen({
       {flip.sub === "result" ? (
         <>
           <div className={`flip-result ${flip.tie ? "ok" : "bad"}`}>
-            <div className="flip-result-title">{flip.tie ? "平手免罰" : "少數派受罰"}</div>
+            <div className="flip-result-title">{flip.tie ? "這局免罰" : ruleName}</div>
             <p className="hint" style={{ marginBottom: 0 }}>
               {flip.tie
-                ? "兩邊同票，沒人受罰"
-                : `${drinkers || "少數派"} · ${punishLabel}`}
+                ? tieHint
+                : `${drinkers || "受罰"} · ${punishLabel}`}
               {q.correct != null ? ` · 官方 ${officialLabel}` : ""}
             </p>
           </div>
@@ -1412,6 +1417,9 @@ export function FlipBattleScreen({
                 </div>
               );
             })}
+          </div>
+          <div className="btn-row">
+            <SkillUseBtn />
           </div>
           <div className="btn-row inline">
             <button className="btn btn-lg" type="button" onClick={onReady}>

@@ -11,12 +11,12 @@ import { Screen, usePress } from "./chrome";
 import { DrinkHud, FateWheel, Portrait } from "./artui";
 
 
-function SkillUseBtn() {
+export function SkillUseBtn() {
   const useSkill = useGame((s) => s.useSkill);
   const show = useGame((s) => canUseSkillNow(s, s.myPlayerId));
   if (!show) return null;
   return (
-    <button className="btn btn-pink" type="button" onClick={useSkill}>
+    <button className="btn btn-pink" type="button" onClick={() => useSkill()}>
       使用技能
     </button>
   );
@@ -136,11 +136,13 @@ export function WhoScreen() {
               : `輪到 ${voter?.name ?? "下一位"} 點名`}
           </p>
           <div className="king-grid">
-            {players.map((p) => (
+            {players.map((p) => {
+              const minePick = Boolean(myPlayerId && who.votes[myPlayerId] === p.id);
+              return (
               <button
                 key={p.id}
                 type="button"
-                className="king-seat"
+                className={`king-seat${minePick ? " is-my-pick" : ""}`}
                 disabled={!canVote}
                 onClick={() => {
                   unlockSfx();
@@ -151,7 +153,8 @@ export function WhoScreen() {
                 <Portrait roleId={p.roleId} size={48} />
                 <strong>{p.name}</strong>
               </button>
-            ))}
+              );
+            })}
           </div>
           <div className="btn-row">
             <ModeSwitchBtn />
@@ -205,8 +208,12 @@ export function TruthScreen() {
       </div>
       {t.sub === "ask" ? (
         botTurn ? (
-          <p className="hint">電腦正在決定要不要講…</p>
+          <>
+            <p className="hint">電腦正在決定要不要講…</p>
+            <ModeSwitchBtn />
+          </>
         ) : (
+        <>
         <div className="btn-row inline">
           <button
             className="btn btn-lg"
@@ -232,6 +239,8 @@ export function TruthScreen() {
             受罰
           </button>
         </div>
+        <ModeSwitchBtn />
+        </>
         )
       ) : (
         <>
@@ -266,7 +275,25 @@ export function ReactScreen() {
   const nextRound = useGame((s) => s.beatReact);
   const release = useGame((s) => s.releaseReact);
   const [okFlash, setOkFlash] = useState(false);
-  const colorMeta = r ? REACT_COLOR_META[r.color as keyof typeof REACT_COLOR_META] : null;
+  const [readyPop, setReadyPop] = useState(0);
+  const seenReady = useRef<string[]>([]);
+  const readyAt = useRef(0);
+  const popReady = () => {
+    const now = Date.now();
+    if (now - readyAt.current < 700) return;
+    readyAt.current = now;
+    setReadyPop((n) => n + 1);
+  };
+  useEffect(() => {
+    if (!r || r.sub !== "ready") {
+      seenReady.current = r?.ready ?? [];
+      return;
+    }
+    const humans = r.ready.filter((id) => !players.some((p) => p.id === id && p.isBot));
+    const added = humans.some((id) => !seenReady.current.includes(id));
+    seenReady.current = r.ready;
+    if (added) popReady();
+  }, [r, players]);
   const needLabel =
     r?.need === "cat" ? "貓" : r?.need === "dog" ? "狗" : r?.need === "cow" ? "牛" : r?.need === "panda" ? "熊貓" : "";
   const faceKey = `${r?.card ?? 0}:${r?.file ?? ""}`;
@@ -319,6 +346,7 @@ export function ReactScreen() {
   return (
     <Screen className="screen-react">
       <DrinkHud />
+      {readyPop > 0 ? <b key={readyPop} className="ready-stamp">READY</b> : null}
       <div className="top-bar">
         <span className="tag-pill">REACT</span>
         <span className="tag-pill pink">
@@ -337,6 +365,12 @@ export function ReactScreen() {
               title={REACT_COLOR_META[c].name}
             />
           ))}
+          {r.hard && r.need ? (
+            <span className="react-plus">
+              ＋{needLabel}
+              <img src={STICKER_ART[r.need]} alt="" draggable={false} />
+            </span>
+          ) : null}
         </div>
       ) : null}
       {r.sub === "ready" ? (
@@ -373,7 +407,16 @@ export function ReactScreen() {
             </button>
           </div>
           <div className="react-ready-foot">
-            <button className="btn btn-lg" type="button" onClick={() => { unlockSfx(); mark(); }}>
+            <button
+              className="btn btn-lg"
+              type="button"
+              onClick={() => {
+                unlockSfx();
+                sfxSlam();
+                popReady();
+                mark();
+              }}
+            >
               準備
             </button>
             <p className="hint">
@@ -384,14 +427,6 @@ export function ReactScreen() {
       ) : null}
       {r.sub === "count" ? (
         <>
-          <div className="react-target">
-            <b style={{ background: colorMeta?.hex }} />
-            <span>
-              點「{colorMeta?.name}」
-              {r.hard ? `＋${needLabel}` : ""}
-            </span>
-            {r.hard && r.need ? <img src={STICKER_ART[r.need]} alt="" className="react-need" /> : null}
-          </div>
           <div className="react-count-only">{r.count}</div>
           <img
             className="react-preload"
@@ -407,14 +442,6 @@ export function ReactScreen() {
       ) : null}
       {r.sub === "play" ? (
         <>
-          <div className="react-target">
-            <b style={{ background: colorMeta?.hex }} />
-            <span>
-              點「{colorMeta?.name}」
-              {r.hard ? `＋${needLabel}` : ""}
-            </span>
-            {r.hard && r.need ? <img src={STICKER_ART[r.need]} alt="" className="react-need" /> : null}
-          </div>
           <button type="button" className={`react-card${okFlash || r.hold ? " is-ok" : ""}`} onPointerDown={tap}>
             <img
               key={faceKey}
@@ -913,11 +940,15 @@ export function MatchScreen() {
   const flipBack = useGame((s) => s.flipMatch);
   const swap = useGame((s) => s.swapMatch);
   const readySwap = useGame((s) => s.readyMatchSwap);
+  const cancelSwap = useGame((s) => s.cancelMatchSwap);
   const commitSwap = useGame((s) => s.commitMatchSwap);
   const arm = useGame((s) => s.armMatch);
+  const again = useGame((s) => s.againMatch);
   const myId = useGame((s) => s.myPlayerId);
   const players = useGame((s) => s.players);
-  const next = useGame((s) => s.nextReact);
+  const isOnline = useGame((s) => s.isOnline);
+  const isHost = useGame((s) => s.isHost);
+  const hostOnly = isOnline && !isHost;
 
   useEffect(() => {
     if (!m?.tiles.length) return;
@@ -926,6 +957,8 @@ export function MatchScreen() {
 
   useEffect(() => {
     if (!m?.lock) return;
+    const live = useGame.getState();
+    if (live.isOnline && !live.isHost) return;
     let stop = false;
     const files = (m.pick ?? []).map((i) => m.tiles[i]?.file).filter(Boolean) as string[];
     const started = Date.now();
@@ -953,19 +986,34 @@ export function MatchScreen() {
 
   useEffect(() => {
     if (!m?.swapping || !m.swapBurst) return;
+    const live = useGame.getState();
+    if (live.isOnline && !live.isHost) return;
     const t = window.setTimeout(() => readySwap(), 1000);
     return () => window.clearTimeout(t);
   }, [m?.swapping, m?.swapBurst, readySwap]);
 
   useEffect(() => {
     if (!m?.swapping || m.swapPick.length !== 2) return;
+    const live = useGame.getState();
+    if (live.isOnline && !live.isHost) return;
     const t = window.setTimeout(() => commitSwap(), 420);
     return () => window.clearTimeout(t);
   }, [m?.swapping, m?.swapPick.length, commitSwap]);
 
+  useEffect(() => {
+    if (!m?.swapping) return;
+    const closed = m.tiles.filter((t) => !t.matched && !t.open).length;
+    if (closed >= 2) return;
+    const live = useGame.getState();
+    if (live.isOnline && !live.isHost) return;
+    cancelSwap();
+  }, [m?.swapping, m?.tiles, cancelSwap]);
+
   if (!m) return <Screen><p className="hint">載入中…</p></Screen>;
   const myTurn = m.turn === myId;
-  const canSwap = myTurn && !m.swapped.includes(myId ?? "") && !m.lock && m.sub === "play" && !m.swapping;
+  const swapClosed = m.tiles.filter((t) => !t.matched && !t.open).length;
+  const canSwap =
+    myTurn && !m.swapped.includes(myId ?? "") && !m.lock && m.sub === "play" && !m.swapping && swapClosed >= 2;
   const showSwapGlow = m.swapping && m.swapBy === myId;
   const turnName = players.find((p) => p.id === m.turn)?.name.replace(/^電腦[·・]/, "") ?? "";
 
@@ -974,12 +1022,12 @@ export function MatchScreen() {
       <DrinkHud />
       <div className="top-bar">
         <span className="tag-pill">MATCH</span>
-        <span className="tag-pill pink">對對碰 {m.round > 0 ? `${m.round}/${m.roundMax || 3}` : ""}</span>
+        <span className="tag-pill pink">對對碰</span>
       </div>
       {m.sub === "size" ? (
         <div className="match-setup">
           <img className="match-setup-art" src={modeArt("match")} alt="" draggable={false} />
-          <p className="hint">三局一場。對到繼續，對錯換人。終場配對最少的喝。自己回合可調換一次，牌面不亮。</p>
+          <p className="hint">一局就結束。對到繼續，對錯換人。配對最少的喝，同分最少就一起罰。自己回合可調換一次，牌面不亮。</p>
           <div className="match-sizes">
             {(
               [
@@ -988,9 +1036,9 @@ export function MatchScreen() {
                 { n: 18 as const, grid: "6×6" },
               ]
             ).map((opt) => (
-              <button key={opt.n} className="match-size" type="button" onClick={() => deal(opt.n)}>
+              <button key={opt.n} className="match-size" type="button" disabled={hostOnly} onClick={() => deal(opt.n)}>
                 <strong>{opt.n} 對</strong>
-                <span>{opt.grid} · 共 3 局</span>
+                <span>{opt.grid}</span>
               </button>
             ))}
           </div>
@@ -1002,7 +1050,7 @@ export function MatchScreen() {
       {m.sub === "play" || m.sub === "spin" ? (
         <>
           <p className="hint">
-            第 {m.round}/{m.roundMax || 3} 局 · {m.sub === "spin" ? "抽誰先開始…" : `輪到 ${turnName}`}
+            {m.sub === "spin" ? "抽誰先開始…" : `輪到 ${turnName}`}
             {m.swapping ? (m.swapBurst ? " · 調換特效" : " · 點兩張蓋牌，卡背會亮黃") : ""}
           </p>
           <div className={`match-board${m.cols >= 6 ? " grid-6" : ""}`} style={{ ["--n" as string]: String(m.cols || 4) }}>
@@ -1027,7 +1075,10 @@ export function MatchScreen() {
               key={`${m.round}-${m.turn}`}
               players={players}
               winnerId={m.turn}
-              onDone={arm}
+              onDone={() => {
+                if (useGame.getState().isOnline && !useGame.getState().isHost) return;
+                arm();
+              }}
             />
           ) : null}
           <div className="match-actions">
@@ -1049,11 +1100,27 @@ export function MatchScreen() {
       ) : null}
       {m.sub === "result" ? (
         <>
-          <p className="hint">三局結束，配對最少的喝。現在可以放技能。</p>
+          <div className="flip-result bad">
+            <div className="flip-result-title">
+              {(m.losers?.length ?? 0) > 1 ? "同分最少，一起受罰" : "配對最少，受罰"}
+            </div>
+            <p className="hint">
+              {(m.losers?.length
+                ? m.losers
+                : players
+                    .filter((p) => (m.scores[p.id] ?? 0) === Math.min(...players.map((x) => m.scores[x.id] ?? 0)))
+                    .map((p) => p.id)
+              )
+                .map((id) => players.find((p) => p.id === id)?.name.replace(/^電腦[·・]/, ""))
+                .filter(Boolean)
+                .join("、") || "有人"}
+              喝
+            </p>
+          </div>
           <div className="btn-row">
             <SkillUseBtn />
-            <button className="btn btn-lg" type="button" onClick={next}>
-              本局頒獎
+            <button className="btn btn-lg" type="button" disabled={hostOnly} onClick={again}>
+              再一局
             </button>
             <ModeSwitchBtn />
           </div>

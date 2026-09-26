@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode
 import { ChevronLeft, ChevronRight, Flame } from "lucide-react";
 import { ART, roleArt } from "@/game/art";
 import { type RoleDef } from "@/game/roles";
-import { heatOf, peekDrawOne } from "@/game/state";
+import { currentDrinkers, heatOf, peekDrawOne } from "@/game/state";
 import { WHEEL } from "@/game/party";
 import { fillPunish } from "@/game/partyPlay";
 import { sfxSlam, sfxSpray, sfxTick, unlockSfx, vibrate } from "@/game/sfx";
@@ -196,12 +196,39 @@ export function DrinkHud() {
     flip.sub === "result" &&
     !flip.tie &&
     flip.drinkerIds.length > 0;
-  const punished = minorityPunished ? new Set(flip!.drinkerIds) : new Set(Object.keys(hit ?? {}).filter((id) => (hit ?? {})[id] > 0));
+  const match = useGame((s) => s.match);
+  const showPairs = phase === "match" && match && match.sub !== "size";
+  const matchLosers =
+    phase === "match" && match?.sub === "result"
+      ? new Set(
+          match.losers?.length
+            ? match.losers
+            : players
+                .filter((p) => {
+                  const min = Math.min(...players.map((x) => match.scores[x.id] ?? 0));
+                  return (match.scores[p.id] ?? 0) === min;
+                })
+                .map((p) => p.id),
+        )
+      : null;
+  const punished = matchLosers
+    ? matchLosers
+    : minorityPunished
+      ? new Set(flip!.drinkerIds)
+      : new Set(Object.keys(hit ?? {}).filter((id) => (hit ?? {})[id] > 0));
   const react = useGame((s) => s.react);
   const showSlips = phase === "react" && !!react;
   const slipCount = (id: string) => (react?.slips ?? []).filter((x) => x === id).length;
-  const match = useGame((s) => s.match);
-  const showPairs = phase === "match" && match && match.sub !== "size";
+  const turnId = phase === "match" && match?.sub === "play" ? match.turn : "";
+  const myId = useGame((s) => s.myPlayerId);
+  const repayCover = useGame((s) => s.repayCover);
+  const canRepay = useGame((s) => {
+    const id = s.myPlayerId;
+    const me = s.players.find((p) => p.id === id);
+    return Boolean(me?.oweCover && id && currentDrinkers(s).includes(id));
+  });
+  const me = players.find((p) => p.id === myId);
+  const repayName = players.find((p) => p.id === me?.oweCover)?.name;
   if (players.length === 0) return null;
   if (phase === "home" || phase === "setup" || phase === "lobby" || phase === "pick_role") return null;
   return (
@@ -216,7 +243,7 @@ export function DrinkHud() {
           const label = p.isBot ? p.name.replace(/^電腦[·・]/, "") : p.name;
           return (
           <div
-            className={cn("hud-chip", punished?.has(p.id) && "is-minority-hit")}
+            className={cn("hud-chip", punished?.has(p.id) && "is-minority-hit", p.id === turnId && "is-turn")}
             key={p.id}
           >
             <Portrait roleId={p.roleId} size={28} />
@@ -225,15 +252,26 @@ export function DrinkHud() {
             {showPairs ? <em className="hud-pairs">{match.scores[p.id] ?? 0}對</em> : null}
             {showSlips && slipCount(p.id) > 0 ? <em className="hud-slips">錯{slipCount(p.id)}</em> : null}
             {hit?.[p.id] ? <i className="hud-hit">×{hit[p.id]}</i> : null}
-            {(p.nextMult ?? 1) > 1 ? <em className="hud-buff">下次×{p.nextMult}</em> : null}
+            {(p.nextMult ?? 1) === 2 ? <em className="hud-buff">下次加倍</em> : null}
+            {(p.nextMult ?? 1) > 2 ? <em className="hud-buff">下次×{p.nextMult}</em> : null}
             {p.nextMult === 0 ? <em className="hud-buff">下次免</em> : null}
-            {p.skipToken ? <em className="hud-buff">補休</em> : null}
-            {p.oweCover ? <em className="hud-buff">要還</em> : null}
+            {p.skipToken ? <em className="hud-buff">可免一次</em> : null}
+            {p.joinNext ? <em className="hud-buff">下回陪罰</em> : null}
+            {p.oweCover ? <em className="hud-buff">可請代罰</em> : null}
+            {players.some((o) => o.oweCover === p.id) ? <em className="hud-buff">要還</em> : null}
             {p.coverFor ? <em className="hud-buff">擋酒中</em> : null}
+            {p.backupWith ? <em className="hud-buff">備援</em> : null}
+            {players.some((o) => o.backupWith === p.id) ? <em className="hud-buff">要攤</em> : null}
+            {(p.punishStreak ?? 0) > 0 ? <em className="hud-buff">連罰{p.punishStreak}</em> : null}
           </div>
           );
         })}
       </div>
+      {canRepay ? (
+        <button className="btn btn-pink hud-repay" type="button" onClick={() => repayCover()}>
+          請{repayName}代替這次（一次）
+        </button>
+      ) : null}
     </div>
   );
 }

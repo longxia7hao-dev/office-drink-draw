@@ -52,7 +52,7 @@ export async function rtcFetch(query = "", options: RequestInit = {}): Promise<R
   const endpoint = signalingEndpoint();
   if (!endpoint) throw new Error("Multiplayer requires a configured signaling endpoint");
   const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), 6000);
+  const timer = window.setTimeout(() => controller.abort(), 15000);
   try {
     return await fetch(endpoint + query, { ...options, signal: controller.signal });
   } finally {

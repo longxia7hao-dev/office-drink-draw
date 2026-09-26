@@ -1,4 +1,4 @@
-/** 翻牌對戰 — 12 類 × 100 題多數派二選一 */
+/** 二選一 — 1000 題，不分類 */
 
 import bank from "./data/flip-bank.json";
 
@@ -19,15 +19,15 @@ export interface FlipQuestion {
   correct?: 0 | 1;
 }
 
-export const FLIP_CATEGORIES: FlipCategory[] = bank.categories;
+export const FLIP_CATEGORIES: FlipCategory[] = [];
 
 export const FLIP_QUESTIONS: FlipQuestion[] = bank.questions.map((q) => ({
   id: q.id,
   q: q.q,
-  options: [q.a, q.b],
-  cat: q.cat,
-  heat: q.heat,
-  age: q.age,
+  options: [q.a, q.b] as [string, string],
+  cat: "",
+  heat: 0,
+  age: "",
 }));
 
 const byId = new Map(FLIP_QUESTIONS.map((q) => [q.id, q]));
@@ -36,10 +36,6 @@ export function getFlipQuestion(id: string): FlipQuestion {
   return byId.get(id) ?? FLIP_QUESTIONS[0]!;
 }
 
-export function questionsForCat(cat: string | null, allow18: boolean): FlipQuestion[] {
-  return FLIP_QUESTIONS.filter((q) => {
-    if (!allow18 && q.age === "18+") return false;
-    if (cat && q.cat !== cat) return false;
-    return true;
-  });
+export function questionsForCat(_cat: string | null, _allow18: boolean): FlipQuestion[] {
+  return FLIP_QUESTIONS;
 }

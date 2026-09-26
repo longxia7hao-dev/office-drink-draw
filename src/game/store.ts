@@ -4,6 +4,7 @@ import { BOT_NAMES } from "./bots";
 import { getRole } from "./roles";
 import { playMeow } from "./sfx";
 import { preloadReactCards } from "./art";
+import { netSend } from "./netBridge";
 import {
   applyBaseDrink,
   applySkill,
@@ -29,6 +30,7 @@ import {
   neverConfirm,
   neverToggle,
   setPlayerRole,
+  spendCoverRepay,
   spinWheel,
   addCups,
   allRolesPicked,
@@ -41,7 +43,9 @@ import {
   matchArm,
   matchBeginSwap,
   matchSwapReady,
+  matchCancelSwap,
   matchCommitSwap,
+  matchAgain,
   reactAdvance,
   reactAgain,
   reactBegin,
@@ -95,7 +99,13 @@ export type NetMsg =
   | { t: "vote"; choice: 0 | 1 }
   | { t: "ready" }
   | { t: "ask-sync" }
-  | { t: "pick-role"; roleId: string };
+  | { t: "pick-role"; roleId: string }
+  | { t: "match-tap"; i: number }
+  | { t: "match-swap" }
+  | { t: "use-skill" }
+  | { t: "skill-target"; id: string }
+  | { t: "repay-cover" }
+  | { t: "react-ready" };
 
 interface GameStore extends GameState {
   overlay: Overlay;
@@ -139,10 +149,11 @@ interface GameStore extends GameState {
   markReady: (playerId: string) => boolean;
   soloReadyNext: () => boolean;
   again: () => void;
-  useSkill: () => void;
+  useSkill: (pid?: string) => void;
   skipSkill: () => void;
   skillTarget: (targetId: string) => void;
   skillOpt: (opt: string) => void;
+  repayCover: (pid?: string) => void;
   applyRemoteSync: (payload: SyncPayload) => void;
   snapshot: () => SyncPayload;
   burst: () => void;
@@ -181,11 +192,13 @@ interface GameStore extends GameState {
   tapReact: (pid?: string) => "miss" | "ok" | "ignore";
   timeoutReact: () => void;
   dealMatch: (n: 8 | 12 | 18) => void;
+  againMatch: () => void;
   armMatch: () => void;
   tapMatch: (i: number, pid?: string) => void;
   flipMatch: () => void;
   swapMatch: (pid?: string) => void;
   readyMatchSwap: () => void;
+  cancelMatchSwap: () => void;
   commitMatchSwap: () => void;
   advanceFlip: () => void;
 }
@@ -229,6 +242,7 @@ function cloneState<T extends GameState>(s: T): T {
           scores: { ...s.match.scores },
           swapped: [...s.match.swapped],
           swapPick: [...(s.match.swapPick ?? [])],
+          losers: [...(s.match.losers ?? [])],
         }
       : null,
     award: s.award ? { ...s.award, worst: [...s.award.worst], best: [...s.award.best] } : null,
@@ -522,9 +536,15 @@ export const useGame = create<GameStore>((set, get) => ({
     else if (mode === "wheel") get().beginWheel();
     else if (mode) get().startCeremony(mode);
   },
-  useSkill: () => {
-    const s = cloneState(get());
-    const me = s.players.find((p) => p.id === s.myPlayerId) ?? s.players.find((p) => !p.isBot);
+  useSkill: (pid) => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost && !pid) {
+      netSend.current?.({ t: "use-skill" });
+      return;
+    }
+    const s = cloneState(cur);
+    const me =
+      s.players.find((p) => p.id === (pid ?? s.myPlayerId)) ?? s.players.find((p) => !p.isBot);
     if (!me) return;
     if (s.phase !== "skill") s.skillReturnPhase = s.phase;
     s.punishActorId = me.id;
@@ -547,7 +567,12 @@ export const useGame = create<GameStore>((set, get) => ({
     set(s);
   },
   skillTarget: (targetId) => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) {
+      netSend.current?.({ t: "skill-target", id: targetId });
+      return;
+    }
+    const s = cloneState(cur);
     const kind = s.lastResult?.skillKind ?? "none";
     continueAfterSkill(s, applySkill(s, kind, targetId));
     s.burstKey += 1;
@@ -561,9 +586,23 @@ export const useGame = create<GameStore>((set, get) => ({
     s.burstKey += 1;
     set(s);
   },
+  repayCover: (pid) => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost && !pid) {
+      netSend.current?.({ t: "repay-cover" });
+      return;
+    }
+    const s = cloneState(cur);
+    const msg = spendCoverRepay(s, pid ?? cur.myPlayerId ?? "");
+    if (msg) s.skillMessage = msg;
+    s.burstKey += 1;
+    set(s);
+  },
   applyRemoteSync: (payload) => {
+    const prev = get().match?.found ?? 0;
     const s = cloneState(get());
     applySync(s, payload);
+    if ((s.match?.found ?? 0) > prev) playMeow();
     set(s);
   },
   snapshot: () => toSync(get()),
@@ -736,7 +775,12 @@ export const useGame = create<GameStore>((set, get) => ({
     set(s);
   },
   markReactReady: (pid) => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost && !pid) {
+      netSend.current?.({ t: "react-ready" });
+      return;
+    }
+    const s = cloneState(cur);
     reactMarkReady(s, pid ?? s.myPlayerId ?? s.players[0]?.id ?? "");
     set(s);
   },
@@ -783,15 +827,28 @@ export const useGame = create<GameStore>((set, get) => ({
     set(s);
     preloadReactCards((s.match?.tiles ?? []).map((t) => t.file));
   },
+  againMatch: () => {
+    const s = cloneState(get());
+    matchAgain(s);
+    s.burstKey += 1;
+    set(s);
+    preloadReactCards((s.match?.tiles ?? []).map((t) => t.file));
+  },
   armMatch: () => {
     const s = cloneState(get());
     matchArm(s);
     set(s);
   },
   tapMatch: (i, pid) => {
-    const s = cloneState(get());
+    const cur = get();
+    const who = pid ?? cur.myPlayerId ?? cur.match?.turn ?? "";
+    if (cur.isOnline && !cur.isHost) {
+      netSend.current?.({ t: "match-tap", i });
+      return;
+    }
+    const s = cloneState(cur);
     const before = s.match?.found ?? 0;
-    matchTap(s, i, pid ?? s.myPlayerId ?? s.match?.turn ?? "");
+    matchTap(s, i, who);
     if ((s.match?.found ?? 0) > before) {
       playMeow();
       s.burstKey += 1;
@@ -799,23 +856,41 @@ export const useGame = create<GameStore>((set, get) => ({
     set(s);
   },
   flipMatch: () => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
     matchFlipBack(s);
     set(s);
   },
   swapMatch: (pid) => {
-    const s = cloneState(get());
-    matchBeginSwap(s, pid ?? s.myPlayerId ?? "");
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) {
+      netSend.current?.({ t: "match-swap" });
+      return;
+    }
+    const s = cloneState(cur);
+    matchBeginSwap(s, pid ?? cur.myPlayerId ?? "");
     s.burstKey += 1;
     set(s);
   },
   readyMatchSwap: () => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
     matchSwapReady(s);
     set(s);
   },
+  cancelMatchSwap: () => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
+    matchCancelSwap(s);
+    set(s);
+  },
   commitMatchSwap: () => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
     matchCommitSwap(s);
     set(s);
   },

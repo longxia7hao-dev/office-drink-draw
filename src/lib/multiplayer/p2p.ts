@@ -11,7 +11,7 @@
 
 import { emitConnectionError, rtcFetch } from "@/game/odd";
 
-export type SignalKind = "offer" | "answer" | "ice";
+export type SignalKind = "offer" | "answer" | "ice" | "data";
 
 /**
  * Wire contract between this client and the signaling relay the app provides
@@ -108,6 +108,7 @@ export class P2PRoom {
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private closed = false;
   private everPolled = false;
+  private warned = false;
   private failedAt = Date.now();
   private failureTimer: ReturnType<typeof setInterval> | null = null;
   private lastPeersFingerprint = "";
@@ -123,7 +124,11 @@ export class P2PRoom {
    */
   async join(): Promise<void> {
     this.failureTimer = setInterval(() => {
-      if (!this.closed && Date.now() - this.failedAt > 10_000) this.fail();
+      if (this.closed || this.everPolled || this.warned) return;
+      if (Date.now() - this.failedAt > 15_000) {
+        this.warned = true;
+        emitConnectionError();
+      }
     }, 500);
     try {
       await this.pollOnce();
@@ -172,9 +177,11 @@ export class P2PRoom {
   /** Send reliably (ordered) to one peer, or to all when peerId is omitted. */
   send(data: unknown, peerId?: string): void {
     const wire = JSON.stringify({ t: "d", d: data });
-    const targets = peerId ? [this.peers.get(peerId)] : [...this.peers.values()];
-    for (const slot of targets) {
+    const ids = peerId ? [peerId] : [...this.peers.keys()];
+    for (const id of ids) {
+      const slot = this.peers.get(id);
       if (slot?.reliable?.readyState === "open") slot.reliable.send(wire);
+      else void this.sendSignal(id, "data", data);
     }
   }
 
@@ -215,6 +222,10 @@ export class P2PRoom {
       throw new Error("Invalid signaling response");
     }
     this.failedAt = Date.now();
+    if (this.warned && typeof window !== "undefined") {
+      this.warned = false;
+      window.dispatchEvent(new Event("odd:connection-ok"));
+    }
     if (this.closed) return;
     if (!this.everPolled) {
       this.everPolled = true;
@@ -384,6 +395,11 @@ export class P2PRoom {
     roster: Set<string>,
   ): Promise<void> {
     if (this.closed) return;
+    if (kind === "data") {
+      if (!roster.has(from)) return;
+      this.opts.onMessage?.(from, payload, "reliable");
+      return;
+    }
     let slot = this.peers.get(from);
     if (!slot) {
       // New peers dial us in the same poll that adds them to the roster.

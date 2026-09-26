@@ -1,6 +1,6 @@
 import { assignRoles, getRole, isRoleAvailable, ROLES, type RoleDef, type SkillKind } from "./roles";
 import { createRng, newSeed, rngInt, shuffleInPlace } from "./rng";
-import { FLIP_QUESTIONS, getFlipQuestion, questionsForCat, type FlipQuestion } from "./flipQuestions";
+import { getFlipQuestion, questionsForCat, type FlipQuestion } from "./flipQuestions";
 import {
   getKingCmd,
   kingNeed,
@@ -54,10 +54,17 @@ export type FlipSubPhase = "choose" | "result";
 export type FlipRule = "majority" | "minority" | "solo" | "allsame";
 export const FLIP_RULES: FlipRule[] = ["majority", "minority", "solo", "allsame"];
 export function flipRuleLabel(r: FlipRule): string {
-  if (r === "majority") return "多數受罰";
-  if (r === "minority") return "少數受罰";
-  if (r === "solo") return "落單 ×2";
-  return "全員同一邊 ×2";
+  if (r === "majority") return "多數懲罰";
+  if (r === "minority") return "少數懲罰";
+  if (r === "solo") return "單獨一人懲罰";
+  return "全部相同懲罰";
+}
+
+export function flipRuleHint(r: FlipRule): string {
+  if (r === "majority") return "人多的那一邊受罰";
+  if (r === "minority") return "人少的那一邊受罰";
+  if (r === "solo") return "只有一個人不同邊，那個人受罰";
+  return "全員選同一邊，一起受罰";
 }
 
 export interface FlipBattleState {
@@ -175,6 +182,7 @@ export interface MatchState {
   pairs: number;
   round: number;
   roundMax: number;
+  losers: string[];
 }
 
 export interface AwardState {
@@ -209,6 +217,10 @@ export interface Player {
   coverFor?: string;
   oweCover?: string;
   collateralHit?: boolean;
+  joinNext?: boolean;
+  backupWith?: string;
+  backupHold?: boolean;
+  punishStreak?: number;
 }
 
 export interface DrawResult {
@@ -393,14 +405,6 @@ export function addCups(state: GameState, ids: string[], n: number): void {
   for (const id of unique) {
     const p = state.players.find((x) => x.id === id);
     if (!p) continue;
-    if (p.oweCover) {
-      const other = state.players.find((x) => x.id === p.oweCover);
-      p.oweCover = undefined;
-      if (other) {
-        addCups(state, [other.id], n);
-        continue;
-      }
-    }
     if (p.handoffId) {
       const hid = p.handoffId;
       p.handoffId = null;
@@ -411,13 +415,40 @@ export function addCups(state: GameState, ids: string[], n: number): void {
       p.skipToken = false;
       continue;
     }
+    let share = n;
+    if (p.backupWith && !p.backupHold) {
+      const otherId = p.backupWith;
+      p.backupWith = undefined;
+      const half = n / 2;
+      if (otherId && otherId !== p.id) addCups(state, [otherId], half);
+      share = half;
+    }
     const m = p.nextMult ?? 1;
     p.nextMult = 1;
     if (m === 0) continue;
-    const add = (n + bonus) * m;
+    const add = (share + bonus) * m;
     p.cups = (p.cups || 0) + add;
     state.hitAmt[p.id] = (state.hitAmt[p.id] ?? 0) + add;
   }
+}
+
+export function spendCoverRepay(state: GameState, pid: string): string {
+  const me = state.players.find((p) => p.id === pid);
+  if (!me?.oweCover) return "";
+  const other = state.players.find((p) => p.id === me.oweCover);
+  if (!other || other.id === me.id) return "";
+  const n = state.hitAmt[me.id] || state.punishAmt || 1;
+  me.oweCover = undefined;
+  me.coverFor = undefined;
+  state.hitAmt[me.id] = 0;
+  state.punishQueue = state.punishQueue.filter((id) => id !== me.id);
+  if (state.flip) state.flip.drinkerIds = state.flip.drinkerIds.filter((id) => id !== me.id);
+  if (state.who) state.who.punishedIds = state.who.punishedIds.filter((id) => id !== me.id);
+  if (state.react) state.react.dead = state.react.dead.filter((id) => id !== me.id);
+  addCups(state, [other.id], n);
+  if (state.flip && !state.flip.drinkerIds.includes(other.id)) state.flip.drinkerIds.push(other.id);
+  if (state.who && !state.who.punishedIds.includes(other.id)) state.who.punishedIds.push(other.id);
+  return `${me.name} 選擇由 ${other.name} 代替這次受罰`;
 }
 
 export function punishPhrase(state: GameState, n = 1): string {
@@ -439,7 +470,7 @@ export function canFireSkill(p: Player, collateral = false): boolean {
   if (p.skillUsed || p.isBot) return false;
   const kind = getRole(p.roleId).skillKind;
   if (kind === "none") return false;
-  if (kind === "protect") return collateral || Boolean(p.collateralHit);
+  if (kind === "protect") return true;
   return true;
 }
 
@@ -462,8 +493,9 @@ export function canUseSkillNow(state: GameState, pid: string | null | undefined)
   const kind = getRole(p.roleId).skillKind;
   if (kind === "none") return false;
   const drinkers = currentDrinkers(state);
-  if (kind === "cover") return drinkers.some((id) => id !== pid);
-  if (kind === "protect") return Boolean(p.collateralHit) && drinkers.includes(pid);
+  if (kind === "cover" || kind === "backup") return drinkers.some((id) => id !== pid);
+  if (kind === "hedge") return drinkers.includes(pid) && (p.punishStreak ?? 0) >= 2;
+  if (kind === "protect") return drinkers.includes(pid);
   return drinkers.includes(pid);
 }
 
@@ -510,6 +542,20 @@ export function settlePunish(state: GameState, ids: string[], n = 1): string[] {
   const buff = state.chaos;
   let list = [...new Set(ids)];
   if (buff?.shieldId) list = list.filter((id) => id !== buff.shieldId);
+  for (const p of state.players) {
+    if (p.backupHold) p.backupHold = false;
+  }
+  if (list.length) {
+    for (const p of state.players) {
+      if (!p.joinNext) continue;
+      if (!list.includes(p.id)) list.push(p.id);
+      p.joinNext = false;
+    }
+  }
+  const punishedNow = new Set(list);
+  for (const p of state.players) {
+    p.punishStreak = punishedNow.has(p.id) ? (p.punishStreak ?? 0) + 1 : 0;
+  }
   state.hitAmt = {};
   if (state.phase !== "skill") state.skillReturnPhase = state.phase;
   state.punishAmt = n;
@@ -957,14 +1003,14 @@ export function startMatch(state: GameState): void {
     found: 0,
     pairs: 0,
     round: 0,
-    roundMax: 3,
+    roundMax: 1,
+    losers: [],
   };
 }
 
 export function matchDeal(state: GameState, size: 8 | 12 | 18): void {
   const m = state.match;
   if (!m) return;
-  const continuing = m.sub === "next" || (m.round > 0 && m.sub !== "size");
   const pairs = size;
   const cols = size === 8 ? 4 : 6;
   const faces = pickMatchFaces(pairs);
@@ -990,12 +1036,9 @@ export function matchDeal(state: GameState, size: 8 | 12 | 18): void {
   m.pick = [];
   m.found = 0;
   m.pairs = pairs;
-  if (!continuing) {
-    m.scores = Object.fromEntries(state.players.map((p) => [p.id, 0]));
-    m.round = 1;
-  } else {
-    m.round = Math.min((m.round || 1) + 1, m.roundMax || 3);
-  }
+  m.scores = Object.fromEntries(state.players.map((p) => [p.id, 0]));
+  m.round = 1;
+  m.losers = [];
   const start = state.players[Math.floor(Math.random() * Math.max(1, state.players.length))];
   m.turn = start?.id ?? state.players[0]?.id ?? "";
   m.swapped = [];
@@ -1018,6 +1061,8 @@ export function matchBeginSwap(state: GameState, pid: string): void {
   if (!m || m.sub !== "play" || m.lock) return;
   if (m.turn !== pid) return;
   if (m.swapped.includes(pid) || m.swapping) return;
+  const closed = m.tiles.filter((t) => !t.matched && !t.open).length;
+  if (closed < 2) return;
   m.swapping = true;
   m.swapBurst = true;
   m.swapBy = pid;
@@ -1038,6 +1083,19 @@ export function matchSwapReady(state: GameState): void {
   const m = state.match;
   if (!m?.swapping || !m.swapBurst) return;
   m.swapBurst = false;
+  if (state.skillFlash?.skill === "調換") state.skillFlash = null;
+}
+
+export function matchCancelSwap(state: GameState): void {
+  const m = state.match;
+  if (!m?.swapping) return;
+  const closed = m.tiles.filter((t) => !t.matched && !t.open).length;
+  if (closed >= 2) return;
+  m.swapping = false;
+  m.swapBurst = false;
+  m.swapBy = null;
+  m.swapPick = [];
+  m.flash = null;
   if (state.skillFlash?.skill === "調換") state.skillFlash = null;
 }
 
@@ -1063,6 +1121,7 @@ export function matchTap(state: GameState, i: number, pid: string): void {
   if (state.punishQueue.length && !m.swapping) flushPunish(state);
   if (m.swapping && m.swapBy === pid) {
     if (m.swapBurst) return;
+    if (m.swapPick.length >= 2) return;
     const tile = m.tiles[i];
     if (!tile || tile.matched || tile.open) return;
     if (m.swapPick.includes(i)) {
@@ -1072,6 +1131,7 @@ export function matchTap(state: GameState, i: number, pid: string): void {
     m.swapPick = [...m.swapPick, i];
     return;
   }
+  if (m.pick.length >= 2) return;
   const tile = m.tiles[i];
   if (!tile || tile.matched || tile.open) return;
   tile.open = true;
@@ -1085,21 +1145,25 @@ export function matchTap(state: GameState, i: number, pid: string): void {
     m.found += 1;
     m.pick = [];
     if (m.found >= m.pairs) {
-      if (m.round < (m.roundMax || 3)) {
-        m.sub = "next";
-        m.flash = `第 ${m.round} 局結束`;
-      } else {
-        const min = Math.min(...Object.values(m.scores));
-        const losers = Object.entries(m.scores)
-          .filter(([, v]) => v === min)
-          .map(([k]) => k);
-        settlePunish(state, losers, 1);
-        m.sub = "result";
-      }
+      const scored = Object.fromEntries(state.players.map((p) => [p.id, m.scores[p.id] ?? 0]));
+      const min = Math.min(...Object.values(scored));
+      const losers = Object.entries(scored)
+        .filter(([, v]) => v === min)
+        .map(([k]) => k);
+      m.losers = losers;
+      settlePunish(state, losers, 1);
+      m.sub = "result";
     }
     return;
   }
   m.lock = true;
+}
+
+export function matchAgain(state: GameState): void {
+  const size = state.match?.size ?? 8;
+  flushPunish(state);
+  startMatch(state);
+  matchDeal(state, size);
 }
 
 export function matchFlipBack(state: GameState): void {
@@ -1243,13 +1307,13 @@ export function applySkill(
     case "slacker":
       mark();
       if (me) me.nextMult = 2;
-      return `${me?.name} 摸魚！本次免罰，下次 ×2`;
+      return `${me?.name} 摸魚！這次免罰，下次被抓到懲罰加倍`;
     case "exam": {
       if (!target) return "請選擇目標";
       mark();
       if (me) addCups(state, [me.id], amt);
-      applyWithProtect(state, [target.id], amt);
-      return `${me?.name} 考績！${target.name} 接受相同份量`;
+      applyWithProtect(state, [target.id], amt * 2);
+      return `${me?.name} 考績！${target.name} 承受兩次懲罰`;
     }
     case "treat_all":
       mark();
@@ -1259,10 +1323,13 @@ export function applySkill(
         amt,
       );
       return `${me?.name} 我請客！全桌一起受罰`;
-    case "protect":
+    case "protect": {
+      if (!target || !me) return "請其他玩家指派";
       mark();
-      if (me) me.collateralHit = false;
-      return `${me?.name} 新人保護期！這次被連坐的懲罰免除`;
+      me.collateralHit = false;
+      state.hitAmt[me.id] = 0;
+      return `${me.name} 免除這次懲罰，大家指派去幫 ${target.name} 做一件事`;
+    }
     case "split": {
       if (!target || !me) return "請選擇平分對象";
       mark();
@@ -1273,26 +1340,39 @@ export function applySkill(
     }
     case "able": {
       mark();
-      if (me) addCups(state, [me.id], amt / 2);
-      const poor = [...state.players].sort((a, b) => (a.cups || 0) - (b.cups || 0)).find((p) => p.id !== me?.id);
-      if (poor) applyWithProtect(state, [poor.id], amt);
-      return `${me?.name} 能者多勞！減半，並由 ${poor?.name ?? "最低分"} 多喝一份`;
+      if (me) {
+        me.joinNext = true;
+        state.hitAmt[me.id] = 0;
+      }
+      return `${me?.name} 能者多勞！這次免罰，下一回合陪受罰的人一起罰`;
     }
     case "hedge": {
       if (!target || !me) return "請選擇";
+      if ((me.punishStreak ?? 0) < 2) return "請選擇";
       mark();
-      addCups(state, [me.id], amt / 2);
-      me.nextMult = 2;
-      target.nextMult = 2;
-      return `風險對沖！${me.name} 減半；你與 ${target.name} 下次都 ×2`;
+      const n = state.hitAmt[me.id] || amt || 1;
+      me.punishStreak = 0;
+      state.hitAmt[me.id] = 0;
+      state.punishQueue = state.punishQueue.filter((id) => id !== me.id);
+      if (state.flip) state.flip.drinkerIds = state.flip.drinkerIds.filter((id) => id !== me.id);
+      if (state.who) state.who.punishedIds = state.who.punishedIds.filter((id) => id !== me.id);
+      if (state.react) state.react.dead = state.react.dead.filter((id) => id !== me.id);
+      addCups(state, [target.id], n);
+      if (state.flip && !state.flip.drinkerIds.includes(target.id)) state.flip.drinkerIds.push(target.id);
+      if (state.who && !state.who.punishedIds.includes(target.id)) state.who.punishedIds.push(target.id);
+      return `風險對沖！${me.name} 連續第二次受罰，改由 ${target.name} 承擔`;
     }
     case "backup": {
       if (!target || !me) return "請選擇";
       mark();
-      addCups(state, [me.id], amt / 2);
-      me.nextMult = 2;
-      target.nextMult = 0;
-      return `緊急備援！${me.name} 減半，下次 ×2；${target.name} 下次免罰`;
+      const n = state.hitAmt[target.id] || amt || 1;
+      const half = n / 2;
+      state.punishQueue = state.punishQueue.filter((id) => id !== target.id);
+      state.hitAmt[target.id] = 0;
+      addCups(state, [target.id], half);
+      me.backupWith = target.id;
+      me.backupHold = true;
+      return `緊急備援！${target.name} 這次減半，下次你受罰由對方自動分攤一半`;
     }
     case "ot_skip":
       mark();
@@ -1305,14 +1385,14 @@ export function applySkill(
       if (!target || !me) return "請選擇要擋的人";
       mark();
       me.coverFor = target.id;
-      target.oweCover = me.id;
+      me.oweCover = target.id;
       const n = state.hitAmt[target.id] ?? amt;
       target.cups = Math.max(0, (target.cups || 0) - n);
       me.cups = (me.cups || 0) + n;
       state.hitAmt[target.id] = 0;
       state.hitAmt[me.id] = (state.hitAmt[me.id] ?? 0) + n;
       state.punishQueue = state.punishQueue.filter((id) => id !== target.id);
-      return `${me.name} 替 ${target.name} 擋酒！下次由對方還`;
+      return `${me.name} 替 ${target.name} 擋酒！之後你受罰時，可選擇由對方代替一次`;
     }
     case "veteran": {
       mark();
@@ -1379,17 +1459,18 @@ export function declineSkill(state: GameState): void {
 }
 
 export function startFlipBattle(state: GameState): void {
-  const rng = createRng(`${state.seed}:flip:${state.drawCount}:${state.flipCat ?? "mix"}`);
-  const pool = questionsForCat(state.flipCat, state.allow18);
-  const ids = (pool.length ? pool : FLIP_QUESTIONS.filter((q) => q.age !== "18+")).map((q) => q.id);
+  const rng = createRng(`${state.seed}:flip:${state.drawCount}`);
+  const pool = questionsForCat(null, true);
+  const ids = pool.map((q) => q.id);
   shuffleInPlace(ids, rng);
   const answerer = state.players.length > 0 ? state.players[0]!.id : null;
-  const rules: FlipRule[] = [...FLIP_RULES, ...FLIP_RULES, ...FLIP_RULES, ...FLIP_RULES];
-  shuffleInPlace(rules, rng);
+  const take = Math.min(16, ids.length);
+  const deck = ids.slice(0, take);
+  const rules: FlipRule[] = deck.map(() => FLIP_RULES[rngInt(rng, FLIP_RULES.length)]!);
   state.mode = "flip_battle";
   state.phase = "flip_battle";
   state.flip = {
-    deck: ids.slice(0, Math.min(16, ids.length)),
+    deck,
     index: 0,
     sub: "choose",
     votes: {},
@@ -1398,7 +1479,7 @@ export function startFlipBattle(state: GameState): void {
     drinkerIds: [],
     tie: false,
     majoritySide: null,
-    cat: state.flipCat,
+    cat: null,
     rule: rules[0]!,
     ruleDeck: rules,
   };
@@ -1442,17 +1523,14 @@ export function resolveFlipMinority(state: GameState): void {
   if (rule === "allsame") {
     if (countA === state.players.length || countB === state.players.length) {
       drinkers = state.players.map((p) => p.id);
-      n = 2;
     } else {
       flip.tie = true;
     }
   } else if (rule === "solo") {
-    if (countA === 1) {
+    if (countA === 1 && countB > 1) {
       drinkers = side(0);
-      n = 2;
-    } else if (countB === 1) {
+    } else if (countB === 1 && countA > 1) {
       drinkers = side(1);
-      n = 2;
     } else {
       flip.tie = true;
     }

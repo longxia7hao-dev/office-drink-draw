@@ -4,6 +4,7 @@ import { bootBgm, setBgmTrack, unlockSfx } from "@/game/sfx";
 import { APP_VERSION } from "@/game/version";
 import "@/game/odd";
 import { useGame, type NetMsg } from "@/game/store";
+import { netSend } from "@/game/netBridge";
 import { TopFabs, WallBg } from "./chrome";
 import { StudioSplash } from "./StudioSplash";
 import { usePracticeBots } from "./usePracticeBots";
@@ -59,6 +60,12 @@ function OnlineBridge({
   const pickFlip = useGame((s) => s.pickFlip);
   const markReady = useGame((s) => s.markReady);
   const pickRole = useGame((s) => s.pickRole);
+  const tapMatch = useGame((s) => s.tapMatch);
+  const swapMatch = useGame((s) => s.swapMatch);
+  const useSkill = useGame((s) => s.useSkill);
+  const skillTarget = useGame((s) => s.skillTarget);
+  const repayCover = useGame((s) => s.repayCover);
+  const markReactReady = useGame((s) => s.markReactReady);
   const snapshot = useGame((s) => s.snapshot);
   const hostId = useGame((s) => s.hostId);
 
@@ -71,7 +78,7 @@ function OnlineBridge({
     const others = p2p.peers.map((p) => ({
       id: p.id,
       name: p.name || "玩家",
-      connected: p.connectionState === "connected",
+      connected: true,
     }));
     setRoster([mine, ...others]);
   }, [p2p.peers, selfId, name, setRoster]);
@@ -119,6 +126,30 @@ function OnlineBridge({
         pickRole(from, data.roleId);
         return;
       }
+      if (data.t === "match-tap") {
+        tapMatch(data.i, from);
+        return;
+      }
+      if (data.t === "match-swap") {
+        swapMatch(from);
+        return;
+      }
+      if (data.t === "use-skill") {
+        useSkill(from);
+        return;
+      }
+      if (data.t === "skill-target") {
+        skillTarget(data.id);
+        return;
+      }
+      if (data.t === "repay-cover") {
+        repayCover(from);
+        return;
+      }
+      if (data.t === "react-ready") {
+        markReactReady(from);
+        return;
+      }
       if (data.t === "ready") {
         const done = markReady(from);
         if (done) {
@@ -128,7 +159,7 @@ function OnlineBridge({
         }
       }
     });
-  }, [p2p, p2p.onMessage, isHost, applyRemoteSync, pickFlip, markReady, pickRole, pushSync]);
+  }, [p2p, p2p.onMessage, isHost, applyRemoteSync, pickFlip, markReady, pickRole, tapMatch, swapMatch, useSkill, skillTarget, repayCover, markReactReady, pushSync]);
 
   useEffect(() => {
     netSend.current = (msg, to) => {
@@ -143,8 +174,6 @@ function OnlineBridge({
 
   return null;
 }
-
-const netSend: { current: ((msg: NetMsg, to?: string) => void) | null } = { current: null };
 
 export function GameApp({ presetRoom }: { presetRoom?: string }) {
   const phase = useGame((s) => s.phase);
@@ -204,10 +233,18 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
 
   useEffect(() => {
     const onErr = () => {
-      setNotice("連線失敗或逾時。請返回重試；單機練習仍可使用。");
+      setNotice("連線還在重試。請留在房間，對方可直接加入。");
+    };
+    const onOk = () => {
+      const s = useGame.getState();
+      if (s.notice.startsWith("連線")) setNotice("");
     };
     window.addEventListener("odd:connection-error", onErr);
-    return () => window.removeEventListener("odd:connection-error", onErr);
+    window.addEventListener("odd:connection-ok", onOk);
+    return () => {
+      window.removeEventListener("odd:connection-error", onErr);
+      window.removeEventListener("odd:connection-ok", onOk);
+    };
   }, [setNotice]);
 
   useEffect(() => {
@@ -222,7 +259,7 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
       ) {
         window.dispatchEvent(new Event("odd:connection-error"));
       }
-    }, 15000);
+    }, 30000);
     return () => window.clearTimeout(t);
   }, [isOnline, phase, isHost]);
 
@@ -381,11 +418,6 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
       <span className="app-ver" aria-hidden="true">
         V{APP_VERSION}
       </span>
-      {phase === "home" && !splash ? (
-        <a className="making-of-link" href="/making-of">
-          開發精華
-        </a>
-      ) : null}
     </div>
   );
 }
