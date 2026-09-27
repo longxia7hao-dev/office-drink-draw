@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { ART, STUDIO_FRAMES } from "@/game/art";
 import { isLiteMode } from "@/game/odd";
-import { prefetchHomeLoop, warmupGame, warmupSplash } from "@/game/preload";
-import { bootBgm, unlockSfx } from "@/game/sfx";
+import { warmupGame, warmupSplash } from "@/game/preload";
+import { bootBgm, primeBgm, unlockSfx } from "@/game/sfx";
 import { StudioLottie } from "./StudioLottie";
+
+const LOGO_MS = 5600;
+const HEAR_MS = 1100;
 
 if (typeof window !== "undefined") void warmupSplash();
 
@@ -11,6 +14,7 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
   const finished = useRef(false);
   const warmed = useRef(false);
   const [pct, setPct] = useState(0);
+  const [needTap, setNeedTap] = useState(false);
 
   function warmRest() {
     if (warmed.current) return;
@@ -23,61 +27,57 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
     finished.current = true;
     setPct(100);
     warmRest();
-    try {
-      unlockSfx();
-      bootBgm();
-    } finally {
-      onDone();
-    }
+    void bootBgm().then((playing) => {
+      if (playing) {
+        window.setTimeout(() => onDone(), HEAR_MS);
+        return;
+      }
+      setNeedTap(true);
+    });
   }
 
   useEffect(() => {
+    if (!needTap) return;
+    const go = () => {
+      unlockSfx();
+      window.setTimeout(() => onDone(), 500);
+    };
+    window.addEventListener("pointerdown", go, true);
+    return () => window.removeEventListener("pointerdown", go, true);
+  }, [needTap, onDone]);
+
+  useEffect(() => {
+    primeBgm();
     void warmupSplash();
     warmRest();
-    if (isLiteMode()) {
-      const t = window.setTimeout(() => finish(), 0);
-      return () => window.clearTimeout(t);
-    }
-    let cancelled = false;
-    void prefetchHomeLoop((p) => {
-      if (!cancelled) setPct(p);
-    }).then(() => {
-      if (cancelled || finished.current) return;
-      setPct(100);
-      finish();
-    });
-    const cap = window.setTimeout(() => finish(), 6500);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(cap);
+    const t0 = performance.now();
+    let raf = 0;
+    const tick = () => {
+      const p = Math.min(100, ((performance.now() - t0) / LOGO_MS) * 100);
+      setPct(p);
+      if (p >= 100) finish();
+      else raf = window.requestAnimationFrame(tick);
     };
+    raf = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(raf);
   }, []);
 
-  function skip(e: { stopPropagation: () => void }) {
+  function arm(e: { stopPropagation: () => void; preventDefault?: () => void }) {
     e.stopPropagation();
     unlockSfx();
-    finish();
   }
 
   return (
     <div
       className="studio-splash"
-      role="button"
-      tabIndex={0}
-      aria-label="跳過開場"
-      onClick={skip}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          skip(e);
-        }
-      }}
+      role="presentation"
+      onPointerDown={arm}
     >
       <div className="studio-reel-box">
         {isLiteMode() ? (
           <img className="studio-reel" src={STUDIO_FRAMES[0]} alt="" draggable={false} />
         ) : (
-          <StudioLottie className="studio-reel" src={ART.studioSting} onReady={warmRest} onEnded={() => finish()} />
+          <StudioLottie className="studio-reel" src={ART.studioSting} loop onReady={warmRest} />
         )}
       </div>
       <div
@@ -93,6 +93,7 @@ export function StudioSplash({ onDone }: { onDone: () => void }) {
           <StudioLottie className="studio-load-walk" src={ART.catWalk} loop />
         </div>
       </div>
+      {needTap ? <p className="studio-tap">點擊開始遊戲</p> : null}
     </div>
   );
 }

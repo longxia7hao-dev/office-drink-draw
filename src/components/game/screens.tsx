@@ -44,6 +44,7 @@ import { SkillUseBtn } from "./partyScreens";
 import { StudioLottie } from "./StudioLottie";
 import { AutoVideo } from "./AutoVideo";
 import { HomeLoopVideo } from "./HomeLoopVideo";
+import { QrCard, QrScanner } from "./qrJoin";
 
 export function HomeScreen() {
   const setOverlay = useGame((s) => s.setOverlay);
@@ -189,7 +190,7 @@ export function RulesOverlay() {
       <div className="rules-list">
         <p><b>連線局</b> 模式與題庫類型由房主選，其他人同步進場。</p>
         <p><b>二選一</b> 選 A 或 B。每局隨機一種懲罰：多數、少數、單獨一人、全部相同。</p>
-        <p><b>誰最可能</b> 點名互嘴，票最高受罰。</p>
+        <p><b>誰最可能</b> 不能投自己。除了本人，大家都投同一個人，那個人喝。</p>
         <p><b>真心話</b> 回答，或接受懲罰。</p>
         <p><b>反應挑戰</b> 綠就拍、紅不准拍。</p>
         <p><b>混亂事件</b> 每 3 題插入加倍／拖人／免死。</p>
@@ -386,6 +387,7 @@ export function LobbyScreen({ joined }: { joined: boolean }) {
   const notice = useGame((s) => s.notice);
   const setNotice = useGame((s) => s.setNotice);
   const [copied, setCopied] = useState(false);
+  const [showQr, setShowQr] = useState(false);
 
   function copyCode() {
     const url = `${window.location.origin}${window.location.pathname}?room=${roomCode ?? ""}`;
@@ -410,16 +412,7 @@ export function LobbyScreen({ joined }: { joined: boolean }) {
         <span className={`status-dot ${joined ? "on" : "off"}`} />
         連線：{joined ? "已接通" : "連線中"} · 房主為抽籤權威 · 最多 8 人
       </p>
-      <div className="sticker">
-        <p style={{ margin: 0, fontWeight: 800 }}>把房間碼或網址分給同事加入。</p>
-        <p className="hint" style={{ marginBottom: 0 }}>
-          網址可帶 <code>?room={roomCode}</code>
-        </p>
-        <button className="btn btn-lime" type="button" style={{ marginTop: 10 }} onClick={copyCode}>
-          {copied ? "已複製連結" : "複製邀請連結"}
-        </button>
-      </div>
-      <div className="player-list" style={{ marginTop: 12 }}>
+      <div className="player-list">
         {roster.map((p) => (
           <div className="player-chip" key={p.id}>
             <span className={`status-dot ${p.connected ? "on" : "off"}`} />
@@ -432,6 +425,19 @@ export function LobbyScreen({ joined }: { joined: boolean }) {
           </div>
         ))}
       </div>
+      <div className="sticker">
+        <div className="btn-row inline">
+          <button className="btn btn-lime" type="button" onClick={copyCode}>
+            {copied ? "已複製連結" : "複製邀請連結"}
+          </button>
+          {roomCode ? (
+            <button className="btn" type="button" onClick={() => setShowQr((v) => !v)}>
+              {showQr ? "關閉 QR" : "顯示 QR"}
+            </button>
+          ) : null}
+        </div>
+      </div>
+      {roomCode && showQr ? <QrCard code={roomCode} /> : null}
       {notice ? <div className="error-banner">{notice}</div> : null}
       <div className="btn-row">
         {isHost ? (
@@ -636,19 +642,14 @@ function RoleCard({ player, roleId }: { player?: Player; roleId: string }) {
         <div className="crew-port-fit">
           <img src={roleArt(r.id)} alt="" className="crew-port" draggable={false} />
         </div>
-        <span className="crew-graffiti">{r.tag}</span>
         <div className="crew-plate">
           <strong>{player?.name ?? r.name}</strong>
-          <span>
-            {r.tag} · {r.name}
-          </span>
+          <span>{r.name}</span>
         </div>
       </div>
       <div className="crew-skill">
         <b>{r.skillName}</b>
         <p>{fillPunish(r.skillDesc, punishLabel)}</p>
-        <em>{fillPunish(r.drink, punishLabel)}</em>
-        <q>{r.line}</q>
       </div>
     </article>
   );
@@ -681,7 +682,6 @@ export function RolesScreen() {
         </button>
         <div className="crew-titles">
           <h1 className="graffiti-title">角色卡</h1>
-          <p className="hint">自己選的角色，記住技能。準備上場噴漆揭示！</p>
         </div>
         <span className="crew-stamp">CREW</span>
       </div>
@@ -841,7 +841,7 @@ export function ModesScreen() {
     {
       id: "who",
       title: "誰最可能",
-      desc: "全場互投，票最高的人受罰。受罰時可釋放角色技能",
+      desc: "不能投自己。除了本人大家都投同一人，那個人喝。可放技能",
       accent: "var(--spray-gold)",
       go: () => beginCore("who"),
     },
@@ -851,6 +851,20 @@ export function ModesScreen() {
       desc: "回答這題，或接受懲罰。受罰時可釋放角色技能",
       accent: "var(--spray-cyan)",
       go: () => beginCore("truth"),
+    },
+    {
+      id: "never",
+      title: "我從來沒有",
+      desc: "做過的人自己承認並受罰。受罰時可釋放角色技能",
+      accent: "#c84bff",
+      go: () => beginCore("never"),
+    },
+    {
+      id: "artist",
+      title: "抽象派畫家",
+      desc: "全猜錯罰畫家。有人猜對就罰猜錯的人。全對過關",
+      accent: "#ff4fd8",
+      go: () => beginCore("artist"),
     },
     {
       id: "react",
@@ -1303,6 +1317,9 @@ export function FlipBattleScreen({
   const counts = flipVoteCounts({ players, flip } as GameState);
   const [dealt, setDealt] = useState(false);
   const flipIndex = flip?.index ?? 0;
+  const readyKey = (flip?.readyIds ?? []).join(",");
+  const advanceFlip = useGame((s) => s.advanceFlip);
+  const markReady = useGame((s) => s.markReady);
   useEffect(() => {
     setDealt(false);
     const t = window.setTimeout(() => {
@@ -1311,6 +1328,23 @@ export function FlipBattleScreen({
     }, 180);
     return () => window.clearTimeout(t);
   }, [flipIndex]);
+  useEffect(() => {
+    if (!flip || flip.sub !== "result") return;
+    if (isOnline && !isHost) return;
+    const missing = players.filter((p) => p.isBot && !flip.readyIds.includes(p.id)).map((p) => p.id);
+    if (!missing.length) return;
+    const t = window.setTimeout(() => {
+      for (const id of missing) markReady(id);
+    }, 450);
+    return () => window.clearTimeout(t);
+  }, [flip, readyKey, players, isOnline, isHost, markReady]);
+  useEffect(() => {
+    if (!flip || flip.sub !== "result") return;
+    if (isOnline && !isHost) return;
+    if (!players.length || !players.every((p) => flip.readyIds.includes(p.id))) return;
+    const t = window.setTimeout(() => advanceFlip(), 700);
+    return () => window.clearTimeout(t);
+  }, [flip, readyKey, players, isOnline, isHost, advanceFlip]);
 
   if (!flip || !q) {
     return (
@@ -1343,7 +1377,7 @@ export function FlipBattleScreen({
     .join("、");
 
   return (
-    <Screen>
+    <Screen className={`screen-flip${flip.sub === "result" ? " is-result" : ""}`}>
       <DrinkHud />
       <div className="top-bar">
         <span className="tag-pill">FLIP</span>
@@ -1354,7 +1388,7 @@ export function FlipBattleScreen({
       <div className={`flip-rule is-${flip.rule}`} role="status">
         <span>本局懲罰</span>
         <strong>{ruleName}</strong>
-        <em>{flip.sub === "result" && flip.tie ? tieHint : ruleHint}</em>
+        {flip.sub === "result" ? null : <em>{ruleHint}</em>}
       </div>
       <div className="flip-q sticker">
         <div className="flip-q-label">二選一</div>
@@ -1407,23 +1441,17 @@ export function FlipBattleScreen({
                 ))}
             </div>
           ) : null}
-          <div className="ready-list">
-            {players.map((p) => {
-              const on = flip.readyIds.includes(p.id);
-              return (
-                <div className={`ready-chip ${on ? "on" : "off"}`} key={p.id}>
-                  <strong>{p.name}</strong>
-                  <span className="ready-label">{on ? "就緒" : "還沒"}</span>
-                </div>
-              );
-            })}
-          </div>
           <div className="btn-row">
             <SkillUseBtn />
           </div>
           <div className="btn-row inline">
-            <button className="btn btn-lg" type="button" onClick={onReady}>
-              下一題
+            <button
+              className="btn btn-lg"
+              type="button"
+              disabled={Boolean(myPlayerId && flip.readyIds.includes(myPlayerId))}
+              onClick={onReady}
+            >
+              下一題準備
             </button>
             <button className="btn btn-ghost" type="button" disabled={isOnline && !isHost} onClick={toModes}>
               換模式
@@ -1449,10 +1477,7 @@ export function JoinOverlay({ presetCode }: { presetCode?: string }) {
   const beginJoin = useGame((s) => s.beginJoin);
   const setNotice = useGame((s) => s.setNotice);
   const notice = useGame((s) => s.notice);
-
-  if (!hasSignaling()) {
-    return <OnlineFallback joining presetCode={presetCode} />;
-  }
+  const [scanning, setScanning] = useState(false);
 
   return (
     <Screen>
@@ -1480,8 +1505,22 @@ export function JoinOverlay({ presetCode }: { presetCode?: string }) {
         placeholder="ABCD"
         autoCapitalize="characters"
       />
+      {scanning ? (
+        <QrScanner
+          onCode={(next) => {
+            setCode(next);
+            setScanning(false);
+            const res = beginJoin(name, next);
+            if ("error" in res) setNotice(res.error);
+          }}
+          onClose={() => setScanning(false)}
+        />
+      ) : null}
       {notice ? <div className="error-banner">{notice}</div> : null}
       <div className="btn-row">
+        <button className="btn btn-lime btn-lg" type="button" onClick={() => setScanning(true)}>
+          掃描 QR 進房
+        </button>
         <button
           className="btn btn-lg"
           type="button"

@@ -11,6 +11,7 @@ import {
 } from "./party";
 import { CHAOS_CARDS, TRUTH_QUESTIONS, WHO_QUESTIONS, fillPunish } from "./partyPlay";
 import { REACT_CARDS, REACT_COLORS, REACT_DECOYS, pickMatchFaces, type ReactColor } from "./reactCards";
+import { ARTIST_SETS } from "./artist";
 
 export type Phase =
   | "home"
@@ -33,6 +34,7 @@ export type Phase =
   | "never"
   | "wheel"
   | "match"
+  | "artist"
   | "award"
   | "recap";
 
@@ -47,7 +49,8 @@ export type GameMode =
   | "match"
   | "king"
   | "never"
-  | "wheel";
+  | "wheel"
+  | "artist";
 
 export type FlipSubPhase = "choose" | "result";
 
@@ -99,7 +102,24 @@ export interface NeverState {
   deck: string[];
   index: number;
   marked: string[];
+  passed: string[];
   sub: "ask" | "result";
+  readyIds: string[];
+}
+
+export interface ArtistState {
+  deck: string[];
+  index: number;
+  sub: "order" | "pick" | "draw" | "guess" | "result";
+  order: string[];
+  artistId: string;
+  choices: string[];
+  answer: string;
+  options: string[];
+  strokes: number[][];
+  guesses: Record<string, string>;
+  wrongIds: string[];
+  drawStart: number;
 }
 
 export interface WheelState {
@@ -119,6 +139,7 @@ export interface WhoState {
   votes: Record<string, string>;
   voterId: string | null;
   punishedIds: string[];
+  readyIds: string[];
   dragFrom: string | null;
 }
 
@@ -252,6 +273,7 @@ export interface GameState {
   king: KingState | null;
   never: NeverState | null;
   wheel: WheelState | null;
+  artist: ArtistState | null;
   who: WhoState | null;
   truth: TruthState | null;
   react: ReactState | null;
@@ -269,7 +291,7 @@ export interface GameState {
   punishActorId: string | null;
   punishCollateral: boolean;
   skillReturnPhase: Phase;
-  skillFlash: { roleId: string; name: string; skill: string; msg: string } | null;
+  skillFlash: { roleId: string; name: string; skill: string; desc?: string; msg: string } | null;
 }
 
 export function createInitialState(): GameState {
@@ -292,6 +314,7 @@ export function createInitialState(): GameState {
     king: null,
     never: null,
     wheel: null,
+    artist: null,
     who: null,
     truth: null,
     react: null,
@@ -411,10 +434,6 @@ export function addCups(state: GameState, ids: string[], n: number): void {
       if (hid && hid !== id) addCups(state, [hid], n * 3);
       continue;
     }
-    if (p.skipToken) {
-      p.skipToken = false;
-      continue;
-    }
     let share = n;
     if (p.backupWith && !p.backupHold) {
       const otherId = p.backupWith;
@@ -430,6 +449,43 @@ export function addCups(state: GameState, ids: string[], n: number): void {
     p.cups = (p.cups || 0) + add;
     state.hitAmt[p.id] = (state.hitAmt[p.id] ?? 0) + add;
   }
+}
+
+function touchPunishList(list: string[] | undefined, id: string, on: boolean) {
+  if (!list) return;
+  const i = list.indexOf(id);
+  if (on && i < 0) list.push(id);
+  if (!on && i >= 0) list.splice(i, 1);
+}
+
+function setPunishBorder(state: GameState, id: string, on: boolean) {
+  touchPunishList(state.flip?.drinkerIds, id, on);
+  touchPunishList(state.who?.punishedIds, id, on);
+  touchPunishList(state.match?.losers, id, on);
+  if (!on) {
+    state.hitAmt[id] = 0;
+    state.punishQueue = state.punishQueue.filter((x) => x !== id);
+  }
+}
+
+export function spendSkipToken(state: GameState, pid: string): string {
+  const me = state.players.find((p) => p.id === pid);
+  if (!me?.skipToken) return "";
+  if (!currentDrinkers(state).includes(pid)) return "";
+  me.skipToken = false;
+  me.punishStreak = Math.max(0, (me.punishStreak ?? 1) - 1);
+  setPunishBorder(state, pid, false);
+  if (state.react) state.react.dead = state.react.dead.filter((id) => id !== pid);
+  return `${me.name} 選擇這次免罰`;
+}
+
+export function autoBotSkip(state: GameState): boolean {
+  const bot = state.players.find((p) => p.isBot && p.skipToken && currentDrinkers(state).includes(p.id));
+  if (!bot) return false;
+  const msg = spendSkipToken(state, bot.id);
+  if (!msg) return false;
+  state.skillMessage = msg;
+  return true;
 }
 
 export function spendCoverRepay(state: GameState, pid: string): string {
@@ -483,6 +539,37 @@ export function currentDrinkers(state: GameState): string[] {
   if (state.react?.sub === "result") return [...state.react.dead];
   if (state.punishQueue.length) return [...state.punishQueue];
   return Object.keys(state.hitAmt ?? {}).filter((id) => (state.hitAmt[id] ?? 0) > 0);
+}
+
+export function botCanSkill(state: GameState, pid: string): boolean {
+  if (state.phase === "react" || state.mode === "react" || state.phase === "skill" || state.skillFlash) return false;
+  const p = state.players.find((x) => x.id === pid);
+  if (!p?.isBot || p.skillUsed) return false;
+  const kind = getRole(p.roleId).skillKind;
+  if (kind === "none") return false;
+  const drinkers = currentDrinkers(state);
+  if (kind === "cover" || kind === "backup") return drinkers.some((id) => id !== pid);
+  if (kind === "hedge") return drinkers.includes(pid) && (p.punishStreak ?? 0) >= 2;
+  return drinkers.includes(pid);
+}
+
+export function castBotSkill(state: GameState): boolean {
+  const me = state.players.find((p) => botCanSkill(state, p.id));
+  if (!me) return false;
+  const kind = getRole(me.roleId).skillKind;
+  const others = state.players.filter((p) => p.id !== me.id);
+  const drinkers = currentDrinkers(state).filter((id) => id !== me.id);
+  const pool =
+    kind === "cover" || kind === "backup" ? state.players.filter((p) => drinkers.includes(p.id)) : others;
+  const needsTarget = kind === "exam" || kind === "split" || kind === "hedge" || kind === "backup" || kind === "cover" || kind === "protect";
+  const target = needsTarget ? pool[Math.floor(Math.random() * Math.max(1, pool.length))]?.id : undefined;
+  if (needsTarget && !target) return false;
+  if (state.phase !== "skill") state.skillReturnPhase = state.phase;
+  state.punishActorId = me.id;
+  const msg = applySkill(state, kind, target, "go");
+  if (msg.startsWith("請選擇")) return false;
+  continueAfterSkill(state, msg);
+  return true;
 }
 
 export function canUseSkillNow(state: GameState, pid: string | null | undefined): boolean {
@@ -595,6 +682,8 @@ export function launchCoreMode(state: GameState, mode: GameMode, fromChaos = fal
   if (mode === "flip_battle") startFlipBattle(state);
   else if (mode === "who") startWho(state);
   else if (mode === "truth") startTruth(state);
+  else if (mode === "never") startNever(state);
+  else if (mode === "artist") startArtist(state);
   else if (mode === "react") startReact(state);
   else if (mode === "match") startMatch(state);
   for (const p of state.players) p.skillUsed = false;
@@ -629,6 +718,7 @@ export function startWho(state: GameState): void {
     votes: {},
     voterId: state.players[0]?.id ?? null,
     punishedIds: [],
+    readyIds: [],
     dragFrom: null,
   };
   state.flip = null;
@@ -640,21 +730,35 @@ export function whoVote(state: GameState, targetId: string, voterId?: string): v
   const who = state.who;
   if (!who || who.sub !== "vote") return;
   const id = voterId ?? who.voterId ?? state.players.find((p) => !(p.id in who.votes))?.id;
-  if (!id || id in who.votes) return;
+  if (!id || id in who.votes || id === targetId) return;
   if (!state.players.some((p) => p.id === targetId)) return;
   who.votes[id] = targetId;
   if (state.players.every((p) => p.id in who.votes)) {
-    const tally: Record<string, number> = {};
-    for (const t of Object.values(who.votes)) tally[t] = (tally[t] ?? 0) + 1;
-    let max = 0;
-    for (const n of Object.values(tally)) if (n > max) max = n;
-    const punished = Object.keys(tally).filter((k) => tally[k] === max);
-    who.punishedIds = settlePunish(state, punished, 1);
-    who.sub = state.chaos?.drag && who.punishedIds.length ? "drag" : "result";
+    const punished = state.players
+      .filter((p) => state.players.every((o) => o.id === p.id || who.votes[o.id] === p.id))
+      .map((p) => p.id);
+    if (punished.length) {
+      who.punishedIds = settlePunish(state, punished, 1);
+      who.sub = state.chaos?.drag && who.punishedIds.length ? "drag" : "result";
+    } else {
+      who.punishedIds = [];
+      who.sub = "result";
+      state.hitAmt = {};
+      state.punishQueue = [];
+      state.punishActorId = null;
+    }
     who.voterId = null;
   } else {
     who.voterId = state.players.find((p) => !(p.id in who.votes))?.id ?? null;
   }
+}
+
+export function whoMarkReady(state: GameState, pid: string): void {
+  const who = state.who;
+  if (!who || who.sub !== "result" || !pid) return;
+  if (!who.readyIds) who.readyIds = [];
+  if (!state.players.some((p) => p.id === pid)) return;
+  if (!who.readyIds.includes(pid)) who.readyIds.push(pid);
 }
 
 export function whoAdvance(state: GameState): void {
@@ -668,6 +772,7 @@ export function whoAdvance(state: GameState): void {
   state.who.sub = "vote";
   state.who.votes = {};
   state.who.punishedIds = [];
+  state.who.readyIds = [];
   state.who.dragFrom = null;
   state.who.voterId = state.players[0]?.id ?? null;
   state.hitAmt = {};
@@ -1193,17 +1298,143 @@ export function reactAgain(state: GameState): void {
   const r = state.react;
   if (!r) return;
   r.hard = hard;
-  Object.assign(r, pickReactBeat(state, hard));
-  r.card = 1;
-  r.sub = "count";
-  r.count = 3;
-  r.beat = 0;
-  r.tempo = 2000;
+  r.sub = "ready";
+  r.ready = [];
   r.dead = [];
   r.tapped = [];
   r.slips = [];
-  r.hold = false;
   r.punished = false;
+  r.beat = 0;
+  r.hold = false;
+  r.count = 3;
+}
+
+function dealArtistChoices(state: GameState, a: ArtistState): void {
+  const rng = createRng(`${state.seed}:artist:${a.index}`);
+  const setId = a.deck[a.index % a.deck.length] ?? "0";
+  const trio = [...(ARTIST_SETS[Number(setId)] ?? ARTIST_SETS[0]!)];
+  shuffleInPlace(trio, rng);
+  a.choices = trio;
+  a.answer = "";
+  a.options = [];
+  a.strokes = [];
+  a.guesses = {};
+  a.wrongIds = [];
+  a.drawStart = 0;
+  const n = Math.max(1, a.order.length);
+  a.artistId = a.order[a.index % n] ?? state.players[0]?.id ?? "";
+}
+
+export function startArtist(state: GameState): void {
+  const rng = createRng(`${state.seed}:artist-deck:${state.drawCount}`);
+  const deck = ARTIST_SETS.map((_, i) => String(i));
+  shuffleInPlace(deck, rng);
+  const order = state.players.map((p) => p.id);
+  shuffleInPlace(order, rng);
+  const artist: ArtistState = {
+    deck,
+    index: 0,
+    sub: "order",
+    order,
+    artistId: order[0] ?? "",
+    choices: [],
+    answer: "",
+    options: [],
+    strokes: [],
+    guesses: {},
+    wrongIds: [],
+    drawStart: 0,
+  };
+  dealArtistChoices(state, artist);
+  state.mode = "artist";
+  state.phase = "artist";
+  state.artist = artist;
+  state.flip = null;
+  state.who = null;
+  state.truth = null;
+  state.react = null;
+  state.never = null;
+  state.king = null;
+  state.wheel = null;
+  state.match = null;
+}
+
+export function artistOrderReady(state: GameState): void {
+  const a = state.artist;
+  if (!a || a.sub !== "order") return;
+  a.sub = "pick";
+}
+
+export function artistPickWord(state: GameState, pid: string, wordId: string): void {
+  const a = state.artist;
+  if (!a || a.sub !== "pick" || !pid || pid !== a.artistId) return;
+  if (!a.choices.includes(wordId)) return;
+  const rng = createRng(`${state.seed}:artist-opt:${a.index}:${wordId}`);
+  const options = [...a.choices];
+  shuffleInPlace(options, rng);
+  a.answer = wordId;
+  a.options = options;
+  a.strokes = [];
+  a.drawStart = Date.now();
+  a.sub = "draw";
+}
+
+export function artistUndo(state: GameState, pid?: string): void {
+  const a = state.artist;
+  if (!a || a.sub !== "draw") return;
+  if (pid && pid !== a.artistId) return;
+  a.strokes.pop();
+}
+
+export function artistAddStroke(state: GameState, pid: string, pts: number[]): void {
+  const a = state.artist;
+  if (!a || a.sub !== "draw" || !pid || pid !== a.artistId) return;
+  if (pts.length < 4 || a.strokes.length > 80) return;
+  a.strokes.push(pts.slice(0, 160));
+}
+
+export function artistStopDraw(state: GameState, pid?: string): void {
+  const a = state.artist;
+  if (!a || a.sub !== "draw") return;
+  if (pid && pid !== a.artistId) return;
+  a.sub = "guess";
+}
+
+export function artistGuess(state: GameState, pid: string, optionId: string): void {
+  const a = state.artist;
+  if (!a || a.sub !== "guess" || !pid || pid === a.artistId) return;
+  if (!a.options.includes(optionId)) return;
+  a.guesses[pid] = optionId;
+  const guessers = state.players.filter((p) => p.id !== a.artistId);
+  if (guessers.length === 0 || guessers.every((p) => a.guesses[p.id])) artistResolve(state);
+}
+
+function artistResolve(state: GameState): void {
+  const a = state.artist;
+  if (!a || a.sub !== "guess") return;
+  const guessers = state.players.filter((p) => p.id !== a.artistId);
+  const missed = guessers.filter((p) => a.guesses[p.id] !== a.answer).map((p) => p.id);
+  const anyRight = guessers.some((p) => a.guesses[p.id] === a.answer);
+  const wrong = anyRight ? missed : a.artistId ? [a.artistId] : [];
+  a.wrongIds = wrong;
+  a.sub = "result";
+  state.drawCount += 1;
+  if (wrong.length) settlePunish(state, wrong, 1);
+  else {
+    state.hitAmt = {};
+    state.punishQueue = [];
+    state.punishActorId = null;
+  }
+}
+
+export function artistAdvance(state: GameState): void {
+  const a = state.artist;
+  if (!a) return;
+  flushPunish(state);
+  state.skillFlash = null;
+  a.index += 1;
+  dealArtistChoices(state, a);
+  a.sub = "pick";
 }
 
 export function peekDrawOne(state: GameState): DrawResult {
@@ -1306,14 +1537,22 @@ export function applySkill(
   switch (kind) {
     case "slacker":
       mark();
-      if (me) me.nextMult = 2;
+      if (me) {
+        me.nextMult = 2;
+        setPunishBorder(state, me.id, false);
+      }
       return `${me?.name} 摸魚！這次免罰，下次被抓到懲罰加倍`;
     case "exam": {
-      if (!target) return "請選擇目標";
+      if (!target || !me || target.id === me.id) return "請選擇其他玩家";
       mark();
-      if (me) addCups(state, [me.id], amt);
+      const once = (state.hitAmt[me.id] ?? 0) > 0 ? state.hitAmt[me.id]! : amt;
+      me.cups = (me.cups || 0) + once;
+      state.hitAmt[me.id] = once;
+      state.punishQueue = state.punishQueue.filter((id) => id !== me.id);
+      setPunishBorder(state, me.id, true);
       applyWithProtect(state, [target.id], amt * 2);
-      return `${me?.name} 考績！${target.name} 承受兩次懲罰`;
+      setPunishBorder(state, target.id, true);
+      return `${me.name} 考績！自己維持原懲罰，${target.name} 承受兩次`;
     }
     case "treat_all":
       mark();
@@ -1322,12 +1561,14 @@ export function applySkill(
         state.players.map((p) => p.id),
         amt,
       );
+      for (const p of state.players) setPunishBorder(state, p.id, true);
       return `${me?.name} 我請客！全桌一起受罰`;
     case "protect": {
       if (!target || !me) return "請其他玩家指派";
       mark();
       me.collateralHit = false;
       state.hitAmt[me.id] = 0;
+      setPunishBorder(state, me.id, false);
       return `${me.name} 免除這次懲罰，大家指派去幫 ${target.name} 做一件事`;
     }
     case "split": {
@@ -1336,6 +1577,7 @@ export function applySkill(
       const half = amt / 2;
       addCups(state, [me.id], half);
       applyWithProtect(state, [target.id], half);
+      setPunishBorder(state, target.id, true);
       return `${me.name} 一人一半！與 ${target.name} 各承擔一半`;
     }
     case "able": {
@@ -1343,6 +1585,7 @@ export function applySkill(
       if (me) {
         me.joinNext = true;
         state.hitAmt[me.id] = 0;
+        setPunishBorder(state, me.id, false);
       }
       return `${me?.name} 能者多勞！這次免罰，下一回合陪受罰的人一起罰`;
     }
@@ -1354,12 +1597,9 @@ export function applySkill(
       me.punishStreak = 0;
       state.hitAmt[me.id] = 0;
       state.punishQueue = state.punishQueue.filter((id) => id !== me.id);
-      if (state.flip) state.flip.drinkerIds = state.flip.drinkerIds.filter((id) => id !== me.id);
-      if (state.who) state.who.punishedIds = state.who.punishedIds.filter((id) => id !== me.id);
-      if (state.react) state.react.dead = state.react.dead.filter((id) => id !== me.id);
+      setPunishBorder(state, me.id, false);
       addCups(state, [target.id], n);
-      if (state.flip && !state.flip.drinkerIds.includes(target.id)) state.flip.drinkerIds.push(target.id);
-      if (state.who && !state.who.punishedIds.includes(target.id)) state.who.punishedIds.push(target.id);
+      setPunishBorder(state, target.id, true);
       return `風險對沖！${me.name} 連續第二次受罰，改由 ${target.name} 承擔`;
     }
     case "backup": {
@@ -1392,6 +1632,8 @@ export function applySkill(
       state.hitAmt[target.id] = 0;
       state.hitAmt[me.id] = (state.hitAmt[me.id] ?? 0) + n;
       state.punishQueue = state.punishQueue.filter((id) => id !== target.id);
+      setPunishBorder(state, target.id, false);
+      setPunishBorder(state, me.id, true);
       return `${me.name} 替 ${target.name} 擋酒！之後你受罰時，可選擇由對方代替一次`;
     }
     case "veteran": {
@@ -1430,6 +1672,7 @@ export function continueAfterSkill(state: GameState, msg: string): void {
       roleId: me.roleId,
       name: me.name,
       skill: getRole(me.roleId).skillName,
+      desc: getRole(me.roleId).skillDesc,
       msg,
     };
   }
@@ -1523,14 +1766,17 @@ export function resolveFlipMinority(state: GameState): void {
   if (rule === "allsame") {
     if (countA === state.players.length || countB === state.players.length) {
       drinkers = state.players.map((p) => p.id);
+      flip.majoritySide = countA === state.players.length ? 0 : 1;
     } else {
       flip.tie = true;
     }
   } else if (rule === "solo") {
     if (countA === 1 && countB > 1) {
       drinkers = side(0);
+      flip.majoritySide = 1;
     } else if (countB === 1 && countA > 1) {
       drinkers = side(1);
+      flip.majoritySide = 0;
     } else {
       flip.tie = true;
     }
@@ -1767,7 +2013,7 @@ export function startNever(state: GameState): void {
   shuffleInPlace(deck, rng);
   state.mode = "never";
   state.phase = "never";
-  state.never = { deck, index: 0, marked: [], sub: "ask" };
+  state.never = { deck, index: 0, marked: [], passed: [], sub: "ask", readyIds: [] };
   state.flip = null;
   state.king = null;
   state.wheel = null;
@@ -1775,26 +2021,54 @@ export function startNever(state: GameState): void {
   state.skillPending = false;
 }
 
+export function neverAnswer(state: GameState, playerId: string, did: boolean): void {
+  const n = state.never;
+  if (!n || n.sub !== "ask" || !playerId) return;
+  if (!n.passed) n.passed = [];
+  n.marked = n.marked.filter((id) => id !== playerId);
+  n.passed = n.passed.filter((id) => id !== playerId);
+  if (did) n.marked.push(playerId);
+  else n.passed.push(playerId);
+  const answered = new Set([...n.marked, ...n.passed]);
+  if (state.players.length > 0 && state.players.every((p) => answered.has(p.id))) neverConfirm(state);
+}
+
 export function neverToggle(state: GameState, playerId: string): void {
   const n = state.never;
   if (!n || n.sub !== "ask") return;
-  if (n.marked.includes(playerId)) n.marked = n.marked.filter((id) => id !== playerId);
-  else n.marked.push(playerId);
+  neverAnswer(state, playerId, !n.marked.includes(playerId));
 }
 
 export function neverConfirm(state: GameState): void {
   const n = state.never;
   if (!n || n.sub !== "ask") return;
-  addCups(state, n.marked, 1);
   n.sub = "result";
+  n.readyIds = [];
   state.drawCount += 1;
+  if (n.marked.length) settlePunish(state, n.marked, 1);
+  else {
+    state.hitAmt = {};
+    state.punishQueue = [];
+    state.punishActorId = null;
+  }
+}
+
+export function neverMarkReady(state: GameState, pid: string): void {
+  const n = state.never;
+  if (!n || n.sub !== "result" || !pid) return;
+  if (!n.readyIds) n.readyIds = [];
+  if (!state.players.some((p) => p.id === pid)) return;
+  if (!n.readyIds.includes(pid)) n.readyIds.push(pid);
 }
 
 export function neverAdvance(state: GameState): void {
   const n = state.never;
   if (!n) return;
+  flushPunish(state);
   n.index = (n.index + 1) % n.deck.length;
   n.marked = [];
+  n.passed = [];
+  n.readyIds = [];
   n.sub = "ask";
 }
 
@@ -1913,6 +2187,7 @@ export interface SyncPayload {
   king: KingState | null;
   never: NeverState | null;
   wheel: WheelState | null;
+  artist: ArtistState | null;
   who: WhoState | null;
   truth: TruthState | null;
   react: ReactState | null;
@@ -1926,7 +2201,7 @@ export interface SyncPayload {
   punishActorId: string | null;
   punishCollateral: boolean;
   skillReturnPhase: Phase;
-  skillFlash: { roleId: string; name: string; skill: string; msg: string } | null;
+  skillFlash: { roleId: string; name: string; skill: string; desc?: string; msg: string } | null;
 }
 
 export function toSync(state: GameState): SyncPayload {
@@ -1945,6 +2220,7 @@ export function toSync(state: GameState): SyncPayload {
     king: state.king,
     never: state.never,
     wheel: state.wheel,
+    artist: state.artist,
     who: state.who,
     truth: state.truth,
     react: state.react,
@@ -1977,6 +2253,7 @@ export function applySync(state: GameState, sync: SyncPayload): void {
   state.king = sync.king ?? null;
   state.never = sync.never ?? null;
   state.wheel = sync.wheel ?? null;
+  state.artist = sync.artist ?? null;
   state.who = sync.who ?? null;
   state.truth = sync.truth ?? null;
   state.react = sync.react ?? null;

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { botFlipVote, botTruth, botWhoTarget } from "@/game/bots";
+import { botFlipVote, botNever, botTruth, botWhoTarget } from "@/game/bots";
 import { reactMustTap } from "@/game/state";
 import { useGame } from "@/game/store";
 
@@ -14,12 +14,29 @@ export function usePracticeBots() {
   const whoIndex = useGame((s) => s.who?.index);
   const truthSub = useGame((s) => s.truth?.sub);
   const truthPid = useGame((s) => s.truth?.playerId);
+  const neverSub = useGame((s) => s.never?.sub);
+  const neverIndex = useGame((s) => s.never?.index);
+  const artistSub = useGame((s) => s.artist?.sub);
+  const artistIndex = useGame((s) => s.artist?.index);
   const reactSub = useGame((s) => s.react?.sub);
   const reactCard = useGame((s) => s.react?.card);
   const matchTurn = useGame((s) => s.match?.turn);
   const matchLock = useGame((s) => s.match?.lock);
   const matchSub = useGame((s) => s.match?.sub);
   const matchFound = useGame((s) => s.match?.found);
+  const isOnline = useGame((s) => s.isOnline);
+  const isHost = useGame((s) => s.isHost);
+  const skillFlash = useGame((s) => s.skillFlash?.msg ?? "");
+  const skillKey = useGame((s) => s.players.map((p) => (p.skillUsed ? p.id : "")).join(","));
+  const punishKey = useGame((s) =>
+    [
+      ...(s.flip?.drinkerIds ?? []),
+      ...(s.who?.punishedIds ?? []),
+      s.truth?.took ?? "",
+      ...(s.react?.dead ?? []),
+      ...Object.keys(s.hitAmt ?? {}),
+    ].join(","),
+  );
 
   useEffect(() => {
     if (!practice) return;
@@ -51,6 +68,61 @@ export function usePracticeBots() {
             cur.voteWho(target, voter.id);
           }, 640),
         );
+      }
+    }
+
+    if (phase === "never" && s.never?.sub === "ask") {
+      const passed = s.never.passed ?? [];
+      s.players
+        .filter((p) => p.isBot && !s.never!.marked.includes(p.id) && !passed.includes(p.id))
+        .forEach((p, i) => {
+          timers.push(
+            window.setTimeout(() => {
+              const cur = useGame.getState();
+              if (cur.never?.sub !== "ask") return;
+              const did = botNever(cur.seed, p.id, cur.never.index);
+              cur.neverSay(did, p.id);
+            }, 420 + i * 180),
+          );
+        });
+    }
+
+    if (phase === "artist" && s.artist) {
+      const art = s.artist;
+      const painter = s.players.find((p) => p.id === art.artistId);
+      if (art.sub === "pick" && painter?.isBot) {
+        timers.push(
+          window.setTimeout(() => {
+            const cur = useGame.getState();
+            if (cur.artist?.sub !== "pick" || cur.artist.artistId !== painter.id) return;
+            const word = cur.artist.choices[Math.floor(Math.random() * cur.artist.choices.length)];
+            if (word) cur.artistPick(word, painter.id);
+          }, 700),
+        );
+      }
+      if (art.sub === "draw" && painter?.isBot) {
+        timers.push(
+          window.setTimeout(() => {
+            const cur = useGame.getState();
+            if (cur.artist?.sub !== "draw" || cur.artist.artistId !== painter.id) return;
+            cur.artistStroke([200, 500, 400, 300, 600, 500, 500, 700], painter.id);
+            useGame.getState().artistDone(painter.id);
+          }, 900),
+        );
+      }
+      if (art.sub === "guess") {
+        s.players
+          .filter((p) => p.isBot && p.id !== art.artistId && !art.guesses[p.id])
+          .forEach((p, i) => {
+            timers.push(
+              window.setTimeout(() => {
+                const cur = useGame.getState();
+                if (cur.artist?.sub !== "guess" || cur.artist.guesses[p.id]) return;
+                const opt = cur.artist.options[Math.floor(Math.random() * cur.artist.options.length)];
+                if (opt) cur.artistGuess(opt, p.id);
+              }, 500 + i * 220),
+            );
+          });
       }
     }
 
@@ -133,6 +205,10 @@ export function usePracticeBots() {
     whoIndex,
     truthSub,
     truthPid,
+    neverSub,
+    neverIndex,
+    artistSub,
+    artistIndex,
     reactSub,
     reactCard,
     matchTurn,
@@ -140,4 +216,16 @@ export function usePracticeBots() {
     matchSub,
     matchFound,
   ]);
+
+  useEffect(() => {
+    if (isOnline && !isHost) return;
+    if (!practice && !isOnline) return;
+    if (skillFlash || phase === "skill" || phase === "react") return;
+    const s = useGame.getState();
+    if (!s.players.some((p) => p.isBot && !p.skillUsed)) return;
+    const t = window.setTimeout(() => {
+      useGame.getState().runBotSkill();
+    }, 900);
+    return () => window.clearTimeout(t);
+  }, [practice, isOnline, isHost, phase, flipSub, whoSub, truthSub, neverSub, artistSub, matchSub, skillFlash, skillKey, punishKey]);
 }

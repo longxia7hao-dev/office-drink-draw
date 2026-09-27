@@ -220,12 +220,24 @@ export function DrinkHud() {
   const showSlips = phase === "react" && !!react;
   const slipCount = (id: string) => (react?.slips ?? []).filter((x) => x === id).length;
   const turnId = phase === "match" && match?.sub === "play" ? match.turn : "";
+  const who = useGame((s) => s.who);
+  const flipReady = useGame((s) => (s.phase === "flip_battle" && s.flip?.sub === "result" ? s.flip.readyIds : null));
+  const whoReady = phase === "who" && who?.sub === "result" ? new Set(who.readyIds ?? []) : null;
+  const never = useGame((s) => s.never);
+  const neverReady = phase === "never" && never?.sub === "result" ? new Set(never.readyIds ?? []) : null;
+  const hudReady = neverReady ?? whoReady ?? (flipReady ? new Set(flipReady) : null);
   const myId = useGame((s) => s.myPlayerId);
   const repayCover = useGame((s) => s.repayCover);
+  const useSkip = useGame((s) => s.useSkip);
   const canRepay = useGame((s) => {
     const id = s.myPlayerId;
     const me = s.players.find((p) => p.id === id);
     return Boolean(me?.oweCover && id && currentDrinkers(s).includes(id));
+  });
+  const canSkip = useGame((s) => {
+    const id = s.myPlayerId;
+    const me = s.players.find((p) => p.id === id);
+    return Boolean(me?.skipToken && id && currentDrinkers(s).includes(id));
   });
   const me = players.find((p) => p.id === myId);
   const repayName = players.find((p) => p.id === me?.oweCover)?.name;
@@ -246,7 +258,10 @@ export function DrinkHud() {
             className={cn("hud-chip", punished?.has(p.id) && "is-minority-hit", p.id === turnId && "is-turn")}
             key={p.id}
           >
-            <Portrait roleId={p.roleId} size={28} />
+            <div className="hud-face">
+              <Portrait roleId={p.roleId} size={28} />
+              {hudReady?.has(p.id) ? <b className="hud-ready">READY</b> : null}
+            </div>
             <span className={cn("hud-name", p.isBot && "is-bot")}>{label}</span>
             <b className="hud-cups">{p.cups || 0}</b>
             {showPairs ? <em className="hud-pairs">{match.scores[p.id] ?? 0}對</em> : null}
@@ -267,6 +282,11 @@ export function DrinkHud() {
           );
         })}
       </div>
+      {canSkip ? (
+        <button className="btn btn-lime hud-repay" type="button" onClick={() => useSkip()}>
+          這次使用免罰
+        </button>
+      ) : null}
       {canRepay ? (
         <button className="btn btn-pink hud-repay" type="button" onClick={() => repayCover()}>
           請{repayName}代替這次（一次）

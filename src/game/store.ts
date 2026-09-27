@@ -6,6 +6,13 @@ import { playMeow } from "./sfx";
 import { preloadReactCards } from "./art";
 import { netSend } from "./netBridge";
 import {
+  artistAddStroke,
+  artistAdvance,
+  artistGuess,
+  artistOrderReady,
+  artistPickWord,
+  artistStopDraw,
+  artistUndo,
   applyBaseDrink,
   applySkill,
   applySync,
@@ -27,10 +34,14 @@ import {
   kingToPick,
   makeLocalPlayers,
   neverAdvance,
+  neverAnswer,
   neverConfirm,
+  neverMarkReady,
   neverToggle,
   setPlayerRole,
   spendCoverRepay,
+  spendSkipToken,
+  autoBotSkip,
   spinWheel,
   addCups,
   allRolesPicked,
@@ -57,6 +68,7 @@ import {
   reactSetHard,
   reactTickCount,
   reactTap,
+  reactMustTap,
   reactTimeout,
   goAward,
   startFlipBattle,
@@ -69,7 +81,9 @@ import {
   wheelLand,
   wheelPickTarget,
   whoAdvance,
+  whoMarkReady,
   whoVote,
+  castBotSkill,
   type GameMode,
   type GameState,
   type SyncPayload,
@@ -102,10 +116,25 @@ export type NetMsg =
   | { t: "pick-role"; roleId: string }
   | { t: "match-tap"; i: number }
   | { t: "match-swap" }
-  | { t: "use-skill" }
+  | { t: "use-skill"; id?: string }
   | { t: "skill-target"; id: string }
+  | { t: "skill-opt"; opt: string }
+  | { t: "skip-skill" }
   | { t: "repay-cover" }
-  | { t: "react-ready" };
+  | { t: "use-skip" }
+  | { t: "react-ready" }
+  | { t: "react-tap"; id?: string; card?: number }
+  | { t: "react-again" }
+  | { t: "react-hard"; hard: boolean }
+  | { t: "never-say"; did: boolean }
+  | { t: "never-ready" }
+  | { t: "artist-pick"; id: string }
+  | { t: "artist-stroke"; pts: number[] }
+  | { t: "artist-undo" }
+  | { t: "artist-done" }
+  | { t: "artist-guess"; id: string }
+  | { t: "artist-next" }
+  | { t: "who-ready" };
 
 interface GameStore extends GameState {
   overlay: Overlay;
@@ -154,6 +183,7 @@ interface GameStore extends GameState {
   skillTarget: (targetId: string) => void;
   skillOpt: (opt: string) => void;
   repayCover: (pid?: string) => void;
+  useSkip: (pid?: string) => void;
   applyRemoteSync: (payload: SyncPayload) => void;
   snapshot: () => SyncPayload;
   burst: () => void;
@@ -163,8 +193,17 @@ interface GameStore extends GameState {
   kingTap: (id: string) => void;
   beginNever: () => void;
   neverTap: (id: string) => void;
+  neverSay: (did: boolean, pid?: string) => void;
   neverDone: () => void;
   neverNext: () => void;
+  markNeverReady: (ids?: string | string[]) => void;
+  artistOrderDone: () => void;
+  artistPick: (wordId: string, pid?: string) => void;
+  artistStroke: (pts: number[], pid?: string) => void;
+  artistUndo: (pid?: string) => void;
+  artistDone: (pid?: string) => void;
+  artistGuess: (optionId: string, pid?: string) => void;
+  artistNext: () => void;
   beginWheel: () => void;
   wheelGo: () => void;
   wheelLanded: () => void;
@@ -177,6 +216,8 @@ interface GameStore extends GameState {
   dragExtra: (id: string) => void;
   voteWho: (targetId: string, voterId?: string) => void;
   nextWho: () => void;
+  markWhoReady: (ids?: string | string[]) => void;
+  runBotSkill: () => void;
   pickTruth: (took: "answer" | "punish") => void;
   nextTruth: () => void;
   startReactPlay: () => void;
@@ -189,7 +230,7 @@ interface GameStore extends GameState {
   failReact: (pid?: string) => void;
   beatReact: () => void;
   releaseReact: () => void;
-  tapReact: (pid?: string) => "miss" | "ok" | "ignore";
+  tapReact: (pid?: string, card?: number) => "miss" | "ok" | "ignore";
   timeoutReact: () => void;
   dealMatch: (n: 8 | 12 | 18) => void;
   againMatch: () => void;
@@ -229,9 +270,37 @@ function cloneState<T extends GameState>(s: T): T {
           drinkerIds: [...s.king.drinkerIds],
         }
       : null,
-    never: s.never ? { ...s.never, deck: [...s.never.deck], marked: [...s.never.marked] } : null,
+    never: s.never
+      ? {
+          ...s.never,
+          deck: [...s.never.deck],
+          marked: [...s.never.marked],
+          passed: [...(s.never.passed ?? [])],
+          readyIds: [...(s.never.readyIds ?? [])],
+        }
+      : null,
     wheel: s.wheel ? { ...s.wheel, drinkerIds: [...s.wheel.drinkerIds] } : null,
-    who: s.who ? { ...s.who, deck: [...s.who.deck], votes: { ...s.who.votes }, punishedIds: [...s.who.punishedIds] } : null,
+    artist: s.artist
+      ? {
+          ...s.artist,
+          deck: [...s.artist.deck],
+          order: [...s.artist.order],
+          choices: [...s.artist.choices],
+          options: [...s.artist.options],
+          strokes: s.artist.strokes.map((st) => [...st]),
+          guesses: { ...s.artist.guesses },
+          wrongIds: [...s.artist.wrongIds],
+        }
+      : null,
+    who: s.who
+      ? {
+          ...s.who,
+          deck: [...s.who.deck],
+          votes: { ...s.who.votes },
+          punishedIds: [...s.who.punishedIds],
+          readyIds: [...(s.who.readyIds ?? [])],
+        }
+      : null,
     truth: s.truth ? { ...s.truth, deck: [...s.truth.deck] } : null,
     react: s.react ? { ...s.react, ready: [...s.react.ready], dead: [...s.react.dead], tapped: [...(s.react.tapped ?? [])] } : null,
     match: s.match
@@ -539,7 +608,7 @@ export const useGame = create<GameStore>((set, get) => ({
   useSkill: (pid) => {
     const cur = get();
     if (cur.isOnline && !cur.isHost && !pid) {
-      netSend.current?.({ t: "use-skill" });
+      netSend.current?.({ t: "use-skill", id: cur.myPlayerId ?? "" });
       return;
     }
     const s = cloneState(cur);
@@ -561,7 +630,12 @@ export const useGame = create<GameStore>((set, get) => ({
     set(s);
   },
   skipSkill: () => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) {
+      netSend.current?.({ t: "skip-skill" });
+      return;
+    }
+    const s = cloneState(cur);
     declineSkill(s);
     s.burstKey += 1;
     set(s);
@@ -579,7 +653,12 @@ export const useGame = create<GameStore>((set, get) => ({
     set(s);
   },
   skillOpt: (opt) => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) {
+      netSend.current?.({ t: "skill-opt", opt });
+      return;
+    }
+    const s = cloneState(cur);
     const kind = s.lastResult?.skillKind ?? "none";
     const msg = applySkill(s, kind, undefined, opt);
     continueAfterSkill(s, msg);
@@ -595,6 +674,19 @@ export const useGame = create<GameStore>((set, get) => ({
     const s = cloneState(cur);
     const msg = spendCoverRepay(s, pid ?? cur.myPlayerId ?? "");
     if (msg) s.skillMessage = msg;
+    s.burstKey += 1;
+    set(s);
+  },
+  useSkip: (pid) => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost && !pid) {
+      netSend.current?.({ t: "use-skip" });
+      return;
+    }
+    const s = cloneState(cur);
+    const msg = spendSkipToken(s, pid ?? cur.myPlayerId ?? "");
+    if (!msg) return;
+    s.skillMessage = msg;
     s.burstKey += 1;
     set(s);
   },
@@ -637,19 +729,122 @@ export const useGame = create<GameStore>((set, get) => ({
     set(s);
   },
   neverTap: (id) => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
     neverToggle(s, id);
     set(s);
   },
+  neverSay: (did, pid) => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost && !pid) {
+      netSend.current?.({ t: "never-say", did });
+      return;
+    }
+    const s = cloneState(cur);
+    neverAnswer(s, pid ?? s.myPlayerId ?? "", did);
+    s.burstKey += 1;
+    set(s);
+  },
   neverDone: () => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
     neverConfirm(s);
     s.burstKey += 1;
     set(s);
   },
   neverNext: () => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
     neverAdvance(s);
+    s.burstKey += 1;
+    set(s);
+  },
+  markNeverReady: (ids) => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost && ids == null) {
+      netSend.current?.({ t: "never-ready" });
+      return;
+    }
+    const list = (ids == null ? [cur.myPlayerId ?? ""] : Array.isArray(ids) ? ids : [ids]).filter(Boolean);
+    const s = cloneState(cur);
+    for (const id of list) neverMarkReady(s, id);
+    set(s);
+  },
+  artistOrderDone: () => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
+    artistOrderReady(s);
+    s.burstKey += 1;
+    set(s);
+  },
+  artistPick: (wordId, pid) => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost && !pid) {
+      netSend.current?.({ t: "artist-pick", id: wordId });
+      return;
+    }
+    const s = cloneState(cur);
+    artistPickWord(s, pid ?? s.myPlayerId ?? "", wordId);
+    s.burstKey += 1;
+    set(s);
+  },
+  artistStroke: (pts, pid) => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost && !pid) {
+      netSend.current?.({ t: "artist-stroke", pts });
+      const s = cloneState(cur);
+      artistAddStroke(s, s.myPlayerId ?? "", pts);
+      set(s);
+      return;
+    }
+    const s = cloneState(cur);
+    artistAddStroke(s, pid ?? s.myPlayerId ?? "", pts);
+    set(s);
+  },
+  artistUndo: (pid) => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost && !pid) {
+      netSend.current?.({ t: "artist-undo" });
+      const s = cloneState(cur);
+      artistUndo(s, s.myPlayerId ?? "");
+      set(s);
+      return;
+    }
+    const s = cloneState(cur);
+    artistUndo(s, pid);
+    set(s);
+  },
+  artistDone: (pid) => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost && !pid) {
+      netSend.current?.({ t: "artist-done" });
+      return;
+    }
+    const s = cloneState(cur);
+    artistStopDraw(s, pid);
+    s.burstKey += 1;
+    set(s);
+  },
+  artistGuess: (optionId, pid) => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost && !pid) {
+      netSend.current?.({ t: "artist-guess", id: optionId });
+      return;
+    }
+    const s = cloneState(cur);
+    artistGuess(s, pid ?? s.myPlayerId ?? "", optionId);
+    s.burstKey += 1;
+    set(s);
+  },
+  artistNext: () => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
+    artistAdvance(s);
     s.burstKey += 1;
     set(s);
   },
@@ -734,6 +929,31 @@ export const useGame = create<GameStore>((set, get) => ({
     s.burstKey += 1;
     set(s);
   },
+  markWhoReady: (ids) => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost && ids == null) {
+      netSend.current?.({ t: "who-ready" });
+      return;
+    }
+    const list = (ids == null ? [cur.myPlayerId ?? ""] : Array.isArray(ids) ? ids : [ids]).filter(Boolean);
+    const s = cloneState(cur);
+    for (const id of list) whoMarkReady(s, id);
+    set(s);
+  },
+  runBotSkill: () => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    if (cur.skillFlash || cur.phase === "skill") return;
+    const s = cloneState(cur);
+    if (autoBotSkip(s)) {
+      s.burstKey += 1;
+      set(s);
+      return;
+    }
+    if (!castBotSkill(s)) return;
+    s.burstKey += 1;
+    set(s);
+  },
   pickTruth: (took) => {
     const s = cloneState(get());
     truthChoose(s, took);
@@ -764,13 +984,23 @@ export const useGame = create<GameStore>((set, get) => ({
     set(s);
   },
   againReact: () => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) {
+      netSend.current?.({ t: "react-again" });
+      return;
+    }
+    const s = cloneState(cur);
     reactAgain(s);
     s.burstKey += 1;
     set(s);
   },
   setReactHard: (hard) => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) {
+      netSend.current?.({ t: "react-hard", hard });
+      return;
+    }
+    const s = cloneState(cur);
     reactSetHard(s, hard);
     set(s);
   },
@@ -785,7 +1015,9 @@ export const useGame = create<GameStore>((set, get) => ({
     set(s);
   },
   tickReactCount: () => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
     reactTickCount(s);
     set(s);
   },
@@ -796,25 +1028,40 @@ export const useGame = create<GameStore>((set, get) => ({
     set(s);
   },
   beatReact: () => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
     reactContinue(s);
     set(s);
   },
   releaseReact: () => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
     reactRelease(s);
     set(s);
   },
-  tapReact: (pid) => {
-    const s = cloneState(get());
-    const result = reactTap(s, pid ?? s.myPlayerId ?? "");
+  tapReact: (pid, card) => {
+    const cur = get();
+    const who = pid ?? cur.myPlayerId ?? "";
+    if (cur.isOnline && !cur.isHost) {
+      const id = cur.myPlayerId || who;
+      if (id) netSend.current?.({ t: "react-tap", id, card: cur.react?.card ?? 0 });
+      if (!cur.react || cur.react.sub !== "play") return "ignore";
+      return reactMustTap(cur.react) ? "ok" : "miss";
+    }
+    if (cur.react && card != null && card > 0 && cur.react.card !== card) return "ignore";
+    const s = cloneState(cur);
+    const result = reactTap(s, who);
     if (result === "miss") playMeow();
     s.burstKey += 1;
     set(s);
     return result;
   },
   timeoutReact: () => {
-    const s = cloneState(get());
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
     const wasPlay = s.react?.sub === "play";
     reactTimeout(s);
     if (wasPlay && s.react && s.react.sub !== "play") playMeow();

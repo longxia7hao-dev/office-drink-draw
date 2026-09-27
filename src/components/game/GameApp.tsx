@@ -31,8 +31,10 @@ import {
   SetupScreen,
   SkillScreen,
 } from "./screens";
-import { AwardScreen, ChaosScreen, KingScreen, MatchScreen, NeverScreen, RecapScreen, ReactScreen, TruthScreen, WheelScreen, WhoScreen } from "./partyScreens";
+import { AwardScreen, ArtistScreen, ChaosScreen, KingScreen, MatchScreen, NeverScreen, RecapScreen, ReactScreen, TruthScreen, WheelScreen, WhoScreen } from "./partyScreens";
 import { Portrait } from "./artui";
+import { fillPunish } from "@/game/partyPlay";
+import { getRole } from "@/game/roles";
 
 function isNetMsg(data: unknown): data is NetMsg {
   return typeof data === "object" && data !== null && "t" in data && typeof (data as { t: unknown }).t === "string";
@@ -65,7 +67,20 @@ function OnlineBridge({
   const useSkill = useGame((s) => s.useSkill);
   const skillTarget = useGame((s) => s.skillTarget);
   const repayCover = useGame((s) => s.repayCover);
+  const useSkip = useGame((s) => s.useSkip);
   const markReactReady = useGame((s) => s.markReactReady);
+  const tapReact = useGame((s) => s.tapReact);
+  const againReact = useGame((s) => s.againReact);
+  const setReactHard = useGame((s) => s.setReactHard);
+  const neverSay = useGame((s) => s.neverSay);
+  const artistPick = useGame((s) => s.artistPick);
+  const artistStroke = useGame((s) => s.artistStroke);
+  const artistUndo = useGame((s) => s.artistUndo);
+  const artistDone = useGame((s) => s.artistDone);
+  const artistGuess = useGame((s) => s.artistGuess);
+  const artistNext = useGame((s) => s.artistNext);
+  const markWhoReady = useGame((s) => s.markWhoReady);
+  const markNeverReady = useGame((s) => s.markNeverReady);
   const snapshot = useGame((s) => s.snapshot);
   const hostId = useGame((s) => s.hostId);
 
@@ -135,31 +150,87 @@ function OnlineBridge({
         return;
       }
       if (data.t === "use-skill") {
-        useSkill(from);
+        useSkill(data.id || from);
         return;
       }
       if (data.t === "skill-target") {
         skillTarget(data.id);
         return;
       }
+      if (data.t === "skill-opt") {
+        useGame.getState().skillOpt(data.opt);
+        return;
+      }
+      if (data.t === "skip-skill") {
+        useGame.getState().skipSkill();
+        return;
+      }
       if (data.t === "repay-cover") {
         repayCover(from);
+        return;
+      }
+      if (data.t === "use-skip") {
+        useSkip(from);
         return;
       }
       if (data.t === "react-ready") {
         markReactReady(from);
         return;
       }
+      if (data.t === "react-tap") {
+        tapReact(data.id || from, data.card);
+        return;
+      }
+      if (data.t === "react-again") {
+        againReact();
+        return;
+      }
+      if (data.t === "react-hard") {
+        setReactHard(data.hard);
+        return;
+      }
+      if (data.t === "never-say") {
+        neverSay(data.did, from);
+        return;
+      }
+      if (data.t === "never-ready") {
+        markNeverReady(from);
+        return;
+      }
+      if (data.t === "artist-pick") {
+        artistPick(data.id, from);
+        return;
+      }
+      if (data.t === "artist-stroke") {
+        artistStroke(data.pts, from);
+        return;
+      }
+      if (data.t === "artist-undo") {
+        artistUndo(from);
+        return;
+      }
+      if (data.t === "artist-done") {
+        artistDone(from);
+        return;
+      }
+      if (data.t === "artist-guess") {
+        artistGuess(data.id, from);
+        return;
+      }
+      if (data.t === "artist-next") {
+        artistNext();
+        return;
+      }
+      if (data.t === "who-ready") {
+        markWhoReady(from);
+        return;
+      }
       if (data.t === "ready") {
-        const done = markReady(from);
-        if (done) {
-          window.setTimeout(() => {
-            useGame.getState().advanceFlip();
-          }, 350);
-        }
+        markReady(from);
+        return;
       }
     });
-  }, [p2p, p2p.onMessage, isHost, applyRemoteSync, pickFlip, markReady, pickRole, tapMatch, swapMatch, useSkill, skillTarget, repayCover, markReactReady, pushSync]);
+  }, [p2p, p2p.onMessage, isHost, applyRemoteSync, pickFlip, markReady, pickRole, tapMatch, swapMatch, useSkill, skillTarget, repayCover, useSkip, markReactReady, tapReact, againReact, setReactHard, neverSay, artistPick, artistStroke, artistUndo, artistDone, artistGuess, artistNext, markWhoReady, markNeverReady, pushSync]);
 
   useEffect(() => {
     netSend.current = (msg, to) => {
@@ -187,11 +258,10 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
   const setOverlay = useGame((s) => s.setOverlay);
   const setNotice = useGame((s) => s.setNotice);
   const pickFlip = useGame((s) => s.pickFlip);
-  const soloReadyNext = useGame((s) => s.soloReadyNext);
   const markReady = useGame((s) => s.markReady);
   const pickRoleStore = useGame((s) => s.pickRole);
+  const punishLabel = useGame((s) => s.punishLabel);
   const skillFlash = useGame((s) => s.skillFlash);
-  const burstKey = useGame((s) => s.burstKey);
   const openedPreset = useRef(false);
   const [splash, setSplash] = useState(true);
   const [flashOn, setFlashOn] = useState(false);
@@ -214,16 +284,16 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
       return;
     }
     setFlashOn(true);
-    const ms = skillFlash.skill === "調換" ? 1000 : 1800;
-    const t = window.setTimeout(() => setFlashOn(false), ms);
+    if (skillFlash.skill !== "調換") return;
+    const t = window.setTimeout(() => setFlashOn(false), 1000);
     return () => window.clearTimeout(t);
-  }, [burstKey, skillFlash?.skill]);
+  }, [skillFlash?.roleId, skillFlash?.skill, skillFlash?.msg]);
 
   useEffect(() => {
     setBgmTrack(
       phase === "who"
         ? "who"
-        : phase === "truth"
+        : phase === "truth" || phase === "never" || phase === "artist"
           ? "truth"
           : phase === "flip_battle" || phase === "react" || phase === "match"
             ? "flip"
@@ -290,12 +360,7 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
       netSend.current?.({ t: "ready" });
       return;
     }
-    const done = s.isOnline && s.myPlayerId ? markReady(s.myPlayerId) : soloReadyNext();
-    if (done) {
-      window.setTimeout(() => {
-        useGame.getState().advanceFlip();
-      }, 350);
-    }
+    if (s.myPlayerId) markReady(s.myPlayerId);
   }
 
   let view: ReactNode;
@@ -367,6 +432,9 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
       case "never":
         view = <NeverScreen />;
         break;
+      case "artist":
+        view = <ArtistScreen />;
+        break;
       case "wheel":
         view = <WheelScreen />;
         break;
@@ -400,13 +468,21 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
       ) : null}
       {splash ? <StudioSplash onDone={() => setSplash(false)} /> : view}
       {flashOn && skillFlash && phase !== "skill" ? (
-        <div className={`skill-burst${skillFlash.skill === "調換" ? " is-hold" : ""}`} role="status">
-          <Portrait roleId={skillFlash.roleId} size={192} />
+        <button
+          type="button"
+          className={`skill-burst is-tap${skillFlash.skill === "調換" ? " is-hold" : ""}`}
+          onClick={() => {
+            if (skillFlash.skill === "調換") return;
+            setFlashOn(false);
+          }}
+        >
+          <Portrait roleId={skillFlash.roleId} size={240} />
           <strong>
-            {skillFlash.name} 使用了 {skillFlash.skill}
+            {skillFlash.name} 放技能「{skillFlash.skill}」
           </strong>
-          <p>{skillFlash.msg}</p>
-        </div>
+          <p>{fillPunish(skillFlash.desc || getRole(skillFlash.roleId).skillDesc, punishLabel)}</p>
+          {skillFlash.skill === "調換" ? null : <span className="skill-dismiss">點一下關閉</span>}
+        </button>
       ) : null}
       <TopFabs
         onSettings={() => {

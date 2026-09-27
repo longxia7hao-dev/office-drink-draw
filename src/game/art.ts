@@ -118,6 +118,8 @@ export const MODE_ART: Record<string, string> = {
   truth: asset("/art/modes/truth.webp"),
   react: asset("/art/modes/react.webp"),
   match: asset("/art/modes/match.webp"),
+  never: asset("/art/modes/never.webp"),
+  artist: asset("/art/modes/artist.webp"),
 };
 
 export function modeArt(id: string): string {
@@ -133,6 +135,10 @@ export function roleArt(roleId: string): string {
   return `${src}?v=${APP_VERSION}`;
 }
 
+export function paintRoleArt(roleId: string): string {
+  return `${asset(`/art/roles/paint-${roleId}.webp`)}?v=${APP_VERSION}`;
+}
+
 const pinned: HTMLImageElement[] = [];
 
 /** Decode role and mode art as soon as the app script loads, before those screens open. */
@@ -140,6 +146,7 @@ export function warmPickArt(): void {
   if (typeof window === "undefined") return;
   const srcs = [
     ...Object.values(ROLE_ART).map((src) => `${src}?v=${APP_VERSION}`),
+    ...Object.keys(ROLE_ART).map((id) => `${asset(`/art/roles/paint-${id}.webp`)}?v=${APP_VERSION}`),
     ...Object.values(MODE_ART).map((src) => `${src}?v=${APP_VERSION}`),
     ...Object.values(STICKER_ART),
   ];

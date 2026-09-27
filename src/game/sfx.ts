@@ -61,9 +61,8 @@ function makePlayer(track: BgmTrack): HTMLAudioElement {
   return a;
 }
 
-function getPlayer(track: BgmTrack): HTMLAudioElement | null {
+function ensurePlayer(track: BgmTrack): HTMLAudioElement | null {
   if (typeof window === "undefined") return null;
-  if (!hasInteracted() || muted) return null;
   if (!bgmHooked) {
     bgmHooked = true;
     document.addEventListener("visibilitychange", () => {
@@ -73,12 +72,17 @@ function getPlayer(track: BgmTrack): HTMLAudioElement | null {
       else void a.play().catch(() => {});
     });
     const kick = () => unlockSfx();
-    window.addEventListener("pointerdown", kick, { capture: true, once: true });
-    window.addEventListener("touchstart", kick, { capture: true, once: true, passive: true });
-    window.addEventListener("keydown", kick, { capture: true, once: true });
+    window.addEventListener("pointerdown", kick, { capture: true });
+    window.addEventListener("touchstart", kick, { capture: true, passive: true });
+    window.addEventListener("keydown", kick, { capture: true });
   }
   if (!players[track]) players[track] = makePlayer(track);
   return players[track] ?? null;
+}
+
+function getPlayer(track: BgmTrack): HTMLAudioElement | null {
+  if (!hasInteracted() || muted) return null;
+  return ensurePlayer(track);
 }
 
 export function setBgmTrack(track: BgmTrack): void {
@@ -105,18 +109,25 @@ export function startBgm(): void {
     a.pause();
     return;
   }
-  const play = () => {
-    void a.play().catch(() => {});
-  };
-  play();
-  a.addEventListener("canplay", play, { once: true });
+  if (!a.paused && a.currentTime > 0) return;
+  void a.play().catch(() => {});
 }
 
 export function warmupBgm(): void {
-  /* Don't prefetch audio until the user taps — saves mobile data. */
+  primeBgm();
 }
 
-export function bootBgm(): void {
+/** 開場就先把主選單音樂載好，讀取條跑滿才能立刻出聲。 */
+export function primeBgm(): void {
+  if (typeof window === "undefined" || muted) return;
+  const a = ensurePlayer("main");
+  if (!a) return;
+  a.preload = "auto";
+  if (!a.getAttribute("src")) a.src = TRACKS.main;
+  a.load();
+}
+
+export function bootBgm(): Promise<boolean> {
   try {
     muted = localStorage.getItem(MUTE_KEY) === "1";
   } catch {
@@ -127,7 +138,31 @@ export function bootBgm(): void {
   } catch {
     /* ignore */
   }
-  startBgm();
+  markInteracted();
+  if (muted) {
+    startBgm();
+    return Promise.resolve(false);
+  }
+  const a = ensurePlayer(currentTrack);
+  if (!a) return Promise.resolve(false);
+  if (!a.getAttribute("src")) a.src = TRACKS[currentTrack];
+  a.muted = false;
+  a.volume = currentTrack === "flip" ? 0.42 : 0.36;
+  a.dataset.live = "1";
+  if (!a.paused && a.currentTime > 0.05) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (ok: boolean) => {
+      if (done) return;
+      done = true;
+      resolve(ok);
+    };
+    a.addEventListener("playing", () => finish(true), { once: true });
+    const p = a.play();
+    if (p) void p.then(() => finish(!a.paused)).catch(() => finish(false));
+    else finish(false);
+    window.setTimeout(() => finish(!a.paused), 700);
+  });
 }
 
 let sting: HTMLAudioElement | null = null;

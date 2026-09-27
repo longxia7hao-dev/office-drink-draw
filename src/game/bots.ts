@@ -15,6 +15,11 @@ export function botWhoTarget(players: Player[], botId: string, salt: string): st
   return pool[rngInt(rng, pool.length)]?.id ?? botId;
 }
 
+export function botNever(seed: string, botId: string, index: number): boolean {
+  const rng = createRng(`${seed}:botnever:${botId}:${index}`);
+  return rng() < 0.42;
+}
+
 export function botTruth(roleId: string, seed: string, botId: string): "answer" | "punish" {
   const rng = createRng(`${seed}:bottruth:${botId}`);
   const punishChance = roleId === "intern" ? 0.55 : roleId === "ceo" || roleId === "sales" ? 0.18 : 0.34;

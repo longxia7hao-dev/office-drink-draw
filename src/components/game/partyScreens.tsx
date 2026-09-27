@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Crown, RotateCw, Zap } from "lucide-react";
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { ChevronLeft, Crown, RotateCw, Zap } from "lucide-react";
 import { getKingCmd, NEVER_PROMPTS, recapTitle, WHEEL } from "@/game/party";
 import { getTruth, getWho, fillPunish, punishPhrase } from "@/game/partyPlay";
 import { useGame } from "@/game/store";
-import { sfxDrink, sfxSlam, sfxSpin, sfxTick, sfxWin, unlockSfx, vibrate } from "@/game/sfx";
-import { ART, modeArt, preloadReactCards, reactCardSrc, whenReactCardsReady, STICKER_ART } from "@/game/art";
+import { playMeow, sfxDrink, sfxSlam, sfxSpin, sfxTick, sfxWin, unlockSfx, vibrate } from "@/game/sfx";
+import { ART, modeArt, paintRoleArt, preloadReactCards, reactCardSrc, whenReactCardsReady, STICKER_ART } from "@/game/art";
+import { artistWord } from "@/game/artist";
 import { REACT_CARDS, REACT_COLOR_META, REACT_COLORS, REACT_DECOYS } from "@/game/reactCards";
 import { canUseSkillNow } from "@/game/state";
 import { Screen, usePress } from "./chrome";
@@ -98,17 +99,34 @@ export function WhoScreen() {
   const players = useGame((s) => s.players);
   const voteWho = useGame((s) => s.voteWho);
   const nextWho = useGame((s) => s.nextWho);
+  const markWhoReady = useGame((s) => s.markWhoReady);
   const toModes = useGame((s) => s.toModes);
   const punishLabel = useGame((s) => s.punishLabel);
   const myPlayerId = useGame((s) => s.myPlayerId);
   const isOnline = useGame((s) => s.isOnline);
   const isHost = useGame((s) => s.isHost);
   const practice = useGame((s) => s.practice);
+  const readyKey = (who?.readyIds ?? []).join(",");
+  useEffect(() => {
+    if (!who || who.sub !== "result") return;
+    if (isOnline && !isHost) return;
+    const missing = players.filter((p) => p.isBot && !(who.readyIds ?? []).includes(p.id)).map((p) => p.id);
+    if (!missing.length) return;
+    const t = window.setTimeout(() => markWhoReady(missing), 450);
+    return () => window.clearTimeout(t);
+  }, [who, readyKey, players, isOnline, isHost, markWhoReady]);
+  useEffect(() => {
+    if (!who || who.sub !== "result") return;
+    if (isOnline && !isHost) return;
+    if (!players.length || !players.every((p) => (who.readyIds ?? []).includes(p.id))) return;
+    const t = window.setTimeout(() => nextWho(), 700);
+    return () => window.clearTimeout(t);
+  }, [who, readyKey, players, isOnline, isHost, nextWho]);
   if (!who) return <Screen><p className="hint">載入中…</p></Screen>;
   const q = getWho(who.deck[who.index % who.deck.length] ?? "w01");
-  const voter = players.find((p) => p.id === who.voterId);
   const punished = who.punishedIds.map((id) => players.find((p) => p.id === id)?.name).filter(Boolean).join("、");
   const myVoted = Boolean(myPlayerId && myPlayerId in who.votes);
+  const mineReady = Boolean(myPlayerId && (who.readyIds ?? []).includes(myPlayerId));
   const canVote = who.sub === "vote" && (practice
     ? Boolean(myPlayerId) && !myVoted
     : isOnline
@@ -129,29 +147,28 @@ export function WhoScreen() {
       {who.sub === "vote" ? (
         <>
           <p className="flip-ux-hint">
-            {practice
-              ? myVoted
-                ? "已點名 · 等電腦投票"
-                : "點名一個人，電腦也會投票"
-              : `輪到 ${voter?.name ?? "下一位"} 點名`}
+            不能投自己。除了本人，大家都投同一個人，那個人就要喝。
           </p>
           <div className="king-grid">
             {players.map((p) => {
+              const voterId = practice || isOnline ? myPlayerId : who.voterId;
+              const self = p.id === voterId;
               const minePick = Boolean(myPlayerId && who.votes[myPlayerId] === p.id);
               return (
               <button
                 key={p.id}
                 type="button"
                 className={`king-seat${minePick ? " is-my-pick" : ""}`}
-                disabled={!canVote}
+                disabled={!canVote || self}
                 onClick={() => {
+                  if (self) return;
                   unlockSfx();
                   sfxTick();
                   voteWho(p.id, practice || isOnline ? myPlayerId ?? undefined : undefined);
                 }}
               >
                 <Portrait roleId={p.roleId} size={48} />
-                <strong>{p.name}</strong>
+                <strong>{self ? "不能投自己" : p.name}</strong>
               </button>
               );
             })}
@@ -163,15 +180,29 @@ export function WhoScreen() {
       ) : (
         <>
           <div className={`flip-result ${who.punishedIds.length ? "bad" : "ok"}`}>
-            <div className="flip-result-title">票數最高</div>
+            <div className="flip-result-title">{who.punishedIds.length ? "全員鎖定" : "沒有共識"}</div>
             <p className="hint" style={{ marginBottom: 0 }}>
-              {punished || "沒人"} · {punishLabel}
+              {who.punishedIds.length ? `${punished || "沒人"} · ${punishLabel}` : "沒有大家都投的同一個人，這題沒人喝"}
             </p>
+          </div>
+          <div className={`who-stage${who.punishedIds.length > 1 ? " is-many" : ""}`}>
+            {who.punishedIds.map((id) => {
+              const p = players.find((x) => x.id === id);
+              if (!p) return null;
+              return (
+                <figure key={id}>
+                  <Portrait roleId={p.roleId} size={220} />
+                  <figcaption>{p.name.replace(/^電腦[·・]/, "")}</figcaption>
+                </figure>
+              );
+            })}
           </div>
           <DragPicker exclude={who.punishedIds} />
           <div className="btn-row">
             <SkillUseBtn />
-            <button className="btn btn-lg" type="button" onClick={nextWho}>下一題</button>
+            <button className="btn btn-lg" type="button" disabled={mineReady} onClick={() => markWhoReady()}>
+              下一題準備
+            </button>
             <ModeSwitchBtn />
           </div>
         </>
@@ -274,9 +305,13 @@ export function ReactScreen() {
   const again = useGame((s) => s.againReact);
   const nextRound = useGame((s) => s.beatReact);
   const release = useGame((s) => s.releaseReact);
+  const isOnline = useGame((s) => s.isOnline);
+  const isHost = useGame((s) => s.isHost);
+  const clock = !isOnline || isHost;
   const [okFlash, setOkFlash] = useState(false);
   const [readyPop, setReadyPop] = useState(0);
   const seenReady = useRef<string[]>([]);
+  const tapLock = useRef(0);
   const readyAt = useRef(0);
   const popReady = () => {
     const now = Date.now();
@@ -296,6 +331,13 @@ export function ReactScreen() {
   }, [r, players]);
   const needLabel =
     r?.need === "cat" ? "貓" : r?.need === "dog" ? "狗" : r?.need === "cow" ? "牛" : r?.need === "panda" ? "熊貓" : "";
+  const reactSub = r?.sub;
+  const reactPunished = r?.punished;
+  const seenSub = useRef(reactSub);
+  useEffect(() => {
+    if (isOnline && !isHost && seenSub.current === "play" && reactSub === "result" && reactPunished) playMeow();
+    seenSub.current = reactSub;
+  }, [isOnline, isHost, reactSub, reactPunished]);
   const faceKey = `${r?.card ?? 0}:${r?.file ?? ""}`;
   const [readyKey, setReadyKey] = useState("");
   const faceReady = r?.sub === "play" && readyKey === faceKey;
@@ -305,34 +347,40 @@ export function ReactScreen() {
   }, []);
 
   useEffect(() => {
-    if (r?.sub !== "count") return;
+    if (r?.sub !== "count" || !clock) return;
     const t = window.setTimeout(tick, 800);
     return () => window.clearTimeout(t);
-  }, [r?.sub, r?.count, tick]);
+  }, [r?.sub, r?.count, tick, clock]);
 
   useEffect(() => {
     setOkFlash(false);
   }, [r?.card]);
 
   useEffect(() => {
-    if (r?.sub !== "play" || !r.hold) return;
+    if (r?.sub !== "play" || !r.hold || !clock) return;
     const t = window.setTimeout(() => release(), 420);
     return () => window.clearTimeout(t);
-  }, [r?.sub, r?.hold, r?.card, release]);
+  }, [r?.sub, r?.hold, r?.card, release, clock]);
 
   useEffect(() => {
-    if (r?.sub !== "play" || !faceReady || r.hold) return;
-    const t = window.setTimeout(() => timeoutReact(), r.tempo);
+    if (r?.sub !== "play" || !faceReady || r.hold || !clock) return;
+    const wait = isOnline ? Math.max(r.tempo, 1200) + 400 : r.tempo;
+    const t = window.setTimeout(() => timeoutReact(), wait);
     return () => window.clearTimeout(t);
-  }, [r?.sub, r?.card, r?.tempo, faceReady, timeoutReact]);
+  }, [r?.sub, r?.card, r?.tempo, faceReady, timeoutReact, clock]);
 
   if (!r) return <Screen><p className="hint">載入中…</p></Screen>;
   const live = r;
 
-  function tap() {
+  function tap(e?: { preventDefault?: () => void; stopPropagation?: () => void }) {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
     if (live.sub !== "play") return;
+    const now = Date.now();
+    if (now - tapLock.current < 220) return;
+    tapLock.current = now;
     unlockSfx();
-    const result = tapReact(myId ?? undefined);
+    const result = tapReact(myId || undefined);
     if (result === "miss") {
       vibrate(40);
       return;
@@ -442,7 +490,12 @@ export function ReactScreen() {
       ) : null}
       {r.sub === "play" ? (
         <>
-          <button type="button" className={`react-card${okFlash || r.hold ? " is-ok" : ""}`} onPointerDown={tap}>
+          <button
+            type="button"
+            className={`react-card${okFlash || r.hold || (myId && r.tapped.includes(myId)) ? " is-ok" : ""}`}
+            onPointerDown={tap}
+            onClick={tap}
+          >
             <img
               key={faceKey}
               src={reactCardSrc(r.file)}
@@ -663,11 +716,29 @@ export function NeverScreen() {
   const n = useGame((s) => s.never);
   const punishLabel = useGame((s) => s.punishLabel);
   const players = useGame((s) => s.players);
-  const neverTap = useGame((s) => s.neverTap);
-  const neverDone = useGame((s) => s.neverDone);
+  const myId = useGame((s) => s.myPlayerId);
+  const neverSay = useGame((s) => s.neverSay);
   const neverNext = useGame((s) => s.neverNext);
-  const toModes = useGame((s) => s.toModes);
-  const hostOnly = useGame((s) => s.isOnline && !s.isHost);
+  const markNeverReady = useGame((s) => s.markNeverReady);
+  const isOnline = useGame((s) => s.isOnline);
+  const isHost = useGame((s) => s.isHost);
+  const hostOnly = isOnline && !isHost;
+  const readyKey = (n?.readyIds ?? []).join(",");
+  useEffect(() => {
+    if (!n || n.sub !== "result") return;
+    if (isOnline && !isHost) return;
+    const missing = players.filter((p) => p.isBot && !(n.readyIds ?? []).includes(p.id)).map((p) => p.id);
+    if (!missing.length) return;
+    const t = window.setTimeout(() => markNeverReady(missing), 450);
+    return () => window.clearTimeout(t);
+  }, [n, readyKey, players, isOnline, isHost, markNeverReady]);
+  useEffect(() => {
+    if (!n || n.sub !== "result") return;
+    if (isOnline && !isHost) return;
+    if (!players.length || !players.every((p) => (n.readyIds ?? []).includes(p.id))) return;
+    const t = window.setTimeout(() => neverNext(), 700);
+    return () => window.clearTimeout(t);
+  }, [n, readyKey, players, isOnline, isHost, neverNext]);
 
   if (!n) {
     return (
@@ -677,6 +748,19 @@ export function NeverScreen() {
     );
   }
   const q = NEVER_PROMPTS.find((p) => p.id === n.deck[n.index % n.deck.length]) ?? NEVER_PROMPTS[0]!;
+  const passed = n.passed ?? [];
+  const me = myId ?? "";
+  const mineDid = n.marked.includes(me);
+  const mineNo = passed.includes(me);
+  const mineReady = Boolean(myId && (n.readyIds ?? []).includes(myId));
+  const waiting = players.filter((p) => !n.marked.includes(p.id) && !passed.includes(p.id));
+
+  function say(did: boolean) {
+    unlockSfx();
+    if (did) sfxDrink();
+    else sfxTick();
+    neverSay(did);
+  }
 
   return (
     <Screen>
@@ -688,7 +772,7 @@ export function NeverScreen() {
         </span>
       </div>
       <h1 className="graffiti-title" style={{ fontSize: "1.7rem" }}>
-        從未做過
+        我從來沒有
       </h1>
       <div className="flip-q sticker">
         <div className="flip-q-label">做過的人{punishLabel}</div>
@@ -696,61 +780,442 @@ export function NeverScreen() {
       </div>
       {n.sub === "ask" ? (
         <>
-          <p className="flip-ux-hint">點選做過的人（可多選）</p>
-          <div className="king-grid">
-            {players.map((p) => (
-              <button
-                type="button"
-                key={p.id}
-                className={`king-seat ${n.marked.includes(p.id) ? "is-king" : ""}`}
-                disabled={hostOnly}
-                onClick={() => neverTap(p.id)}
-              >
-                <Portrait roleId={p.roleId} size={48} />
-                <strong>{p.name}</strong>
-              </button>
-            ))}
+          <p className="flip-ux-hint">自己承認就好，不用幫別人點</p>
+          <div className="btn-row inline">
+            <button className={`btn btn-lg${mineDid ? " is-mine" : ""}`} type="button" onClick={() => say(true)}>
+              我做過
+            </button>
+            <button className={`btn btn-ghost btn-lg${mineNo ? " is-mine" : ""}`} type="button" onClick={() => say(false)}>
+              我沒有
+            </button>
           </div>
-          <div className="btn-row">
-            <HostGate>
-              <button
-                className="btn btn-pink btn-lg"
-                type="button"
-                onClick={() => {
-                  unlockSfx();
-                  sfxDrink();
-                  vibrate(24);
-                  neverDone();
-                }}
-              >
-                確認 · {n.marked.length} 人受罰
-              </button>
-            </HostGate>
+          <div className="ready-list">
+            {players.map((p) => {
+              const did = n.marked.includes(p.id);
+              const no = passed.includes(p.id);
+              return (
+                <div className={`ready-chip ${did ? "on" : "off"}`} key={p.id}>
+                  <strong>{p.name}</strong>
+                  <span className="ready-label">{did ? "做過" : no ? "沒有" : "還沒"}</span>
+                </div>
+              );
+            })}
           </div>
+          <p className="hint">{waiting.length ? `還有 ${waiting.length} 人沒表態` : "全員到齊，結算中…"}</p>
         </>
       ) : (
         <>
           <div className={`flip-result ${n.marked.length ? "bad" : "ok"}`}>
-            <div className="flip-result-title">{n.marked.length ? "中鏢受罰" : "全場清白"}</div>
+            <div className="flip-result-title">{n.marked.length ? "做過的人受罰" : "全場都沒做過"}</div>
             <p className="hint" style={{ marginBottom: 0 }}>
               {n.marked.length
                 ? n.marked
-                    .map((id) => players.find((p) => p.id === id)?.name)
+                    .map((id) => players.find((p) => p.id === id)?.name?.replace(/^電腦[·・]/, ""))
                     .filter(Boolean)
                     .join("、") + ` ${punishLabel}`
                 : "這題沒人中"}
             </p>
           </div>
-          <div className="btn-row inline">
-            <HostGate>
-              <button className="btn btn-lg" type="button" onClick={neverNext}>
-                下一題
-              </button>
-              <ModeSwitchBtn />
-            </HostGate>
+          {n.marked.length ? (
+            <div className={`who-stage${n.marked.length > 1 ? " is-many" : ""}`}>
+              {n.marked.map((id) => {
+                const p = players.find((x) => x.id === id);
+                if (!p) return null;
+                return (
+                  <figure key={id}>
+                    <Portrait roleId={p.roleId} size={220} />
+                    <figcaption>{p.name.replace(/^電腦[·・]/, "")}</figcaption>
+                  </figure>
+                );
+              })}
+            </div>
+          ) : null}
+          <DragPicker exclude={n.marked} />
+          <div className="btn-row">
+            <SkillUseBtn />
+            <button className="btn btn-lg" type="button" disabled={mineReady} onClick={() => markNeverReady()}>
+              下一題準備
+            </button>
+            <ModeSwitchBtn />
           </div>
         </>
       )}
+    </Screen>
+  );
+}
+
+function paintArtist(ctx: CanvasRenderingContext2D, pts: number[], w: number) {
+  let start = 0;
+  let erase = false;
+  if (pts[0] === 1002) {
+    erase = true;
+    start = 2;
+  } else if (pts[0] === 1001) start = 2;
+  if (pts.length < start + 4) return;
+  ctx.save();
+  ctx.globalCompositeOperation = erase ? "destination-out" : "source-over";
+  ctx.strokeStyle = "#161616";
+  ctx.lineWidth = erase ? 36 : 10;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo((pts[start]! / 1000) * w, (pts[start + 1]! / 1000) * w);
+  for (let i = start + 2; i < pts.length; i += 2) ctx.lineTo((pts[i]! / 1000) * w, (pts[i + 1]! / 1000) * w);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function ArtistWait({
+  roleId,
+  name,
+  title,
+  detail,
+  paint,
+}: {
+  roleId: string;
+  name: string;
+  title: string;
+  detail?: string;
+  paint?: boolean;
+}) {
+  return (
+    <div className="artist-wait-card">
+      {paint ? (
+        <img className="artist-wait-paint" src={paintRoleArt(roleId)} alt="" />
+      ) : (
+        <Portrait roleId={roleId} size={168} className="artist-wait-art" />
+      )}
+      {paint ? null : <strong>{name}</strong>}
+      <p>{title}</p>
+      {detail ? <b className="artist-wait">{detail}</b> : <span className="artist-dots">等待中</span>}
+    </div>
+  );
+}
+
+function ArtistPaper({
+  strokes,
+  spin,
+  enabled,
+  erase,
+  onStroke,
+}: {
+  strokes: number[][];
+  spin: boolean;
+  enabled: boolean;
+  erase: boolean;
+  onStroke: (pts: number[]) => void;
+}) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const angleRef = useRef(0);
+  const liveRef = useRef<number[]>([]);
+  const [liveTick, setLiveTick] = useState(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const w = canvas.width;
+    ctx.clearRect(0, 0, w, w);
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, w, w);
+    for (const st of strokes) paintArtist(ctx, st, w);
+    paintArtist(ctx, liveRef.current, w);
+  }, [strokes, liveTick]);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    if (!spin) {
+      el.style.transform = "none";
+      return;
+    }
+    let raf = 0;
+    const t0 = performance.now();
+    const loop = (now: number) => {
+      angleRef.current = ((now - t0) / 1000) * 60;
+      el.style.transform = `rotate(${angleRef.current}deg)`;
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [spin]);
+
+  function point(e: PointerEvent) {
+    const el = wrapRef.current;
+    if (!el) return [0, 0];
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const rad = (-angleRef.current * Math.PI) / 180;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+    const lx = dx * Math.cos(rad) - dy * Math.sin(rad);
+    const ly = dx * Math.sin(rad) + dy * Math.cos(rad);
+    const half = el.clientWidth / 2 || 1;
+    const x = Math.round(((lx / half + 1) / 2) * 1000);
+    const y = Math.round(((ly / half + 1) / 2) * 1000);
+    return [Math.max(0, Math.min(1000, x)), Math.max(0, Math.min(1000, y))];
+  }
+
+  function down(e: PointerEvent) {
+    if (!enabled) return;
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    const [x, y] = point(e);
+    liveRef.current = erase ? [1002, 0, x!, y!] : [1001, 0, x!, y!];
+    setLiveTick((n) => n + 1);
+  }
+  function move(e: PointerEvent) {
+    if (!enabled || liveRef.current.length === 0) return;
+    e.preventDefault();
+    const [x, y] = point(e);
+    const pts = liveRef.current;
+    const px = pts[pts.length - 2] ?? 0;
+    const py = pts[pts.length - 1] ?? 0;
+    if (Math.hypot(x! - px, y! - py) < 12) return;
+    if (pts.length < 160) pts.push(x!, y!);
+    setLiveTick((n) => n + 1);
+  }
+  function up() {
+    const pts = liveRef.current;
+    liveRef.current = [];
+    setLiveTick((n) => n + 1);
+    if (pts.length >= 6) onStroke(pts);
+  }
+
+  return (
+    <div className={`artist-stage${spin ? " is-spin" : ""}`}>
+      <div
+        ref={wrapRef}
+        className="artist-paper"
+        onPointerDown={down}
+        onPointerMove={move}
+        onPointerUp={up}
+        onPointerCancel={up}
+      >
+        <canvas ref={canvasRef} width={400} height={400} />
+      </div>
+    </div>
+  );
+}
+
+export function ArtistScreen() {
+  const a = useGame((s) => s.artist);
+  const players = useGame((s) => s.players);
+  const myId = useGame((s) => s.myPlayerId);
+  const punishLabel = useGame((s) => s.punishLabel);
+  const hostOnly = useGame((s) => s.isOnline && !s.isHost);
+  const orderDone = useGame((s) => s.artistOrderDone);
+  const pick = useGame((s) => s.artistPick);
+  const stroke = useGame((s) => s.artistStroke);
+  const done = useGame((s) => s.artistDone);
+  const guess = useGame((s) => s.artistGuess);
+  const next = useGame((s) => s.artistNext);
+  const undo = useGame((s) => s.artistUndo);
+  const toModes = useGame((s) => s.toModes);
+  const [left, setLeft] = useState(20);
+  const [tool, setTool] = useState<"pen" | "erase">("pen");
+
+  useEffect(() => {
+    if (a?.sub !== "draw") return;
+    const tick = () => setLeft(Math.max(0, Math.ceil((a.drawStart + 20000 - Date.now()) / 1000)));
+    tick();
+    const id = window.setInterval(tick, 200);
+    return () => window.clearInterval(id);
+  }, [a?.sub, a?.drawStart]);
+
+  useEffect(() => {
+    if (a?.sub !== "draw" || hostOnly) return;
+    const wait = Math.max(0, a.drawStart + 20000 - Date.now());
+    const t = window.setTimeout(() => done(), wait);
+    return () => window.clearTimeout(t);
+  }, [a?.sub, a?.drawStart, hostOnly, done]);
+
+  if (!a) {
+    return (
+      <Screen>
+        <p className="hint">調色中…</p>
+      </Screen>
+    );
+  }
+  const painter = players.find((p) => p.id === a.artistId);
+  const mine = myId === a.artistId;
+  const myGuess = myId ? a.guesses[myId] : "";
+  const waiting = players.filter((p) => p.id !== a.artistId && !a.guesses[p.id]);
+  const ordered = a.order
+    .map((id, i) => ({ id, i, name: players.find((p) => p.id === id)?.name ?? "?" }))
+    .filter((p) => p.name);
+
+  return (
+    <Screen className="screen-artist">
+      <DrinkHud />
+      <div className="top-bar">
+        <button
+          className="btn btn-ghost btn-sm"
+          type="button"
+          disabled={hostOnly}
+          aria-label="返回"
+          onClick={() => {
+            if (!hostOnly) toModes();
+          }}
+        >
+          <ChevronLeft size={18} />
+        </button>
+        <span className="tag-pill">ART</span>
+        <span className="tag-pill pink">
+          {a.sub === "order" ? "排順序" : `畫家 ${painter?.name ?? "？"}`}
+        </span>
+      </div>
+      {a.sub === "order" ? (
+        <MatchStarterReel players={players} winnerId={a.order[0] ?? ""} onDone={() => orderDone()} />
+      ) : (
+        <div className="artist-order">
+          {ordered.map((p) => (
+            <span key={p.id} className={p.id === a.artistId ? "on" : ""}>
+              {p.i + 1}.{p.name.replace(/^電腦[·・]/, "")}
+            </span>
+          ))}
+        </div>
+      )}
+      {a.sub === "pick" ? (
+        <>
+          <p className="flip-ux-hint">{mine ? "三選一，等下要在旋轉畫紙上畫出來" : `等 ${painter?.name ?? "畫家"} 選題`}</p>
+          {mine ? (
+            <div className="artist-words">
+              {a.choices.map((id) => (
+                <button
+                  key={id}
+                  className="btn btn-lg"
+                  type="button"
+                  onClick={() => {
+                    unlockSfx();
+                    sfxTick();
+                    pick(id);
+                  }}
+                >
+                  {artistWord(id)}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <ArtistWait
+              roleId={painter?.roleId ?? "worker"}
+              name={painter?.name ?? "畫家"}
+              title={`${painter?.name ?? "畫家"}選題中…`}
+              paint
+            />
+          )}
+        </>
+      ) : null}
+      {a.sub === "draw" ? (
+        <>
+          <p className="flip-ux-hint">
+            {mine ? `畫「${artistWord(a.answer)}」。畫紙會一直轉，${left} 秒` : "先等這張畫完成"}
+          </p>
+          {mine ? (
+            <>
+              <ArtistPaper
+                strokes={a.strokes}
+                spin
+                enabled
+                erase={tool === "erase"}
+                onStroke={(pts) => stroke(pts)}
+              />
+              <div className="artist-tools">
+                <button className={`btn${tool === "pen" ? " is-mine" : " btn-ghost"}`} type="button" onClick={() => setTool("pen")}>
+                  畫筆
+                </button>
+                <button className={`btn${tool === "erase" ? " is-mine" : " btn-ghost"}`} type="button" onClick={() => setTool("erase")}>
+                  橡皮擦
+                </button>
+                <button className="btn btn-ghost" type="button" disabled={a.strokes.length === 0} onClick={() => undo()}>
+                  上一步
+                </button>
+              </div>
+              <button className="btn btn-lg" type="button" onClick={() => done()}>
+                畫完
+              </button>
+            </>
+          ) : (
+            <ArtistWait
+              roleId={painter?.roleId ?? "worker"}
+              name={painter?.name ?? "畫家"}
+              title={`${painter?.name ?? "畫家"}作畫中…`}
+              detail={String(left)}
+              paint
+            />
+          )}
+        </>
+      ) : null}
+      {a.sub === "guess" || a.sub === "result" ? (
+        <ArtistPaper strokes={a.strokes} spin={false} enabled={false} erase={false} onStroke={() => {}} />
+      ) : null}
+      {a.sub === "guess" ? (
+        <>
+          {mine ? (
+            <div className="artist-wait-card is-compact">
+              <p>等大家猜這張畫</p>
+              <div className="artist-wait-row">
+                {waiting.map((p) => (
+                  <span key={p.id}>
+                    <Portrait roleId={p.roleId} size={64} />
+                    <b>{p.name}</b>
+                  </span>
+                ))}
+              </div>
+              {waiting.length === 0 ? <span className="artist-dots">結算中</span> : <span className="artist-dots">還沒猜</span>}
+            </div>
+          ) : (
+            <>
+              <p className="flip-ux-hint">這張在畫什麼？三選一</p>
+              <div className="artist-words">
+                {a.options.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`btn btn-lg${myGuess === id ? " is-mine" : ""}`}
+                    onClick={() => {
+                      unlockSfx();
+                      sfxTick();
+                      guess(id);
+                    }}
+                  >
+                    {artistWord(id)}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          <p className="hint">{waiting.length ? `還有 ${waiting.length} 人在猜` : "猜完了"}</p>
+        </>
+      ) : null}
+      {a.sub === "result" ? (
+        <>
+          <div className={`flip-result ${a.wrongIds.length ? "bad" : "ok"}`}>
+            <div className="flip-result-title">
+              {a.wrongIds.includes(a.artistId) ? "全猜錯，畫家受罰" : a.wrongIds.length ? "猜錯的人受罰" : "大家都猜對"}
+            </div>
+            <p className="hint" style={{ marginBottom: 0 }}>
+              答案 {artistWord(a.answer)}
+              {a.wrongIds.length
+                ? ` · ${a.wrongIds
+                    .map((id) => players.find((p) => p.id === id)?.name)
+                    .filter(Boolean)
+                    .join("、")} ${punishLabel}`
+                : " · 過關"}
+            </p>
+          </div>
+          <div className="btn-row inline">
+            <SkillUseBtn />
+            <button className="btn btn-lg" type="button" disabled={hostOnly} onClick={next}>
+              換下一個人
+            </button>
+            <ModeSwitchBtn />
+          </div>
+        </>
+      ) : null}
     </Screen>
   );
 }
