@@ -219,13 +219,20 @@ export function DrinkHud() {
   const react = useGame((s) => s.react);
   const showSlips = phase === "react" && !!react;
   const slipCount = (id: string) => (react?.slips ?? []).filter((x) => x === id).length;
-  const turnId = phase === "match" && match?.sub === "play" ? match.turn : "";
+  const liner = useGame((s) => s.oneliner);
+  const turnId =
+    phase === "match" && match?.sub === "play"
+      ? match.turn
+      : phase === "oneliner" && liner && liner.sub !== "setup" && liner.sub !== "spin" && liner.sub !== "rank"
+        ? (liner.order[liner.seat] ?? "")
+        : "";
   const who = useGame((s) => s.who);
   const flipReady = useGame((s) => (s.phase === "flip_battle" && s.flip?.sub === "result" ? s.flip.readyIds : null));
   const whoReady = phase === "who" && who?.sub === "result" ? new Set(who.readyIds ?? []) : null;
   const never = useGame((s) => s.never);
   const neverReady = phase === "never" && never?.sub === "result" ? new Set(never.readyIds ?? []) : null;
-  const hudReady = neverReady ?? whoReady ?? (flipReady ? new Set(flipReady) : null);
+  const linerReady = phase === "oneliner" && liner?.sub === "judge" ? new Set(liner.readyIds ?? []) : null;
+  const hudReady = linerReady ?? neverReady ?? whoReady ?? (flipReady ? new Set(flipReady) : null);
   const myId = useGame((s) => s.myPlayerId);
   const repayCover = useGame((s) => s.repayCover);
   const useSkip = useGame((s) => s.useSkip);

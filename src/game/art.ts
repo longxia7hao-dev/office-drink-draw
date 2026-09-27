@@ -120,6 +120,7 @@ export const MODE_ART: Record<string, string> = {
   match: asset("/art/modes/match.webp"),
   never: asset("/art/modes/never.webp"),
   artist: asset("/art/modes/artist.webp"),
+  oneliner: asset("/art/modes/oneliner.webp"),
 };
 
 export function modeArt(id: string): string {

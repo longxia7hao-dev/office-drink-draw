@@ -11,6 +11,7 @@ import {
 } from "./party";
 import { CHAOS_CARDS, TRUTH_QUESTIONS, WHO_QUESTIONS, fillPunish } from "./partyPlay";
 import { REACT_CARDS, REACT_COLORS, REACT_DECOYS, pickMatchFaces, type ReactColor } from "./reactCards";
+import { LINER_EFFECTS, LINER_SITUATIONS } from "./oneliner";
 import { ARTIST_SETS } from "./artist";
 
 export type Phase =
@@ -35,6 +36,7 @@ export type Phase =
   | "wheel"
   | "match"
   | "artist"
+  | "oneliner"
   | "award"
   | "recap";
 
@@ -50,7 +52,8 @@ export type GameMode =
   | "king"
   | "never"
   | "wheel"
-  | "artist";
+  | "artist"
+  | "oneliner";
 
 export type FlipSubPhase = "choose" | "result";
 
@@ -105,6 +108,29 @@ export interface NeverState {
   passed: string[];
   sub: "ask" | "result";
   readyIds: string[];
+  allDeny: boolean;
+}
+
+export interface OneLinerState {
+  sub: "setup" | "spin" | "prompt" | "judge" | "reveal" | "rank";
+  perPlayer: number;
+  order: string[];
+  round: number;
+  seat: number;
+  sitDeck: number[];
+  effDeck: number[];
+  cursor: number;
+  situation: string;
+  effect: string;
+  line: string;
+  votes: Record<string, boolean>;
+  scores: Record<string, number>;
+  readyIds: string[];
+  boom: boolean;
+  success: boolean;
+  deadline: number;
+  best: string[];
+  worst: string[];
 }
 
 export interface ArtistState {
@@ -274,6 +300,7 @@ export interface GameState {
   never: NeverState | null;
   wheel: WheelState | null;
   artist: ArtistState | null;
+  oneliner: OneLinerState | null;
   who: WhoState | null;
   truth: TruthState | null;
   react: ReactState | null;
@@ -315,6 +342,7 @@ export function createInitialState(): GameState {
     never: null,
     wheel: null,
     artist: null,
+    oneliner: null,
     who: null,
     truth: null,
     react: null,
@@ -684,6 +712,7 @@ export function launchCoreMode(state: GameState, mode: GameMode, fromChaos = fal
   else if (mode === "truth") startTruth(state);
   else if (mode === "never") startNever(state);
   else if (mode === "artist") startArtist(state);
+  else if (mode === "oneliner") startOneLiner(state);
   else if (mode === "react") startReact(state);
   else if (mode === "match") startMatch(state);
   for (const p of state.players) p.skillUsed = false;
@@ -2013,7 +2042,7 @@ export function startNever(state: GameState): void {
   shuffleInPlace(deck, rng);
   state.mode = "never";
   state.phase = "never";
-  state.never = { deck, index: 0, marked: [], passed: [], sub: "ask", readyIds: [] };
+  state.never = { deck, index: 0, marked: [], passed: [], sub: "ask", readyIds: [], allDeny: false };
   state.flip = null;
   state.king = null;
   state.wheel = null;
@@ -2045,12 +2074,13 @@ export function neverConfirm(state: GameState): void {
   n.sub = "result";
   n.readyIds = [];
   state.drawCount += 1;
-  if (n.marked.length) settlePunish(state, n.marked, 1);
-  else {
-    state.hitAmt = {};
-    state.punishQueue = [];
-    state.punishActorId = null;
+  if (!n.marked.length) {
+    n.allDeny = true;
+    n.marked = state.players.map((p) => p.id);
+  } else {
+    n.allDeny = false;
   }
+  settlePunish(state, n.marked, 1);
 }
 
 export function neverMarkReady(state: GameState, pid: string): void {
@@ -2069,7 +2099,9 @@ export function neverAdvance(state: GameState): void {
   n.marked = [];
   n.passed = [];
   n.readyIds = [];
+  n.allDeny = false;
   n.sub = "ask";
+  state.hitAmt = {};
 }
 
 export function startWheel(state: GameState): void {
@@ -2172,6 +2204,180 @@ export function wheelApply(state: GameState): void {
   state.drawCount += 1;
 }
 
+function linerSpeaker(state: GameState): string {
+  const o = state.oneliner;
+  if (!o) return "";
+  return o.order[o.seat] ?? "";
+}
+
+function linerDeal(state: GameState): void {
+  const o = state.oneliner;
+  if (!o) return;
+  const sit = LINER_SITUATIONS[o.sitDeck[o.cursor % o.sitDeck.length]!] ?? LINER_SITUATIONS[0]!;
+  const eff = LINER_EFFECTS[o.effDeck[o.cursor % o.effDeck.length]!] ?? LINER_EFFECTS[0]!;
+  o.cursor += 1;
+  o.situation = sit;
+  o.effect = eff.name;
+  o.line = "";
+  o.votes = {};
+  o.readyIds = [];
+  o.boom = false;
+  o.success = false;
+  o.deadline = 0;
+  o.sub = "prompt";
+  state.hitAmt = {};
+  state.punishQueue = [];
+  state.punishActorId = null;
+}
+
+function linerResolve(state: GameState): void {
+  const o = state.oneliner;
+  if (!o || o.sub !== "judge") return;
+  const speaker = linerSpeaker(state);
+  const judges = state.players.filter((p) => p.id !== speaker);
+  const hits = judges.filter((p) => o.votes[p.id]).length;
+  const need = Math.floor(judges.length / 2) + 1;
+  o.success = judges.length === 0 ? true : hits >= need;
+  o.boom = judges.length > 0 && hits === judges.length;
+  if (o.success) {
+    o.scores[speaker] = (o.scores[speaker] ?? 0) + 1;
+    state.hitAmt = {};
+    state.punishQueue = [];
+    state.punishActorId = null;
+  } else if (speaker) {
+    settlePunish(state, [speaker], 1);
+  }
+  o.sub = "reveal";
+  o.readyIds = [];
+}
+
+export function startOneLiner(state: GameState): void {
+  const rng = createRng(`${state.seed}:oneliner:${state.drawCount}`);
+  const order = state.players.map((p) => p.id);
+  shuffleInPlace(order, rng);
+  const sitDeck = LINER_SITUATIONS.map((_, i) => i);
+  const effDeck = LINER_EFFECTS.map((_, i) => i);
+  shuffleInPlace(sitDeck, rng);
+  shuffleInPlace(effDeck, rng);
+  const scores: Record<string, number> = {};
+  for (const p of state.players) scores[p.id] = 0;
+  state.mode = "oneliner";
+  state.phase = "oneliner";
+  state.oneliner = {
+    sub: "setup",
+    perPlayer: 3,
+    order,
+    round: 0,
+    seat: 0,
+    sitDeck,
+    effDeck,
+    cursor: 0,
+    situation: "",
+    effect: "",
+    line: "",
+    votes: {},
+    scores,
+    readyIds: [],
+    boom: false,
+    success: false,
+    deadline: 0,
+    best: [],
+    worst: [],
+  };
+  state.flip = null;
+  state.never = null;
+  state.artist = null;
+  state.who = null;
+  state.truth = null;
+}
+
+export function linerSetRounds(state: GameState, n: number): void {
+  const o = state.oneliner;
+  if (!o || o.sub !== "setup") return;
+  o.perPlayer = Math.max(1, Math.min(8, Math.round(n)));
+}
+
+export function linerBegin(state: GameState): void {
+  const o = state.oneliner;
+  if (!o || o.sub !== "setup" || state.players.length === 0) return;
+  o.sub = "spin";
+}
+
+export function linerSpinDone(state: GameState): void {
+  const o = state.oneliner;
+  if (!o || o.sub !== "spin") return;
+  linerDeal(state);
+}
+
+export function linerSubmit(state: GameState, text: string, pid?: string): void {
+  const o = state.oneliner;
+  if (!o || o.sub !== "prompt") return;
+  const speaker = linerSpeaker(state);
+  if (pid && pid !== speaker) return;
+  o.line = text.trim().slice(0, 42);
+  o.sub = "judge";
+  o.votes = {};
+  const judges = state.players.filter((p) => p.id !== speaker);
+  if (judges.length === 0) linerResolve(state);
+}
+
+export function linerVote(state: GameState, hit: boolean, pid: string): void {
+  const o = state.oneliner;
+  if (!o || o.sub !== "judge" || !pid) return;
+  const speaker = linerSpeaker(state);
+  if (pid === speaker) return;
+  if (!state.players.some((p) => p.id === pid)) return;
+  o.votes[pid] = hit;
+  if (!o.readyIds.includes(pid)) o.readyIds.push(pid);
+  const judges = state.players.filter((p) => p.id !== speaker);
+  if (judges.length > 0 && judges.every((p) => p.id in o.votes)) linerResolve(state);
+}
+
+export function linerMarkReady(state: GameState, pid: string): void {
+  const o = state.oneliner;
+  if (!o || !pid) return;
+  if (!o.readyIds) o.readyIds = [];
+  if (!state.players.some((p) => p.id === pid)) return;
+  const speaker = linerSpeaker(state);
+  if (o.sub === "judge") {
+    if (pid === speaker || !(pid in o.votes)) return;
+    if (!o.readyIds.includes(pid)) o.readyIds.push(pid);
+    const judges = state.players.filter((p) => p.id !== speaker);
+    if (judges.length > 0 && judges.every((p) => o.readyIds.includes(p.id))) linerResolve(state);
+    return;
+  }
+  if (o.sub !== "reveal") return;
+  if (!o.readyIds.includes(pid)) o.readyIds.push(pid);
+}
+
+export function linerAdvance(state: GameState): void {
+  const o = state.oneliner;
+  if (!o || o.sub !== "reveal") return;
+  flushPunish(state);
+  const n = Math.max(1, o.order.length);
+  const lastSeat = o.seat >= n - 1;
+  const lastRound = o.round >= o.perPlayer - 1;
+  if (lastSeat && lastRound) {
+    const vals = state.players.map((p) => o.scores[p.id] ?? 0);
+    const max = Math.max(0, ...vals);
+    const min = Math.min(...vals);
+    o.best = state.players.filter((p) => (o.scores[p.id] ?? 0) === max).map((p) => p.id);
+    o.worst = max === min ? [] : state.players.filter((p) => (o.scores[p.id] ?? 0) === min).map((p) => p.id);
+    o.sub = "rank";
+    state.hitAmt = {};
+    state.punishQueue = [];
+    if (o.worst.length) settlePunish(state, o.worst, 1);
+    return;
+  }
+  if (lastSeat) {
+    o.round += 1;
+    o.seat = 0;
+  } else {
+    o.seat += 1;
+  }
+  linerDeal(state);
+}
+
 export interface SyncPayload {
   phase: Phase;
   mode: GameMode | null;
@@ -2188,6 +2394,7 @@ export interface SyncPayload {
   never: NeverState | null;
   wheel: WheelState | null;
   artist: ArtistState | null;
+  oneliner: OneLinerState | null;
   who: WhoState | null;
   truth: TruthState | null;
   react: ReactState | null;
@@ -2221,6 +2428,7 @@ export function toSync(state: GameState): SyncPayload {
     never: state.never,
     wheel: state.wheel,
     artist: state.artist,
+    oneliner: state.oneliner,
     who: state.who,
     truth: state.truth,
     react: state.react,
@@ -2254,6 +2462,7 @@ export function applySync(state: GameState, sync: SyncPayload): void {
   state.never = sync.never ?? null;
   state.wheel = sync.wheel ?? null;
   state.artist = sync.artist ?? null;
+  state.oneliner = sync.oneliner ?? null;
   state.who = sync.who ?? null;
   state.truth = sync.truth ?? null;
   state.react = sync.react ?? null;

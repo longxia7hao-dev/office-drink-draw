@@ -47,7 +47,15 @@ import {
   allRolesPicked,
   confirmChaos,
   consumeDrag,
+  flushPunish,
   launchCoreMode,
+  linerAdvance,
+  linerBegin,
+  linerMarkReady,
+  linerSetRounds,
+  linerSpinDone,
+  linerSubmit,
+  linerVote,
   matchDeal,
   matchTap,
   matchFlipBack,
@@ -134,6 +142,9 @@ export type NetMsg =
   | { t: "artist-done" }
   | { t: "artist-guess"; id: string }
   | { t: "artist-next" }
+  | { t: "liner-line"; text: string }
+  | { t: "liner-vote"; hit: boolean }
+  | { t: "liner-ready" }
   | { t: "who-ready" };
 
 interface GameStore extends GameState {
@@ -197,6 +208,14 @@ interface GameStore extends GameState {
   neverDone: () => void;
   neverNext: () => void;
   markNeverReady: (ids?: string | string[]) => void;
+  linerSetRounds: (n: number) => void;
+  linerBegin: () => void;
+  linerSpinDone: () => void;
+  linerSubmit: (text: string, pid?: string) => void;
+  linerVote: (hit: boolean, pid?: string) => void;
+  linerReady: (ids?: string | string[]) => void;
+  linerNext: () => void;
+  linerLeave: () => void;
   artistOrderDone: () => void;
   artistPick: (wordId: string, pid?: string) => void;
   artistStroke: (pts: number[], pid?: string) => void;
@@ -290,6 +309,19 @@ function cloneState<T extends GameState>(s: T): T {
           strokes: s.artist.strokes.map((st) => [...st]),
           guesses: { ...s.artist.guesses },
           wrongIds: [...s.artist.wrongIds],
+        }
+      : null,
+    oneliner: s.oneliner
+      ? {
+          ...s.oneliner,
+          order: [...s.oneliner.order],
+          sitDeck: [...s.oneliner.sitDeck],
+          effDeck: [...s.oneliner.effDeck],
+          votes: { ...s.oneliner.votes },
+          scores: { ...s.oneliner.scores },
+          readyIds: [...(s.oneliner.readyIds ?? [])],
+          best: [...(s.oneliner.best ?? [])],
+          worst: [...(s.oneliner.worst ?? [])],
         }
       : null,
     who: s.who
@@ -771,6 +803,82 @@ export const useGame = create<GameStore>((set, get) => ({
     const list = (ids == null ? [cur.myPlayerId ?? ""] : Array.isArray(ids) ? ids : [ids]).filter(Boolean);
     const s = cloneState(cur);
     for (const id of list) neverMarkReady(s, id);
+    set(s);
+  },
+  linerSetRounds: (n) => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
+    linerSetRounds(s, n);
+    set(s);
+  },
+  linerBegin: () => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
+    linerBegin(s);
+    s.burstKey += 1;
+    set(s);
+  },
+  linerSpinDone: () => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
+    linerSpinDone(s);
+    s.burstKey += 1;
+    set(s);
+  },
+  linerSubmit: (text, pid) => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost && !pid) {
+      netSend.current?.({ t: "liner-line", text });
+      return;
+    }
+    const s = cloneState(cur);
+    linerSubmit(s, text, pid ?? cur.myPlayerId ?? undefined);
+    s.burstKey += 1;
+    set(s);
+  },
+  linerVote: (hit, pid) => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost && !pid) {
+      netSend.current?.({ t: "liner-vote", hit });
+      return;
+    }
+    const s = cloneState(cur);
+    linerVote(s, hit, pid ?? cur.myPlayerId ?? "");
+    s.burstKey += 1;
+    set(s);
+  },
+  linerReady: (ids) => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost && ids == null) {
+      netSend.current?.({ t: "liner-ready" });
+      return;
+    }
+    const list = (ids == null ? [cur.myPlayerId ?? ""] : Array.isArray(ids) ? ids : [ids]).filter(Boolean);
+    const s = cloneState(cur);
+    for (const id of list) linerMarkReady(s, id);
+    set(s);
+  },
+  linerNext: () => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
+    linerAdvance(s);
+    s.burstKey += 1;
+    set(s);
+  },
+  linerLeave: () => {
+    const cur = get();
+    if (cur.isOnline && !cur.isHost) return;
+    const s = cloneState(cur);
+    flushPunish(s);
+    s.phase = "mode_select";
+    s.oneliner = null;
+    s.hitAmt = {};
+    s.punishQueue = [];
+    s.burstKey += 1;
     set(s);
   },
   artistOrderDone: () => {

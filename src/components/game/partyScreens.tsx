@@ -722,7 +722,6 @@ export function NeverScreen() {
   const markNeverReady = useGame((s) => s.markNeverReady);
   const isOnline = useGame((s) => s.isOnline);
   const isHost = useGame((s) => s.isHost);
-  const hostOnly = isOnline && !isHost;
   const readyKey = (n?.readyIds ?? []).join(",");
   useEffect(() => {
     if (!n || n.sub !== "result") return;
@@ -750,7 +749,7 @@ export function NeverScreen() {
   const q = NEVER_PROMPTS.find((p) => p.id === n.deck[n.index % n.deck.length]) ?? NEVER_PROMPTS[0]!;
   const passed = n.passed ?? [];
   const me = myId ?? "";
-  const mineDid = n.marked.includes(me);
+  const mineDid = n.marked.includes(me) && n.sub === "ask";
   const mineNo = passed.includes(me);
   const mineReady = Boolean(myId && (n.readyIds ?? []).includes(myId));
   const waiting = players.filter((p) => !n.marked.includes(p.id) && !passed.includes(p.id));
@@ -780,7 +779,7 @@ export function NeverScreen() {
       </div>
       {n.sub === "ask" ? (
         <>
-          <p className="flip-ux-hint">自己承認就好，不用幫別人點</p>
+          <p className="flip-ux-hint">自己承認。全場都說沒有，就全員{punishLabel}。</p>
           <div className="btn-row inline">
             <button className={`btn btn-lg${mineDid ? " is-mine" : ""}`} type="button" onClick={() => say(true)}>
               我做過
@@ -791,11 +790,11 @@ export function NeverScreen() {
           </div>
           <div className="ready-list">
             {players.map((p) => {
-              const did = n.marked.includes(p.id);
+              const did = n.sub === "ask" && n.marked.includes(p.id);
               const no = passed.includes(p.id);
               return (
                 <div className={`ready-chip ${did ? "on" : "off"}`} key={p.id}>
-                  <strong>{p.name}</strong>
+                  <strong>{p.name.replace(/^電腦[·・]/, "")}</strong>
                   <span className="ready-label">{did ? "做過" : no ? "沒有" : "還沒"}</span>
                 </div>
               );
@@ -806,14 +805,14 @@ export function NeverScreen() {
       ) : (
         <>
           <div className={`flip-result ${n.marked.length ? "bad" : "ok"}`}>
-            <div className="flip-result-title">{n.marked.length ? "做過的人受罰" : "全場都沒做過"}</div>
+            <div className="flip-result-title">{n.allDeny ? "全場都說沒有" : "做過的人受罰"}</div>
             <p className="hint" style={{ marginBottom: 0 }}>
-              {n.marked.length
-                ? n.marked
+              {n.allDeny
+                ? `沒人承認，全員 ${punishLabel}`
+                : n.marked
                     .map((id) => players.find((p) => p.id === id)?.name?.replace(/^電腦[·・]/, ""))
                     .filter(Boolean)
-                    .join("、") + ` ${punishLabel}`
-                : "這題沒人中"}
+                    .join("、") + ` ${punishLabel}`}
             </p>
           </div>
           {n.marked.length ? (
@@ -1332,7 +1331,7 @@ export function WheelScreen() {
   );
 }
 
-function MatchStarterReel({
+export function MatchStarterReel({
   players,
   winnerId,
   onDone,
@@ -1516,7 +1515,7 @@ export function MatchScreen() {
         <>
           <p className="hint">
             {m.sub === "spin" ? "抽誰先開始…" : `輪到 ${turnName}`}
-            {m.swapping ? (m.swapBurst ? " · 調換特效" : " · 點兩張蓋牌，卡背會亮黃") : ""}
+            {m.swapping ? (m.swapBurst ? "" : " · 點兩張蓋牌") : ""}
           </p>
           <div className={`match-board${m.cols >= 6 ? " grid-6" : ""}`} style={{ ["--n" as string]: String(m.cols || 4) }}>
             {m.tiles.map((t, i) => (

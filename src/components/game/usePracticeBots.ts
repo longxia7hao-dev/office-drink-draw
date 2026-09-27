@@ -80,6 +80,7 @@ export function usePracticeBots() {
             window.setTimeout(() => {
               const cur = useGame.getState();
               if (cur.never?.sub !== "ask") return;
+              if (cur.never.marked.includes(p.id) || (cur.never.passed ?? []).includes(p.id)) return;
               const did = botNever(cur.seed, p.id, cur.never.index);
               cur.neverSay(did, p.id);
             }, 420 + i * 180),

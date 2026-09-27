@@ -193,6 +193,7 @@ export function RulesOverlay() {
         <p><b>誰最可能</b> 不能投自己。除了本人，大家都投同一個人，那個人喝。</p>
         <p><b>真心話</b> 回答，或接受懲罰。</p>
         <p><b>反應挑戰</b> 綠就拍、紅不准拍。</p>
+        <p><b>一句見笑</b> 講一句中指定效果。評審只評有沒有中，超過半數才成功。</p>
         <p><b>混亂事件</b> 每 3 題插入加倍／拖人／免死。</p>
         <p>懲罰在組隊時自訂：喝半杯、體能訓練、彈額頭都可以。</p>
       </div>
@@ -855,7 +856,7 @@ export function ModesScreen() {
     {
       id: "never",
       title: "我從來沒有",
-      desc: "做過的人自己承認並受罰。受罰時可釋放角色技能",
+      desc: "做過的人承認。全場都說沒有，就全員受罰",
       accent: "#c84bff",
       go: () => beginCore("never"),
     },
@@ -865,6 +866,13 @@ export function ModesScreen() {
       desc: "全猜錯罰畫家。有人猜對就罰猜錯的人。全對過關",
       accent: "#ff4fd8",
       go: () => beginCore("artist"),
+    },
+    {
+      id: "oneliner",
+      title: "一句見笑",
+      desc: "講一句中指定效果。超過半數有中才算成功，失敗就受罰",
+      accent: "#ffd000",
+      go: () => beginCore("oneliner"),
     },
     {
       id: "react",

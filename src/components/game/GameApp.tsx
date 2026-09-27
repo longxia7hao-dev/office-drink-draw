@@ -32,6 +32,7 @@ import {
   SkillScreen,
 } from "./screens";
 import { AwardScreen, ArtistScreen, ChaosScreen, KingScreen, MatchScreen, NeverScreen, RecapScreen, ReactScreen, TruthScreen, WheelScreen, WhoScreen } from "./partyScreens";
+import { OneLinerScreen } from "./OneLinerScreen";
 import { Portrait } from "./artui";
 import { fillPunish } from "@/game/partyPlay";
 import { getRole } from "@/game/roles";
@@ -81,6 +82,9 @@ function OnlineBridge({
   const artistNext = useGame((s) => s.artistNext);
   const markWhoReady = useGame((s) => s.markWhoReady);
   const markNeverReady = useGame((s) => s.markNeverReady);
+  const linerSubmit = useGame((s) => s.linerSubmit);
+  const linerVote = useGame((s) => s.linerVote);
+  const linerReady = useGame((s) => s.linerReady);
   const snapshot = useGame((s) => s.snapshot);
   const hostId = useGame((s) => s.hostId);
 
@@ -197,6 +201,18 @@ function OnlineBridge({
         markNeverReady(from);
         return;
       }
+      if (data.t === "liner-line") {
+        linerSubmit(data.text, from);
+        return;
+      }
+      if (data.t === "liner-vote") {
+        linerVote(data.hit, from);
+        return;
+      }
+      if (data.t === "liner-ready") {
+        linerReady(from);
+        return;
+      }
       if (data.t === "artist-pick") {
         artistPick(data.id, from);
         return;
@@ -230,7 +246,7 @@ function OnlineBridge({
         return;
       }
     });
-  }, [p2p, p2p.onMessage, isHost, applyRemoteSync, pickFlip, markReady, pickRole, tapMatch, swapMatch, useSkill, skillTarget, repayCover, useSkip, markReactReady, tapReact, againReact, setReactHard, neverSay, artistPick, artistStroke, artistUndo, artistDone, artistGuess, artistNext, markWhoReady, markNeverReady, pushSync]);
+  }, [p2p, p2p.onMessage, isHost, applyRemoteSync, pickFlip, markReady, pickRole, tapMatch, swapMatch, useSkill, skillTarget, repayCover, useSkip, markReactReady, tapReact, againReact, setReactHard, neverSay, artistPick, artistStroke, artistUndo, artistDone, artistGuess, artistNext, markWhoReady, markNeverReady, linerSubmit, linerVote, linerReady, pushSync]);
 
   useEffect(() => {
     netSend.current = (msg, to) => {
@@ -293,7 +309,7 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
     setBgmTrack(
       phase === "who"
         ? "who"
-        : phase === "truth" || phase === "never" || phase === "artist"
+        : phase === "truth" || phase === "never" || phase === "artist" || phase === "oneliner"
           ? "truth"
           : phase === "flip_battle" || phase === "react" || phase === "match"
             ? "flip"
@@ -434,6 +450,9 @@ export function GameApp({ presetRoom }: { presetRoom?: string }) {
         break;
       case "artist":
         view = <ArtistScreen />;
+        break;
+      case "oneliner":
+        view = <OneLinerScreen />;
         break;
       case "wheel":
         view = <WheelScreen />;

@@ -454,6 +454,90 @@
   height: 100% !important;
   display: block;
 }
+.liner-scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.liner-scores .is-on {
+  color: var(--spray-lime);
+}
+.liner-effect {
+  text-align: center;
+}
+.liner-effect b {
+  display: block;
+  font-size: 1.7rem;
+  line-height: 1.1;
+}
+.liner-effect span,
+.liner-time {
+  color: #ffe14a;
+}
+.liner-time {
+  margin: 0;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 900;
+}
+.liner-input {
+  width: 100%;
+  min-height: 76px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  border: 2px solid #ffe14a;
+  background: #120c14;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  padding: 10px 12px;
+  resize: none;
+}
+.liner-said {
+  margin: 0;
+  text-align: center;
+  font-weight: 900;
+  font-size: 1.05rem;
+}
+.liner-boom {
+  margin: 0;
+  text-align: center;
+  font-family: var(--street);
+  font-size: 2rem;
+  color: #ffe14a;
+  text-shadow: 3px 3px 0 #000;
+}
+.liner-setup,
+.liner-step {
+  display: flex;
+  gap: 8px;
+}
+.liner-setup {
+  flex-direction: column;
+}
+.liner-step {
+  align-items: center;
+  justify-content: center;
+}
+.screen-liner {
+  overflow: hidden;
+}
+.screen-liner .who-stage {
+  flex: 0 0 auto;
+  overflow: visible;
+  min-height: 150px;
+}
+.screen-liner .who-stage figure {
+  max-width: 128px;
+  max-height: none;
+  overflow: visible;
+}
+.screen-liner .who-stage img {
+  height: 136px !important;
+  object-position: center center;
+}
 .studio-tap {
   margin: 14px 0 0;
   text-align: center;
