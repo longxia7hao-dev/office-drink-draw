@@ -1,0 +1,182 @@
+import { APP_VERSION } from "./version";
+import { REACT_CARDS, type ReactColor } from "./reactCards";
+
+export function asset(path: string): string {
+  const base = import.meta.env.BASE_URL || "/";
+  return `${base}${path.replace(/^\//, "")}`;
+}
+
+export const ROLE_ART: Record<string, string> = {
+  ceo: asset("/art/roles/ceo.webp"),
+  manager: asset("/art/roles/manager.webp"),
+  worker: asset("/art/roles/worker.webp"),
+  intern: asset("/art/roles/intern.webp"),
+  sales: asset("/art/roles/sales.webp"),
+  hr: asset("/art/roles/hr.webp"),
+  accountant: asset("/art/roles/accountant.webp"),
+  engineer: asset("/art/roles/engineer.webp"),
+  overtime: asset("/art/roles/overtime.webp"),
+  secretary: asset("/art/roles/secretary.webp"),
+  veteran: asset("/art/roles/veteran.webp"),
+  security: asset("/art/roles/security.webp"),
+  qc: asset("/art/roles/qc.webp"),
+  cs: asset("/art/roles/cs.webp"),
+  legal: asset("/art/roles/legal.webp"),
+  warehouse: asset("/art/roles/warehouse.webp"),
+};
+
+export const STICKER_ART = {
+  cat: `${asset("/art/stickers/cat.png")}?v=${APP_VERSION}`,
+  dog: `${asset("/art/stickers/dog.png")}?v=${APP_VERSION}`,
+  cow: `${asset("/art/stickers/cow.png")}?v=${APP_VERSION}`,
+  panda: `${asset("/art/stickers/panda.png")}?v=${APP_VERSION}`,
+} as const;
+
+export function reactCardSrc(file: string): string {
+  return `${asset(`/art/react/${file}`)}?v=${APP_VERSION}`;
+}
+
+export function preloadReactCards(files: string[]): void {
+  if (typeof window === "undefined") return;
+  const uniq = [...new Set(files.filter(Boolean))];
+  for (const file of uniq) {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = reactCardSrc(file);
+    void img.decode?.().catch(() => {});
+  }
+}
+
+export function whenReactCardsReady(files: string[], timeoutMs = 2200): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  const uniq = [...new Set(files.filter(Boolean))];
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      resolve();
+    };
+    const timer = window.setTimeout(finish, timeoutMs);
+    if (!uniq.length) {
+      finish();
+      return;
+    }
+    let left = uniq.length;
+    const one = () => {
+      left -= 1;
+      if (left <= 0) finish();
+    };
+    for (const file of uniq) {
+      const img = new Image();
+      let hit = false;
+      const ping = () => {
+        if (hit) return;
+        hit = true;
+        if (typeof img.decode === "function") void img.decode().then(one, one);
+        else one();
+      };
+      img.onload = ping;
+      img.onerror = () => {
+        if (hit) return;
+        hit = true;
+        one();
+      };
+      img.src = reactCardSrc(file);
+      if (img.complete && img.naturalWidth > 0) ping();
+    }
+  });
+}
+
+export function cardsOf(color: ReactColor): string[] {
+  return REACT_CARDS.filter((c) => c.color === color).map((c) => c.file);
+}
+
+export const ART = {
+  internIdle: [
+    asset("/art/mascot/idle-1.png"),
+    asset("/art/mascot/idle-2.png"),
+    asset("/art/mascot/idle-3.png"),
+    asset("/art/mascot/idle-4.png"),
+  ],
+  spray: [asset("/art/fx/fx-1.png"), asset("/art/fx/fx-2.png"), asset("/art/fx/fx-3.png"), asset("/art/fx/fx-4.png")],
+  cardBack: asset("/art/ui/card-back.png"),
+  logo: `${asset("/art/ui/logo.png")}?v=${APP_VERSION}`,
+  homeScene: asset("/art/ui/home-scene.jpg"),
+  homePoster: asset("/art/ui/home-poster.jpg"),
+  homeFreeze: asset("/art/ui/home-ui-freeze.webp"),
+  homeLoop: asset("/art/ui/home-loop.mp4"),
+  studioSprite: asset("/art/ui/studio-sprite.jpg"),
+  homePartySprite: asset("/art/ui/home-party-sprite.jpg"),
+  studioIntro: asset("/art/ui/studio-intro.mp4"),
+  studioSting: asset("/art/ui/studio-sting.json"),
+  catWalk: asset("/art/ui/cat-walk.json"),
+  loadCat: asset("/art/ui/load-cat.png"),
+  catsPoster: asset("/art/ui/cats-poster.jpg"),
+  modesPoster: asset("/art/ui/modes-poster.jpg"),
+};
+
+export const MODE_ART: Record<string, string> = {
+  flip: asset("/art/modes/flip.webp"),
+  who: asset("/art/modes/who.webp"),
+  truth: asset("/art/modes/truth.webp"),
+  react: asset("/art/modes/react.webp"),
+  match: asset("/art/modes/match.webp"),
+  never: asset("/art/modes/never.webp"),
+  artist: asset("/art/modes/artist.webp"),
+  oneliner: asset("/art/modes/oneliner.webp"),
+  wolf: asset("/art/modes/wolf.webp"),
+};
+
+export function modeArt(id: string): string {
+  const src = MODE_ART[id];
+  return src ? `${src}?v=${APP_VERSION}` : "";
+}
+
+export const STUDIO_FRAMES: string[] = Array.from({ length: 18 }, (_, i) => asset(`/art/ui/studio/f${String(i + 1).padStart(2, "0")}.jpg`));
+export const HOME_IDLE: string[] = Array.from({ length: 24 }, (_, i) => asset(`/art/ui/home-idle/f${String(i + 1).padStart(2, "0")}.jpg`));
+
+export function roleArt(roleId: string): string {
+  const src = ROLE_ART[roleId] ?? ROLE_ART.worker!;
+  return `${src}?v=${APP_VERSION}`;
+}
+
+/** Paint poses were saved under the wrong role ids. Map each role to the file that matches its face. */
+const PAINT_FILE: Record<string, string> = {
+  secretary: "accountant",
+  hr: "secretary",
+  manager: "hr",
+  accountant: "manager",
+  engineer: "intern",
+  intern: "engineer",
+  ceo: "sales",
+  sales: "ceo",
+};
+
+export function paintRoleArt(roleId: string): string {
+  const file = PAINT_FILE[roleId] ?? roleId;
+  return `${asset(`/art/roles/paint-${file}.webp`)}?v=${APP_VERSION}`;
+}
+
+const pinned: HTMLImageElement[] = [];
+
+/** Decode role and mode art as soon as the app script loads, before those screens open. */
+export function warmPickArt(): void {
+  if (typeof window === "undefined") return;
+  const srcs = [
+    ...Object.values(ROLE_ART).map((src) => `${src}?v=${APP_VERSION}`),
+    ...Object.keys(ROLE_ART).map((id) => `${asset(`/art/roles/paint-${id}.webp`)}?v=${APP_VERSION}`),
+    ...Object.values(MODE_ART).map((src) => `${src}?v=${APP_VERSION}`),
+    ...Object.values(STICKER_ART),
+  ];
+  for (const src of srcs) {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = src;
+    pinned.push(img);
+    void img.decode?.().catch(() => {});
+  }
+}
+
+warmPickArt();

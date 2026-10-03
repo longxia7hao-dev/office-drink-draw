@@ -1,94 +1,56 @@
-# 公司酒局 Office Drink Draw
+# 公司酒局／五告哞聊
 
-**美式嘻哈街頭塗鴉風格**的上班族抽籤喝酒遊戲（成人派對向）。
+派對喝酒遊戲。
 
-- 單機（一台手機傳著玩）開箱即用  
-- 連線房間：房主開房碼，其他人加入，狀態同步  
-- 角色技能、儀式感揭示、四種模式（含翻牌對戰）  
+- 倉庫：https://github.com/longxia7hao-dev/office-drink-draw
+- 線上站：https://longxia7hao-dev.github.io/office-drink-draw/
+- 日常改遊戲：只動 `grok-src`（工作分支，可以更新）
+- `gh-pages` 是編譯後靜態站；`main` 是較舊的版本
 
-> 請理性飲酒。未滿法定飲酒年齡請勿使用。
+## 上鎖還原點
 
----
+### 最新可玩備份：V14.1（覆蓋 grok-src）
 
-## 藝術風格
+- 分支 [`grok-src`](https://github.com/longxia7hao-dev/office-drink-draw/tree/grok-src)
+- 分支 [`v14.1`](https://github.com/longxia7hao-dev/office-drink-draw/tree/v14.1)
+- 分支 [`backup/v14.1`](https://github.com/longxia7hao-dev/office-drink-draw/tree/backup/v14.1)
+- 標籤 [`v14.1`](https://github.com/longxia7hao-dev/office-drink-draw/releases/tag/v14.1)
 
-**美式嘻哈街頭塗鴉（American hip-hop street graffiti）· ART-LOCK**  
-瀝青／磚牆底、噴漆滴流、粗體街頭字、貼紙按鈕、霓虹／馬克筆高光、boombox 街頭能量。  
-**已撤銷** Word／Excel 辦公室 UI 惡搞（非本專案造型語言）。
+V14.1 含：新增「一句見笑」（拉霸決定第一人、開口說、點有中／沒中即標 READY、超過半數才成功）；我從來沒有改為自己承認，全場都說沒有就全員受罰；拿掉畫面上的開發說明文字。
 
----
+### 仍上鎖、沒有被覆蓋
 
-## 怎麼玩（單機，免設定）
+- V13.3：[`v13.3`](https://github.com/longxia7hao-dev/office-drink-draw/tree/v13.3)／[`backup/v13.3`](https://github.com/longxia7hao-dev/office-drink-draw/tree/backup/v13.3)
+- V9.7：[`v9.7`](https://github.com/longxia7hao-dev/office-drink-draw/tree/v9.7)／[`backup/v9.7`](https://github.com/longxia7hao-dev/office-drink-draw/tree/backup/v9.7)
+- V6.6：[`v6.6`](https://github.com/longxia7hao-dev/office-drink-draw/tree/v6.6)／[`backup/v6.6`](https://github.com/longxia7hao-dev/office-drink-draw/tree/backup/v6.6)
+- V4.1：[`v4.1`](https://github.com/longxia7hao-dev/office-drink-draw/tree/v4.1)／[`backup/v4.1`](https://github.com/longxia7hao-dev/office-drink-draw/tree/backup/v4.1)
+- V2.7：[`v2.7`](https://github.com/longxia7hao-dev/office-drink-draw/tree/v2.7)／[`backup/v2.7`](https://github.com/longxia7hao-dev/office-drink-draw/tree/backup/v2.7)
+- V2.0：[`v2.0`](https://github.com/longxia7hao-dev/office-drink-draw/tree/v2.0)／[`backup/v2.0`](https://github.com/longxia7hao-dev/office-drink-draw/tree/backup/v2.0)
 
-1. 用手機瀏覽器打開網站（或本機預覽）。
-2. 點 **「單機開打」** → 輸入 2–12 人暱稱 → 鎖定陣容。
-3. 看角色卡 → 選模式：
-   - **抽一位喝酒**：公平亂數（seed）＋大揭示＋可發動技能  
-   - **喝杯順序**：排出乾杯順序  
-   - **分隊乾杯**：隨機兩隊互敬  
-   - **翻牌對戰**：無厘頭／台灣時事梗 → 兩選項立刻可見 → 全員選完揭曉；**少數方喝**（平手免喝）；全員按「下一題」才進下一題  
-4. 中籤後依角色技能互動（打小報告、老闆發話、喊救命…）。
+舊版都保留。這次只更新可覆寫的 `grok-src`，並另存 V14.1。
 
-### 翻牌對戰規則（FLIP-002／004）
+## 遊戲壞了怎麼接回
 
-- 懲罰為**社會少數**：跟多數不一樣的那邊喝。  
-- A／B 票數相同 → **平手免喝**。  
-- 「官方答案」只作趣味揭示，**不決定誰喝**。  
-- 選項一開始就公開（無蓋牌倒數）；收齊選票才揭少數名單。
-
----
-
-## 角色一覽
-
-| 角色 | 喝酒 | 技能 |
-|------|------|------|
-| 主管 | 1 | 打小報告：指定上班族喝 2 |
-| 上班族 | 1 | （無特殊技能） |
-| 老闆 | 1 | 全場喝 1，或指定一人喝 2 |
-| 實習生 | 半杯或 1 | 喊救命：整場可傳一次 |
-| 業務 | 1 | 請客：指定一人跟你各喝 1 |
-| 人資 | 1 | 調職：互換或全體重抽 |
-| 會計 | 1 | 報帳：指定多喝 1，自己半杯 |
-| 工程師 | 1 | 緊急上線：自己喝 1，可讓一人下輪免抽 |
-| 加班狗 | 2 | 加班：喝 2，下輪免抽 |
-
----
-
-## 本機開發
+接最新備份：
 
 ```bash
-npm install
-npm run dev          # 前端 http://localhost:5173/office-drink-draw/
-npm run build        # 產出 dist/
-npm run preview      # 預覽正式建置
+git fetch origin
+git checkout v14.1
 ```
 
-### 連線房間（可選）
+zip：https://github.com/longxia7hao-dev/office-drink-draw/archive/refs/tags/v14.1.zip
+
+## 開發
 
 ```bash
-npm run server       # 預設埠 8787
-# .env：VITE_WS_URL=ws://你的電腦區網IP:8787
+npm i
 npm run dev
 ```
 
-> GitHub Pages **只有靜態檔**，單機模式可直接玩；連線模式請自架 `npm run server`。
-
----
-
-## 部署到 GitHub Pages
+GitHub Pages 建置：
 
 ```bash
-npm run build
-npx gh-pages -d dist
+npm run pages:build
 ```
 
-網站：`https://longxia7hao-dev.github.io/office-drink-draw/`
-
----
-
-## 技術摘要
-
-- Vite + TypeScript（vanilla）
-- Seed-first Mulberry32 RNG，房主為權威
-- `/server` 輕量 WebSocket 轉發
-- 手機直向 9:16 友善、大按鈕、街頭塗鴉 UI
+輸出在 `dist-pages/`，可直接放到 `gh-pages`。
